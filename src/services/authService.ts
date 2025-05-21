@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { SignupFormValues } from "@/schemas/authSchemas";
+import { SignupFormValues, LoginFormValues } from "@/schemas/authSchemas";
 
 export async function checkEmailExists(email: string) {
   const { data: existingUser } = await supabase
@@ -45,4 +45,15 @@ export async function registerUser(values: SignupFormValues) {
   if (insertError) throw insertError;
 
   return authData.user;
+}
+
+export async function loginUser(values: LoginFormValues) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: values.email,
+    password: values.password,
+  });
+
+  if (error) throw error;
+
+  return data.user;
 }

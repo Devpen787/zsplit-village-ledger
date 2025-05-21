@@ -9,4 +9,10 @@ export const signupSchema = z.object({
   walletAddress: z.string().optional(),
 });
 
+export const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(1, "Password is required"),
+});
+
 export type SignupFormValues = z.infer<typeof signupSchema>;
+export type LoginFormValues = z.infer<typeof loginSchema>;

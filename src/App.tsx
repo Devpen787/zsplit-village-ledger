@@ -1,5 +1,6 @@
 
 import Signup from "./pages/Signup";
+import Login from "./pages/Login";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +26,7 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login />} />
             
             {/* Protected routes (require authentication) */}
             <Route element={<ProtectedRoute />}>
