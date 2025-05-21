@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile"; // Fixed hook name
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -17,7 +17,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile(); // Using the correct hook name
   const [open, setOpen] = useState(false);
 
   const navigation = [

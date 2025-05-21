@@ -20,7 +20,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   hasRole: (role: string) => boolean;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<User | null>; // Changed return type to Promise<User | null>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,13 +31,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const refreshUser = async () => {
+  const refreshUser = async (): Promise<User | null> => {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       
       if (!authUser) {
         setUser(null);
-        return;
+        return null;
       }
 
       // Fetch user profile from our users table
@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.warn('User authenticated but profile not found in users table');
           toast.error('Failed to load your profile');
         }
-        return;
+        return null;
       }
 
       const updatedUser = {
@@ -77,6 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error('Error fetching user data:', error);
       // Don't show toast here - we'll show it only if we have auth but not profile data
+      return null;
     }
   };
 
@@ -116,9 +117,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // Defer Supabase calls with setTimeout to prevent deadlocks
           setTimeout(async () => {
             try {
-              await refreshUser();
-              console.log('User signed in successfully, redirecting to dashboard');
-              navigate('/');
+              const userData = await refreshUser();
+              if (userData) {
+                console.log('User signed in successfully, redirecting to dashboard');
+                navigate('/');
+              }
             } catch (err) {
               console.error('Error during authentication:', err);
             }

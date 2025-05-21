@@ -29,10 +29,14 @@ const Login = () => {
       setHasRedirected(true);
       setTimeout(async () => {
         try {
-          await refreshUser();
-          toast.success("Successfully authenticated!");
-          console.log('Login: Authentication redirect processed, navigating to dashboard');
-          navigate('/');
+          const user = await refreshUser();
+          if (user) {
+            toast.success("Successfully authenticated!");
+            console.log('Login: Authentication redirect processed, navigating to dashboard');
+            navigate('/');
+          } else {
+            setAuthProcessed(true);
+          }
         } catch (err) {
           console.error('Failed to load profile after authentication', err);
           toast.error("Failed to load profile after authentication");
