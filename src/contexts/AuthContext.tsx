@@ -52,27 +52,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('id', privyUser.id)
         .maybeSingle();
       
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        // If there's an error with the UUID format, we need to use a text-based approach
-        console.error('Error fetching user:', fetchError);
+      if (fetchError) {
+        // If there's an error with the ID format or any other issue
+        console.error('Error fetching user by ID:', fetchError);
         
         // Try a different approach - get user by email if available
         if (email) {
+          console.log('Trying to find user by email:', email);
+          
           const { data: userByEmail, error: emailFetchError } = await supabase
             .from('users')
             .select('*')
             .eq('email', email)
             .maybeSingle();
             
-          if (!emailFetchError && userByEmail) {
-            return {
-              id: privyUser.id,
-              email: email,
-              name: userByEmail.name,
-              role: userByEmail.role,
-              group_name: userByEmail.group_name,
-              wallet_address: wallet || userByEmail.wallet_address
-            };
+          if (emailFetchError) {
+            console.error('Error fetching user by email:', emailFetchError);
+          }
+            
+          if (userByEmail) {
+            console.log('Found user by email, updating ID to Privy ID');
+            
+            // Update the existing user's ID to match the Privy ID
+            const { error: updateError } = await supabase
+              .from('users')
+              .update({ id: privyUser.id })
+              .eq('email', email);
+              
+            if (updateError) {
+              console.error('Error updating user ID:', updateError);
+              toast.error('Failed to update user profile');
+            } else {
+              return {
+                id: privyUser.id,
+                email: email,
+                name: userByEmail.name,
+                role: userByEmail.role,
+                group_name: userByEmail.group_name,
+                wallet_address: wallet || userByEmail.wallet_address
+              };
+            }
           }
         }
       }
@@ -117,9 +136,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           wallet_address: wallet
         };
         
-        const { error: insertError } = await supabase
+        console.log('Creating new user with Privy ID:', newUser);
+        
+        const { data, error: insertError } = await supabase
           .from('users')
-          .insert(newUser);
+          .insert(newUser)
+          .select()
+          .single();
           
         if (insertError) {
           console.error('Error creating user:', insertError);
@@ -142,11 +165,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
+      console.log('Refreshing user with Privy ID:', privy.user.id);
       const updatedUser = await createOrUpdateUserProfile(privy.user);
       
       if (updatedUser) {
+        console.log('User profile updated:', updatedUser);
         setUser(updatedUser);
         return updatedUser;
+      } else {
+        console.log('Failed to update user profile');
       }
       
       return null;
@@ -158,17 +185,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Effect to handle Privy auth changes
   useEffect(() => {
-    if (privy.ready) {
-      if (privy.authenticated && privy.user) {
-        console.log('Privy authenticated, syncing user profile');
-        refreshUser()
-          .then(() => setLoading(false))
-          .catch(() => setLoading(false));
-      } else {
-        setUser(null);
+    const syncUserWithPrivy = async () => {
+      if (!privy.ready) return;
+      
+      try {
+        if (privy.authenticated && privy.user) {
+          console.log('Privy authenticated, syncing user profile');
+          await refreshUser();
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Error syncing with Privy:', error);
+      } finally {
         setLoading(false);
       }
-    }
+    };
+    
+    syncUserWithPrivy();
   }, [privy.ready, privy.authenticated, privy.user]);
 
   const signOut = async () => {

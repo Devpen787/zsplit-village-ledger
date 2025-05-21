@@ -20,5 +20,12 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10
     }
+  },
+  // Use Privy as the external auth provider
+  global: {
+    headers: {
+      // This sets up headers that will be included in all requests
+      // We'll leverage this to pass Privy authentication if needed
+    }
   }
 });

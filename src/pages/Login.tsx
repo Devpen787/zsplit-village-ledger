@@ -5,25 +5,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { usePrivy } from '@privy-io/react-auth';
 import { useAuth } from "@/contexts/AuthContext";
-import { LogIn } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
+import { LogIn, Loader2 } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, authenticated, ready } = usePrivy();
-  const { isAuthenticated, refreshUser } = useAuth();
+  const { isAuthenticated, refreshUser, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   
   // Handle navigation if already authenticated
   useEffect(() => {
     if (ready && authenticated) {
       setIsLoading(true);
-      refreshUser().then(() => {
-        console.log('User authenticated, navigating to dashboard');
-        // Use stored path or default to home page
-        const from = location.state?.from?.pathname || '/';
-        navigate(from, { replace: true });
+      console.log('Privy authenticated, refreshing user profile');
+      refreshUser().then((user) => {
+        if (user) {
+          console.log('User profile refreshed, navigating to dashboard or stored path');
+          // Use stored path or default to home page
+          const from = location.state?.from?.pathname || '/';
+          navigate(from, { replace: true });
+        } else {
+          console.log('Failed to refresh user profile');
+          setIsLoading(false);
+        }
+      }).catch(error => {
+        console.error('Error refreshing user profile:', error);
         setIsLoading(false);
       });
     }
@@ -57,9 +64,9 @@ const Login = () => {
               onClick={handleLogin} 
               className="w-full"
               size="lg"
-              disabled={isLoading}
+              disabled={isLoading || authLoading}
             >
-              {isLoading ? (
+              {(isLoading || authLoading) ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <LogIn className="mr-2 h-4 w-4" />

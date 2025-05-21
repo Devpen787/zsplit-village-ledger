@@ -6,19 +6,24 @@ import { Button } from "@/components/ui/button";
 import { usePrivy } from '@privy-io/react-auth';
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/sonner";
-import { LogIn, Wallet } from "lucide-react";
+import { LogIn, Wallet, Loader2 } from "lucide-react";
 
 const Signup = () => {
   const navigate = useNavigate();
   const { login, authenticated, ready } = usePrivy();
-  const { isAuthenticated, refreshUser } = useAuth();
+  const { isAuthenticated, refreshUser, loading } = useAuth();
   
   // Handle navigation if already authenticated
   useEffect(() => {
     if (ready && authenticated) {
-      refreshUser().then(() => {
-        console.log('User authenticated, navigating to dashboard');
-        navigate('/');
+      console.log('Privy authenticated, refreshing user profile');
+      refreshUser().then((user) => {
+        if (user) {
+          console.log('User profile refreshed, navigating to dashboard');
+          navigate('/');
+        } else {
+          console.log('Failed to refresh user profile');
+        }
       });
     }
   }, [ready, authenticated, navigate, refreshUser]);
@@ -49,9 +54,14 @@ const Signup = () => {
               onClick={handleLogin} 
               className="w-full"
               size="lg"
+              disabled={loading}
             >
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign In
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <LogIn className="mr-2 h-4 w-4" />
+              )}
+              Sign Up
             </Button>
             
             <div className="flex items-center w-full">

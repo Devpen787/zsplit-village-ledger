@@ -1,7 +1,5 @@
 
-// This file is kept for backward compatibility but is no longer used
-// Authentication is now handled through Privy
-
+// This file is kept for backward compatibility but is now using Privy for authentication
 import { isValidRole } from "@/contexts/AuthContext";
 
 export async function checkEmailExists(email: string): Promise<boolean> {

@@ -17,9 +17,11 @@ export const ProtectedRoute = ({
   useEffect(() => {
     // Only redirect if we're done loading and the user isn't authenticated
     if (!loading && !isAuthenticated) {
+      console.log('Not authenticated, redirecting to login');
       navigate('/login');
     } else if (!loading && requiredRole && !hasRole(requiredRole)) {
       // Only redirect for role issues after loading is complete
+      console.log(`Required role ${requiredRole} not found, redirecting to home`);
       navigate('/');
     }
   }, [loading, isAuthenticated, navigate, requiredRole, hasRole]);
@@ -39,6 +41,7 @@ export const ProtectedRoute = ({
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-primary">Loading your profile...</span>
       </div>
     );
   }
