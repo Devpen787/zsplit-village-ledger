@@ -1,6 +1,6 @@
 
 // This file is kept for backward compatibility but is now using Privy for authentication
-import { isValidRole } from "@/contexts/AuthContext";
+import { isValidRole } from "@/utils/authUtils";
 
 export async function checkEmailExists(email: string): Promise<boolean> {
   console.warn("checkEmailExists is deprecated with Privy integration");

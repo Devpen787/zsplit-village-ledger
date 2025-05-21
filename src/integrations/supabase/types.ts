@@ -45,13 +45,6 @@ export type Database = {
             referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "expense_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       expenses: {
@@ -111,7 +104,7 @@ export type Database = {
           created_at?: string
           email: string
           group_name?: string | null
-          id?: string
+          id: string
           name?: string | null
           role?: string | null
           wallet_address?: string | null
