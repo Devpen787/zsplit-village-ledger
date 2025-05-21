@@ -1,14 +1,15 @@
 
 import { InviteUserModal } from "@/components/InviteUserModal";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Plus, Users, AlertCircle } from "lucide-react";
+import { Plus, Users, AlertCircle, LogOut } from "lucide-react";
 import { BalanceSummary } from "@/components/BalanceSummary";
 import { ExpensesList } from "@/components/ExpensesList";
 import supabase from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Define TypeScript type for users based on the database schema
 type User = {
@@ -22,7 +23,8 @@ const Index = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const mockGroupName = "Zuitzerland House";
+  const { user: currentUser, signOut } = useAuth();
+  const mockGroupName = currentUser?.group_name || "Zuitzerland House";
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -49,10 +51,33 @@ const Index = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Zsplit</h1>
         <div className="flex gap-2">
-          <Link to="/signup">
-            <Button variant="outline" size="sm">Signup</Button>
-          </Link>
-          <InviteUserModal onUserAdded={() => {}} />
+          {currentUser ? (
+            <Button variant="outline" size="sm" onClick={signOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          ) : (
+            <Link to="/signup">
+              <Button variant="outline" size="sm">Signup</Button>
+            </Link>
+          )}
+          <InviteUserModal onUserAdded={() => {
+            // Refresh users list when a new user is added
+            const fetchUsers = async () => {
+              try {
+                const { data, error } = await supabase
+                  .from('users')
+                  .select('id, name, email, group_name');
+      
+                if (error) throw new Error(error.message);
+                setUsers(data || []);
+              } catch (err) {
+                console.error('Error refreshing users:', err);
+              }
+            };
+            
+            fetchUsers();
+          }} />
         </div>
       </div>
 
@@ -60,6 +85,35 @@ const Index = () => {
         <h2 className="text-lg font-medium mb-2">{mockGroupName}</h2>
         <BalanceSummary />
       </div>
+
+      {currentUser && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-md font-medium">Your Profile</h3>
+            <Users className="h-4 w-4" />
+          </div>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-medium">{currentUser.name || "Unnamed"}</p>
+                  <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <span className="px-2 py-1 rounded bg-slate-100">
+                    {currentUser.role || "participant"}
+                  </span>
+                </div>
+              </div>
+              {currentUser.wallet_address && (
+                <p className="text-xs text-muted-foreground mt-2 font-mono">
+                  Wallet: {currentUser.wallet_address}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="mb-6">
         <h3 className="text-md font-medium mb-3">Group Members</h3>

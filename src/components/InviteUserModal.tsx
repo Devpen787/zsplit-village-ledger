@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "@/components/ui/sonner"
+import { useAuth } from "@/contexts/AuthContext"
 import supabase from "@/lib/supabase"
 
 export function InviteUserModal({ onUserAdded }: { onUserAdded: () => void }) {
@@ -16,33 +18,74 @@ export function InviteUserModal({ onUserAdded }: { onUserAdded: () => void }) {
   const [role, setRole] = useState("participant")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole('admin');
+
+  const validateEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
 
   const handleInvite = async () => {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.from("users").insert({
-      name,
-      email,
-      group_name: group || null,
-      wallet_address: wallet || null,
-      role
-    })
-
-    if (error) {
-      setError(error.message)
-    } else {
-      setName("")
-      setEmail("")
-      setGroup("")
-      setWallet("")
-      setRole("participant")
-      setOpen(false)
-      onUserAdded()
+    // Basic validation
+    if (!name) {
+      setError("Name is required");
+      setLoading(false);
+      return;
     }
 
-    setLoading(false)
+    if (!email || !validateEmail(email)) {
+      setError("Valid email is required");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Check if user already exists
+      const { data: existingUser } = await supabase
+        .from("users")
+        .select("email")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (existingUser) {
+        setError("A user with this email already exists");
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.from("users").insert({
+        name,
+        email,
+        group_name: group || null,
+        wallet_address: wallet || null,
+        role
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setName("");
+        setEmail("");
+        setGroup("");
+        setWallet("");
+        setRole("participant");
+        setOpen(false);
+        onUserAdded();
+        toast.success(`User ${name} has been invited successfully`);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
+
+  // Don't render the component if user is not an admin
+  if (!isAdmin) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

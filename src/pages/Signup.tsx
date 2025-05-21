@@ -1,16 +1,15 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 // UI Components
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
@@ -20,6 +19,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
 
 // Form validation schema
 const signupSchema = z.object({
@@ -35,6 +36,14 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 const Signup = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated, refreshUser } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   // Initialize react-hook-form with zod validation
   const form = useForm<SignupFormValues>({
@@ -51,6 +60,18 @@ const Signup = () => {
   const onSubmit = async (values: SignupFormValues) => {
     setIsLoading(true);
     try {
+      // Check if email already exists in users table
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', values.email)
+        .maybeSingle();
+      
+      if (existingUser) {
+        toast.error("This email is already registered");
+        return;
+      }
+
       // Step 1: Register user with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
@@ -82,8 +103,9 @@ const Signup = () => {
 
       if (insertError) throw insertError;
 
-      // Success! Notify and redirect
+      // Success! Notify and update auth context
       toast.success("Account created successfully!");
+      await refreshUser();
       navigate('/');
       
     } catch (error: any) {

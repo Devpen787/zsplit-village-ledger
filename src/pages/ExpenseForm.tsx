@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,16 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/sonner";
+import supabase from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
-// This will be replaced with real data from Supabase once integrated
-const mockUsers = [
-  { id: "1", name: "Anna" },
-  { id: "2", name: "Michael" },
-  { id: "3", name: "Sarah" },
-  { id: "4", name: "Thomas" },
-];
+type User = {
+  id: string;
+  name: string | null;
+};
 
 const currencies = ["CHF", "USD", "EUR", "USDC"];
 const visibilityOptions = [
@@ -41,6 +40,37 @@ const ExpenseForm = () => {
   const [splitMethod, setSplitMethod] = useState("equal");
   const [notes, setNotes] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<Record<string, boolean>>({});
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, name')
+          .order('name');
+
+        if (error) throw error;
+        
+        setUsers(data || []);
+        // Default to current user as the payer
+        if (user && !paidBy) {
+          setPaidBy(user.id);
+        }
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+        toast.error('Failed to load users');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [user, paidBy]);
 
   const toggleUser = (userId: string) => {
     setSelectedUsers((prev) => ({
@@ -49,25 +79,68 @@ const ExpenseForm = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // This will be replaced with Supabase integration
-    console.log({
-      title,
-      amount: parseFloat(amount),
-      currency,
-      paidBy,
-      date,
-      visibility,
-      splitMethod,
-      notes,
-      participants: Object.keys(selectedUsers).filter(id => selectedUsers[id]),
-    });
+    if (!title || !amount || !paidBy || parseFloat(amount) <= 0) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
 
-    // Redirect after submission
-    // Replace with actual navigation after Supabase integration
-    alert("Expense added successfully!");
+    const participants = Object.keys(selectedUsers).filter(id => selectedUsers[id]);
+    if (participants.length === 0) {
+      toast.error('Please select at least one participant');
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      // Insert the expense with the currently authenticated user as paid_by
+      const { data: expenseData, error: expenseError } = await supabase
+        .from('expenses')
+        .insert({
+          title,
+          amount: parseFloat(amount),
+          currency,
+          paid_by: paidBy, // Use the selected user as paidBy
+          date: new Date(date).toISOString(),
+          visibility,
+          leftover_notes: notes
+        })
+        .select('id')
+        .single();
+
+      if (expenseError) throw expenseError;
+      
+      if (!expenseData) throw new Error('Failed to create expense');
+
+      const expenseId = expenseData.id;
+
+      // Create expense members for each participant
+      const expenseMembers = participants.map(userId => ({
+        expense_id: expenseId,
+        user_id: userId,
+        share_type: splitMethod,
+        // For equal split, divide by number of participants
+        share_value: splitMethod === 'equal' ? parseFloat(amount) / participants.length : parseFloat(amount),
+        paid_status: userId === paidBy // Mark as paid if this user paid
+      }));
+
+      const { error: memberError } = await supabase
+        .from('expense_members')
+        .insert(expenseMembers);
+
+      if (memberError) throw memberError;
+
+      toast.success('Expense added successfully!');
+      navigate('/');
+    } catch (error: any) {
+      console.error('Error adding expense:', error);
+      toast.error(error.message || 'Failed to add expense');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -128,18 +201,24 @@ const ExpenseForm = () => {
 
           <div className="space-y-2">
             <Label htmlFor="paidBy">Paid by</Label>
-            <Select value={paidBy} onValueChange={setPaidBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Who paid?" />
-              </SelectTrigger>
-              <SelectContent>
-                {mockUsers.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {loading ? (
+              <div className="flex items-center justify-center h-10">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            ) : (
+              <Select value={paidBy} onValueChange={setPaidBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Who paid?" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -157,7 +236,7 @@ const ExpenseForm = () => {
             <Label>Split with</Label>
             <Card>
               <CardContent className="p-4 space-y-2">
-                {mockUsers.map((user) => (
+                {users.map((user) => (
                   <div key={user.id} className="flex items-center space-x-2">
                     <Checkbox
                       id={`user-${user.id}`}
@@ -207,7 +286,15 @@ const ExpenseForm = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full">Add Expense</Button>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              <>
+                Adding Expense <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              </>
+            ) : (
+              "Add Expense"
+            )}
+          </Button>
         </div>
       </form>
     </div>
