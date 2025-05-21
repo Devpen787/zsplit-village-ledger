@@ -24,6 +24,7 @@ export const ProtectedRoute = ({
     }
   }, [loading, isAuthenticated, navigate, requiredRole, hasRole]);
 
+  // Show loading spinner while authentication is being checked
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -32,9 +33,9 @@ export const ProtectedRoute = ({
     );
   }
 
-  // When still loading but authenticated via Privy, show a loading spinner
-  // instead of redirecting to avoid flickering
-  if (!user && isAuthenticated) {
+  // When authenticated via Privy but user profile is not fully loaded yet,
+  // show a loading spinner instead of redirecting to avoid flickering
+  if (isAuthenticated && !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

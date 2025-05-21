@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const linkedAccounts = privyUser.linkedAccounts || [];
       const wallet = linkedAccounts.find((account: any) => account.type === 'wallet')?.address || null;
       
-      // Check if user exists in our database
+      // Check if user exists in our database with the Privy ID
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
@@ -53,8 +53,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .maybeSingle();
       
       if (fetchError && fetchError.code !== 'PGRST116') {
+        // If there's an error with the UUID format, we need to use a text-based approach
         console.error('Error fetching user:', fetchError);
-        return null;
+        
+        // Try a different approach - get user by email if available
+        if (email) {
+          const { data: userByEmail, error: emailFetchError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .maybeSingle();
+            
+          if (!emailFetchError && userByEmail) {
+            return {
+              id: privyUser.id,
+              email: email,
+              name: userByEmail.name,
+              role: userByEmail.role,
+              group_name: userByEmail.group_name,
+              wallet_address: wallet || userByEmail.wallet_address
+            };
+          }
+        }
       }
 
       if (existingUser) {
@@ -139,13 +159,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Effect to handle Privy auth changes
   useEffect(() => {
     if (privy.ready) {
-      setLoading(false);
-      
       if (privy.authenticated && privy.user) {
         console.log('Privy authenticated, syncing user profile');
-        refreshUser();
+        refreshUser()
+          .then(() => setLoading(false))
+          .catch(() => setLoading(false));
       } else {
         setUser(null);
+        setLoading(false);
       }
     }
   }, [privy.ready, privy.authenticated, privy.user]);
