@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginFormValues } from "@/schemas/authSchemas";
@@ -16,6 +16,7 @@ import { InfoIcon, ArrowRight } from "lucide-react";
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated, refreshUser } = useAuth();
   const [hasRedirected, setHasRedirected] = useState(false);
@@ -23,7 +24,10 @@ const Login = () => {
 
   // Check for hash in URL (from auth redirects)
   useEffect(() => {
-    if (location.hash && location.hash.includes('access_token')) {
+    const isConfirmed = searchParams.get('confirmed') === 'true';
+    const hasAuthToken = location.hash && location.hash.includes('access_token');
+    
+    if (hasAuthToken || isConfirmed) {
       // Auth redirect detected, wait a bit for Supabase client to process
       console.log('Auth redirect detected in Login page');
       setHasRedirected(true);
@@ -44,7 +48,7 @@ const Login = () => {
         }
       }, 500);
     }
-  }, [location.hash, refreshUser, navigate]);
+  }, [location.hash, searchParams, refreshUser, navigate]);
 
   // Redirect if already authenticated
   useEffect(() => {

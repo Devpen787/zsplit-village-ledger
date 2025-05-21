@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signupSchema, SignupFormValues } from "@/schemas/authSchemas";
@@ -39,9 +39,24 @@ const SignupForm = ({ onSubmit, isLoading }: SignupFormProps) => {
     },
   });
 
+  // Track submission state to prevent duplicate requests
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleFormSubmit = async (values: SignupFormValues) => {
+    // Prevent duplicate submissions
+    if (isSubmitting) return;
+    
+    try {
+      setIsSubmitting(true);
+      await onSubmit(values);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -137,9 +152,9 @@ const SignupForm = ({ onSubmit, isLoading }: SignupFormProps) => {
         <Button 
           type="submit" 
           className="w-full"
-          disabled={isLoading}
+          disabled={isLoading || isSubmitting}
         >
-          {isLoading ? "Creating Account..." : "Sign Up"}
+          {isLoading || isSubmitting ? "Creating Account..." : "Sign Up"}
         </Button>
       </form>
     </Form>

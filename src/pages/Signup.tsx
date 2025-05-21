@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { SignupFormValues } from "@/schemas/authSchemas";
@@ -10,28 +10,36 @@ import { checkEmailExists, registerUser } from "@/services/authService";
 // UI Components
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon, ArrowRight } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InfoIcon, ArrowRight, CheckCircle, MailIcon } from "lucide-react";
 
 const Signup = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated, refreshUser } = useAuth();
   const [hasRedirected, setHasRedirected] = useState(false);
   const [authProcessed, setAuthProcessed] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailConfirmed, setEmailConfirmed] = useState(false);
 
-  // Check for hash in URL (from auth redirects)
+  // Check for hash in URL (from auth redirects) or confirmed flag
   useEffect(() => {
-    if (location.hash && location.hash.includes('access_token')) {
+    const isConfirmed = searchParams.get('confirmed') === 'true';
+    const hasAuthToken = location.hash && location.hash.includes('access_token');
+    
+    if (hasAuthToken || isConfirmed) {
       // Auth redirect detected, wait a bit for Supabase client to process
       console.log('Auth redirect detected in Signup page');
       setHasRedirected(true);
+      setEmailConfirmed(true);
+      
       setTimeout(async () => {
         try {
           const user = await refreshUser();
           if (user) {
-            toast.success("Email verified! Welcome!");
+            toast.success("✅ Email confirmed. Welcome to Zsplit!");
             console.log('Signup: Authentication redirect processed, navigating to dashboard');
             navigate('/');
           } else {
@@ -44,7 +52,7 @@ const Signup = () => {
         }
       }, 500);
     }
-  }, [location.hash, refreshUser, navigate]);
+  }, [location.hash, searchParams, refreshUser, navigate]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -66,20 +74,41 @@ const Signup = () => {
         return;
       }
 
+      // Ensure role is valid
+      const role = values.role || 'participant';
+      if (!['participant', 'organizer'].includes(role)) {
+        toast.error("Invalid role specified");
+        setIsLoading(false);
+        return;
+      }
+
       await registerUser(values);
       
-      // Success! Notify and update auth context
-      toast.success("Account created successfully! Check your email to confirm your account.");
-      const user = await refreshUser();
-      
-      if (user) {
-        console.log('Signup successful');
-      }
+      // Success! Notify the user to check email
+      toast.success("🎉 Please check your email to confirm your account.");
+      console.log('Signup successful, email confirmation sent');
+      setEmailSent(true);
       setAuthProcessed(true);
       
     } catch (error: any) {
       // Handle errors gracefully
-      const errorMessage = error.message || "Something went wrong during signup";
+      let errorMessage = "Something went wrong during signup";
+      
+      if (error.message) {
+        // Check for rate limiting error
+        if (error.message.includes('security purposes') && error.message.includes('seconds')) {
+          errorMessage = "For security reasons, please wait a few seconds before trying again";
+        }
+        // Check for other common errors
+        else if (error.message.includes('violates row-level security')) {
+          errorMessage = "Account creation failed: permission denied";
+          console.error("RLS violation during signup:", error);
+        }
+        else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast.error(errorMessage);
       console.error("Signup error:", error);
     } finally {
@@ -92,6 +121,11 @@ const Signup = () => {
     navigate('/');
   };
 
+  const resendConfirmationEmail = async () => {
+    // Placeholder for resend confirmation functionality
+    toast.info("Confirmation email functionality will be implemented in a future update");
+  };
+
   return (
     <div className="flex justify-center items-center min-h-screen px-4 py-10 bg-background">
       <Card className="w-full max-w-md">
@@ -102,7 +136,8 @@ const Signup = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {location.hash && location.hash.includes('access_token') && (
+          {/* Email Confirmation Processing Alert */}
+          {(location.hash && location.hash.includes('access_token')) && (
             <Alert className="mb-4 bg-blue-50">
               <InfoIcon className="h-4 w-4" />
               <AlertDescription>
@@ -111,8 +146,44 @@ const Signup = () => {
             </Alert>
           )}
           
-          <SignupForm onSubmit={handleSubmit} isLoading={isLoading} />
+          {/* Email Confirmed Alert */}
+          {emailConfirmed && (
+            <Alert className="mb-4 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <div className="ml-2">
+                <AlertTitle>Email Confirmed!</AlertTitle>
+                <AlertDescription>
+                  Your email has been verified successfully.
+                </AlertDescription>
+              </div>
+            </Alert>
+          )}
           
+          {/* Email Sent Alert */}
+          {emailSent && !emailConfirmed && (
+            <Alert className="mb-6 bg-blue-50">
+              <MailIcon className="h-4 w-4" />
+              <div className="ml-2">
+                <AlertTitle>Check Your Email</AlertTitle>
+                <AlertDescription>
+                  We've sent a confirmation link to your email address. Please check your inbox and click the link to activate your account.
+                  <Button 
+                    variant="link" 
+                    className="p-0 ml-1 text-blue-600" 
+                    onClick={resendConfirmationEmail}>
+                    Resend email
+                  </Button>
+                </AlertDescription>
+              </div>
+            </Alert>
+          )}
+          
+          {/* Show signup form only if email hasn't been sent yet */}
+          {!emailSent && (
+            <SignupForm onSubmit={handleSubmit} isLoading={isLoading} />
+          )}
+          
+          {/* Continue button - Only show if authenticated or auth processed */}
           {(isAuthenticated || authProcessed) && (
             <div className="mt-4 text-center">
               <Button 
