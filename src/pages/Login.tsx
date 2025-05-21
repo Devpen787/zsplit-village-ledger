@@ -10,17 +10,21 @@ import { loginUser } from "@/services/authService";
 // UI Components
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated, refreshUser } = useAuth();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   // Check for hash in URL (from auth redirects)
   useEffect(() => {
     if (location.hash && location.hash.includes('access_token')) {
       // Auth redirect detected, wait a bit for Supabase client to process
+      setHasRedirected(true);
       setTimeout(() => {
         refreshUser().then(() => {
           toast.success("Successfully authenticated!");
@@ -34,10 +38,10 @@ const Login = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !hasRedirected) {
       navigate('/');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, hasRedirected]);
 
   const handleSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
@@ -69,6 +73,14 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {location.hash && location.hash.includes('access_token') && (
+            <Alert className="mb-4 bg-blue-50">
+              <InfoIcon className="h-4 w-4" />
+              <AlertDescription>
+                Processing your authentication... Please wait.
+              </AlertDescription>
+            </Alert>
+          )}
           <LoginForm onSubmit={handleSubmit} isLoading={isLoading} />
         </CardContent>
         <CardFooter className="flex justify-center">

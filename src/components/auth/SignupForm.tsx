@@ -13,6 +13,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SignupFormProps {
   onSubmit: (values: SignupFormValues) => Promise<void>;
@@ -28,6 +35,7 @@ const SignupForm = ({ onSubmit, isLoading }: SignupFormProps) => {
       password: "",
       groupName: "",
       walletAddress: "",
+      role: "participant", // Default role
     },
   });
 
@@ -71,6 +79,28 @@ const SignupForm = ({ onSubmit, isLoading }: SignupFormProps) => {
               <FormControl>
                 <Input type="password" placeholder="••••••••" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="role"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Role</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="participant">Participant</SelectItem>
+                  <SelectItem value="organizer">Organizer</SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

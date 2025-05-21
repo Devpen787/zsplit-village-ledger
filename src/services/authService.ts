@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { SignupFormValues, LoginFormValues } from "@/schemas/authSchemas";
-import { cleanupAuthState } from "@/utils/authUtils";
+import { cleanupAuthState, isValidRole } from "@/utils/authUtils";
 
 export async function checkEmailExists(email: string) {
   const { data: existingUser } = await supabase
@@ -14,6 +14,12 @@ export async function checkEmailExists(email: string) {
 }
 
 export async function registerUser(values: SignupFormValues) {
+  // Validate role if provided
+  const role = values.role || 'participant'; // Default to 'participant'
+  if (!isValidRole(role)) {
+    throw new Error("Invalid role specified. Only 'participant' or 'organizer' are allowed.");
+  }
+
   // Clean up any existing auth state first
   cleanupAuthState();
   
@@ -34,6 +40,7 @@ export async function registerUser(values: SignupFormValues) {
         name: values.name,
         group_name: values.groupName || null,
         wallet_address: values.walletAddress || null,
+        role: role, // Include role in user metadata
       },
     },
   });
@@ -51,10 +58,14 @@ export async function registerUser(values: SignupFormValues) {
     name: values.name,
     group_name: values.groupName || null,
     wallet_address: values.walletAddress || null,
-    role: 'participant', // Default role for self-registration
+    role: role, // Explicitly set to 'participant' or specified valid role
   });
 
-  if (insertError) throw insertError;
+  if (insertError) {
+    // If there was an error inserting user data, we should try to delete the auth user
+    console.error("Error inserting user data:", insertError);
+    throw insertError;
+  }
 
   return authData.user;
 }

@@ -53,7 +53,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (!userData) {
-        console.warn('User authenticated but profile not found in users table');
+        // Only show error if there is an authenticated user but no profile
+        if (authUser) {
+          console.warn('User authenticated but profile not found in users table');
+          toast.error('Failed to load your profile');
+        }
         return;
       }
 
@@ -67,7 +71,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
     } catch (error) {
       console.error('Error fetching user data:', error);
-      toast.error('Failed to load your profile');
+      // Don't show toast here - we'll show it only if we have auth but not profile data
     }
   };
 
@@ -80,12 +84,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (session) {
           // We have a session, force refresh the user data
           setTimeout(() => {
-            refreshUser();
+            refreshUser().then(() => {
+              navigate('/');
+            }).catch(err => {
+              console.error('Error during session restoration:', err);
+            });
           }, 0);
         }
       });
     }
-  }, [location]);
+  }, [location, navigate]);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -97,7 +105,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } else if (event === 'SIGNED_IN' && session?.user) {
           // Defer Supabase calls with setTimeout to prevent deadlocks
           setTimeout(() => {
-            refreshUser();
+            refreshUser().then(() => {
+              navigate('/');
+            }).catch(err => {
+              console.error('Error during authentication:', err);
+            });
           }, 0);
         } else if (event === 'USER_UPDATED' && session?.user) {
           // Handle user updates
