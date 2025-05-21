@@ -1,13 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
-import { cleanupAuthState } from '@/utils/authUtils';
+import { usePrivy } from '@privy-io/react-auth';
 
 type User = {
   id: string;
-  email: string;
+  email: string | null;
   name?: string | null;
   role?: string | null;
   group_name?: string | null;
@@ -20,158 +20,142 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   hasRole: (role: string) => boolean;
-  refreshUser: () => Promise<User | null>; // Changed return type to Promise<User | null>
+  refreshUser: () => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const isValidRole = (role: string): boolean => {
+  const allowedRoles = ['participant', 'organizer', 'admin'];
+  return allowedRoles.includes(role);
+};
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const location = useLocation();
+  const privy = usePrivy();
 
-  const refreshUser = async (): Promise<User | null> => {
+  const createOrUpdateUserProfile = async (privyUser: any): Promise<User | null> => {
+    if (!privyUser) return null;
+    
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      // Get email and wallet from privy user
+      const email = privyUser.email?.address || null;
+      const linkedAccounts = privyUser.linkedAccounts || [];
+      const wallet = linkedAccounts.find((account: any) => account.type === 'wallet')?.address || null;
       
-      if (!authUser) {
-        setUser(null);
-        return null;
-      }
-
-      // Fetch user profile from our users table
-      const { data: userData, error } = await supabase
+      // Check if user exists in our database
+      const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
-        .eq('id', authUser.id)
+        .eq('id', privyUser.id)
         .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching user data:', error);
-        throw error;
-      }
-
-      if (!userData) {
-        // Only show error if there is an authenticated user but no profile
-        if (authUser) {
-          console.warn('User authenticated but profile not found in users table');
-          toast.error('Failed to load your profile');
-        }
+      
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching user:', fetchError);
         return null;
       }
 
-      const updatedUser = {
-        id: authUser.id,
-        email: authUser.email!,
-        name: userData.name,
-        role: userData.role,
-        group_name: userData.group_name,
-        wallet_address: userData.wallet_address
-      };
-
-      setUser(updatedUser);
-      console.log('User authenticated and profile loaded:', updatedUser);
-      
-      return updatedUser;
+      if (existingUser) {
+        // Update existing user if needed
+        const updates: any = {};
+        if (email && email !== existingUser.email) updates.email = email;
+        if (wallet && wallet !== existingUser.wallet_address) updates.wallet_address = wallet;
+        
+        // Only update if there are changes
+        if (Object.keys(updates).length > 0) {
+          const { error: updateError } = await supabase
+            .from('users')
+            .update(updates)
+            .eq('id', privyUser.id);
+            
+          if (updateError) {
+            console.error('Error updating user:', updateError);
+            toast.error('Failed to update your profile');
+          }
+        }
+        
+        return {
+          id: existingUser.id,
+          email: email || existingUser.email,
+          name: existingUser.name,
+          role: existingUser.role,
+          group_name: existingUser.group_name,
+          wallet_address: wallet || existingUser.wallet_address
+        };
+      } else {
+        // Create new user
+        const role = 'participant'; // Default role for new users
+        
+        const newUser = {
+          id: privyUser.id,
+          email: email,
+          name: privyUser.displayName || null,
+          role: role,
+          group_name: null,
+          wallet_address: wallet
+        };
+        
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert(newUser);
+          
+        if (insertError) {
+          console.error('Error creating user:', insertError);
+          toast.error('Failed to create your profile');
+          return null;
+        }
+        
+        return newUser;
+      }
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      // Don't show toast here - we'll show it only if we have auth but not profile data
+      console.error('Error in createOrUpdateUserProfile:', error);
       return null;
     }
   };
 
-  // Handle URL changes to check for auth redirects
-  useEffect(() => {
-    // Check if we've redirected from auth flow
-    if (location.hash && location.hash.includes('access_token')) {
-      console.log('Auth redirect detected');
-      // Allow Supabase auth client to process the URL
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          // We have a session, force refresh the user data
-          setTimeout(async () => {
-            try {
-              await refreshUser();
-              console.log('User redirected to dashboard after auth confirmation');
-              navigate('/');
-            } catch (err) {
-              console.error('Error during session restoration:', err);
-            }
-          }, 500);
-        }
-      });
+  const refreshUser = async (): Promise<User | null> => {
+    if (!privy.user) {
+      setUser(null);
+      return null;
     }
-  }, [location, navigate]);
 
+    try {
+      const updatedUser = await createOrUpdateUserProfile(privy.user);
+      
+      if (updatedUser) {
+        setUser(updatedUser);
+        return updatedUser;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      return null;
+    }
+  };
+
+  // Effect to handle Privy auth changes
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event);
-        
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-          navigate('/signup');
-        } else if (event === 'SIGNED_IN' && session?.user) {
-          // Defer Supabase calls with setTimeout to prevent deadlocks
-          setTimeout(async () => {
-            try {
-              const userData = await refreshUser();
-              if (userData) {
-                console.log('User signed in successfully, redirecting to dashboard');
-                navigate('/');
-              }
-            } catch (err) {
-              console.error('Error during authentication:', err);
-            }
-          }, 500);
-        } else if (event === 'USER_UPDATED' && session?.user) {
-          // Handle user updates
-          setTimeout(() => {
-            refreshUser();
-          }, 0);
-        }
+    if (privy.ready) {
+      setLoading(false);
+      
+      if (privy.authenticated && privy.user) {
+        console.log('Privy authenticated, syncing user profile');
+        refreshUser();
+      } else {
+        setUser(null);
       }
-    );
-
-    // THEN check for existing session
-    const initializeAuth = async () => {
-      setLoading(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          await refreshUser();
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
+    }
+  }, [privy.ready, privy.authenticated, privy.user]);
 
   const signOut = async () => {
     try {
-      // Clean up auth state first
-      cleanupAuthState();
-      
-      // Attempt global sign out
-      await supabase.auth.signOut({ scope: 'global' });
-      
+      await privy.logout();
       setUser(null);
-      
-      // Force page reload to ensure clean state
-      window.location.href = '/signup';
-      
       toast.success('Logged out successfully');
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Failed to log out');
@@ -185,9 +169,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthContext.Provider value={{
       user,
-      loading,
+      loading: loading || privy.loading,
       signOut,
-      isAuthenticated: !!user,
+      isAuthenticated: !!user && privy.authenticated,
       hasRole,
       refreshUser
     }}>

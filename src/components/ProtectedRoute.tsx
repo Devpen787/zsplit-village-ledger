@@ -16,7 +16,7 @@ export const ProtectedRoute = ({
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      navigate('/signup');
+      navigate('/login');
     } else if (!loading && requiredRole && !hasRole(requiredRole)) {
       navigate('/');
     }

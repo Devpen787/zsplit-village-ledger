@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/sonner"
 import { useAuth } from "@/contexts/AuthContext"
-import supabase from "@/lib/supabase"
+import { supabase } from "@/integrations/supabase/client"
+import { isValidRole } from "@/contexts/AuthContext"
 
 export function InviteUserModal({ onUserAdded }: { onUserAdded: () => void }) {
   const [open, setOpen] = useState(false)
@@ -43,6 +44,13 @@ export function InviteUserModal({ onUserAdded }: { onUserAdded: () => void }) {
       return;
     }
 
+    // Validate role
+    if (!isValidRole(role)) {
+      setError("Invalid role");
+      setLoading(false);
+      return;
+    }
+
     try {
       // Check if user already exists
       const { data: existingUser } = await supabase
@@ -57,7 +65,24 @@ export function InviteUserModal({ onUserAdded }: { onUserAdded: () => void }) {
         return;
       }
 
+      // Generate a unique ID for the user
+      const { data: { user: authUser } } = await supabase.auth.admin.createUser({
+        email: email,
+        email_confirm: true,
+        user_metadata: {
+          name,
+          role,
+          group_name: group || null,
+          wallet_address: wallet || null,
+        }
+      });
+
+      if (!authUser) {
+        throw new Error("Failed to create user");
+      }
+
       const { error } = await supabase.from("users").insert({
+        id: authUser.id,
         name,
         email,
         group_name: group || null,

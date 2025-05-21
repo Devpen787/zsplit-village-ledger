@@ -16,36 +16,45 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import Profile from "./pages/Profile";
 import GroupDashboard from "./pages/GroupDashboard";
 import Settings from "./pages/Settings";
+import { PrivyProvider } from '@privy-io/react-auth';
 
 const queryClient = new QueryClient();
+
+// Privy configuration
+const PRIVY_APP_ID = "cmayii9yh00fpl40mgq8kod1g";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/login" element={<Login />} />
-            
-            {/* Protected routes (require authentication) */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/expenses/:id" element={<ExpenseDetail />} />
-              <Route path="/expenses/new" element={<ExpenseForm />} />
-              <Route path="/balances" element={<Balances />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/group" element={<GroupDashboard />} />
-              <Route path="/settings" element={<Settings />} />
-            </Route>
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
+      <PrivyProvider
+        appId={PRIVY_APP_ID}
+        onSuccess={() => console.log("Privy authentication successful")}
+      >
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/login" element={<Login />} />
+              
+              {/* Protected routes (require authentication) */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/expenses/:id" element={<ExpenseDetail />} />
+                <Route path="/expenses/new" element={<ExpenseForm />} />
+                <Route path="/balances" element={<Balances />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/group" element={<GroupDashboard />} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </PrivyProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
