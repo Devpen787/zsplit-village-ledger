@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
 
 // Form validation schema
 const signupSchema = z.object({
@@ -69,6 +68,7 @@ const Signup = () => {
       
       if (existingUser) {
         toast.error("This email is already registered");
+        setIsLoading(false);
         return;
       }
 
@@ -91,14 +91,14 @@ const Signup = () => {
         throw new Error("No user returned after signup");
       }
 
-      // Step 2: Insert user data into users table
+      // Step 2: Insert user data into users table with the correct ID
       const { error: insertError } = await supabase.from('users').insert({
-        id: authData.user.id,
+        id: authData.user.id, // Ensure ID matches auth.uid()
         email: values.email,
         name: values.name,
         group_name: values.groupName || null,
         wallet_address: values.walletAddress || null,
-        role: 'participant', // Default role
+        role: 'participant', // Default role for self-registration
       });
 
       if (insertError) throw insertError;

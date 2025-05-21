@@ -33,11 +33,6 @@ const App = () => (
               <Route path="/expenses/new" element={<ExpenseForm />} />
               <Route path="/balances" element={<Balances />} />
             </Route>
-
-            {/* Admin-only routes */}
-            {/* <Route element={<ProtectedRoute requiredRole="admin" />}>
-              <Route path="/admin" element={<AdminPanel />} />
-            </Route> */}
             
             <Route path="*" element={<NotFound />} />
           </Routes>
