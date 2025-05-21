@@ -45,15 +45,11 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="flex justify-between items-center mb-6">
-      <h1 className="text-2xl font-bold">Zsplit</h1>
-      <div className="flex gap-2">
-        <Link to="/signup">
-          <Button variant="outline" size="sm">Signup</Button>
-        </Link>
+    <div className="container max-w-md mx-auto px-4 py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Zsplit</h1>
         <InviteUserModal />
       </div>
-    </div>
 
       <div className="mb-6">
         <h2 className="text-lg font-medium mb-2">{mockGroupName}</h2>
