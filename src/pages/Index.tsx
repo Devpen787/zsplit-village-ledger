@@ -1,4 +1,5 @@
 
+import { InviteUserModal } from "@/components/InviteUserModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -47,9 +48,7 @@ const Index = () => {
     <div className="container max-w-md mx-auto px-4 py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Zsplit</h1>
-        <Button variant="ghost" size="icon">
-          <Users className="h-5 w-5" />
-        </Button>
+        <InviteUserModal />
       </div>
 
       <div className="mb-6">
