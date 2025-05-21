@@ -139,4 +139,3 @@ export const ExpensesList = ({ limit }: ExpensesListProps) => {
       ))}
     </div>
   );
-};
