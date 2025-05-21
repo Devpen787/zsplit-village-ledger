@@ -11,7 +11,7 @@ import { loginUser } from "@/services/authService";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, ArrowRight } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,19 +19,25 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated, refreshUser } = useAuth();
   const [hasRedirected, setHasRedirected] = useState(false);
+  const [authProcessed, setAuthProcessed] = useState(false);
 
   // Check for hash in URL (from auth redirects)
   useEffect(() => {
     if (location.hash && location.hash.includes('access_token')) {
       // Auth redirect detected, wait a bit for Supabase client to process
+      console.log('Auth redirect detected in Login page');
       setHasRedirected(true);
-      setTimeout(() => {
-        refreshUser().then(() => {
+      setTimeout(async () => {
+        try {
+          await refreshUser();
           toast.success("Successfully authenticated!");
+          console.log('Login: Authentication redirect processed, navigating to dashboard');
           navigate('/');
-        }).catch(() => {
+        } catch (err) {
+          console.error('Failed to load profile after authentication', err);
           toast.error("Failed to load profile after authentication");
-        });
+          setAuthProcessed(true);
+        }
       }, 500);
     }
   }, [location.hash, refreshUser, navigate]);
@@ -39,6 +45,7 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !hasRedirected) {
+      console.log('User already authenticated, redirecting to dashboard');
       navigate('/');
     }
   }, [isAuthenticated, navigate, hasRedirected]);
@@ -50,8 +57,14 @@ const Login = () => {
       
       // Success! Notify and update auth context
       toast.success("Logged in successfully!");
-      await refreshUser();
-      navigate('/');
+      const user = await refreshUser();
+      
+      if (user) {
+        console.log('Login successful, redirecting to dashboard');
+        navigate('/');
+      } else {
+        setAuthProcessed(true);
+      }
       
     } catch (error: any) {
       // Handle errors gracefully
@@ -61,6 +74,11 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const goToDashboard = () => {
+    console.log('Manual navigation to dashboard');
+    navigate('/');
   };
 
   return (
@@ -81,7 +99,20 @@ const Login = () => {
               </AlertDescription>
             </Alert>
           )}
+          
           <LoginForm onSubmit={handleSubmit} isLoading={isLoading} />
+          
+          {(isAuthenticated || authProcessed) && (
+            <div className="mt-4 text-center">
+              <Button 
+                onClick={goToDashboard} 
+                className="w-full"
+                variant="outline"
+              >
+                Continue to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">

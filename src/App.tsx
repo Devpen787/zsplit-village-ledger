@@ -13,6 +13,9 @@ import Balances from "./pages/Balances";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import Profile from "./pages/Profile";
+import GroupDashboard from "./pages/GroupDashboard";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +37,9 @@ const App = () => (
               <Route path="/expenses/:id" element={<ExpenseDetail />} />
               <Route path="/expenses/new" element={<ExpenseForm />} />
               <Route path="/balances" element={<Balances />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/group" element={<GroupDashboard />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

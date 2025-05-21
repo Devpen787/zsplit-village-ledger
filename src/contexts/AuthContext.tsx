@@ -61,14 +61,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      setUser({
+      const updatedUser = {
         id: authUser.id,
         email: authUser.email!,
         name: userData.name,
         role: userData.role,
         group_name: userData.group_name,
         wallet_address: userData.wallet_address
-      });
+      };
+
+      setUser(updatedUser);
+      console.log('User authenticated and profile loaded:', updatedUser);
+      
+      return updatedUser;
     } catch (error) {
       console.error('Error fetching user data:', error);
       // Don't show toast here - we'll show it only if we have auth but not profile data
@@ -79,17 +84,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Check if we've redirected from auth flow
     if (location.hash && location.hash.includes('access_token')) {
+      console.log('Auth redirect detected');
       // Allow Supabase auth client to process the URL
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
           // We have a session, force refresh the user data
-          setTimeout(() => {
-            refreshUser().then(() => {
+          setTimeout(async () => {
+            try {
+              await refreshUser();
+              console.log('User redirected to dashboard after auth confirmation');
               navigate('/');
-            }).catch(err => {
+            } catch (err) {
               console.error('Error during session restoration:', err);
-            });
-          }, 0);
+            }
+          }, 500);
         }
       });
     }
@@ -99,18 +107,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event);
+        
         if (event === 'SIGNED_OUT') {
           setUser(null);
           navigate('/signup');
         } else if (event === 'SIGNED_IN' && session?.user) {
           // Defer Supabase calls with setTimeout to prevent deadlocks
-          setTimeout(() => {
-            refreshUser().then(() => {
+          setTimeout(async () => {
+            try {
+              await refreshUser();
+              console.log('User signed in successfully, redirecting to dashboard');
               navigate('/');
-            }).catch(err => {
+            } catch (err) {
               console.error('Error during authentication:', err);
-            });
-          }, 0);
+            }
+          }, 500);
         } else if (event === 'USER_UPDATED' && session?.user) {
           // Handle user updates
           setTimeout(() => {
