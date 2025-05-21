@@ -1,6 +1,10 @@
 
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 type Expense = {
   id: string;
@@ -8,7 +12,11 @@ type Expense = {
   amount: number;
   currency: string;
   date: string;
-  paidBy: string;
+  paid_by: string;
+  paid_by_user?: {
+    name: string | null;
+    email: string;
+  };
 };
 
 type ExpensesListProps = {
@@ -16,37 +24,87 @@ type ExpensesListProps = {
 };
 
 export const ExpensesList = ({ limit }: ExpensesListProps) => {
-  // This will be replaced with real data from Supabase once integrated
-  const mockExpenses: Expense[] = [
-    {
-      id: "1",
-      title: "Groceries",
-      amount: 87.35,
-      currency: "CHF",
-      date: "2025-05-20",
-      paidBy: "Anna"
-    },
-    {
-      id: "2",
-      title: "Internet bill",
-      amount: 59.90,
-      currency: "CHF",
-      date: "2025-05-18",
-      paidBy: "Michael"
-    },
-    {
-      id: "3",
-      title: "Cleaning supplies",
-      amount: 23.45,
-      currency: "CHF",
-      date: "2025-05-15",
-      paidBy: "Sarah"
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  const fetchExpenses = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch expenses with user information for the payer
+      const query = supabase
+        .from('expenses')
+        .select(`
+          id,
+          title,
+          amount,
+          currency,
+          date,
+          paid_by,
+          users:paid_by (
+            name,
+            email
+          )
+        `)
+        .order('date', { ascending: false });
+        
+      if (limit) {
+        query.limit(limit);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Transform the data to match our Expense type
+      const formattedExpenses = data.map((expense: any) => ({
+        id: expense.id,
+        title: expense.title || 'Unnamed Expense',
+        amount: expense.amount || 0,
+        currency: expense.currency || 'CHF',
+        date: expense.date || new Date().toISOString(),
+        paid_by: expense.paid_by,
+        paid_by_user: expense.users
+      }));
+
+      setExpenses(formattedExpenses);
+    } catch (err) {
+      console.error('Error fetching expenses:', err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const displayExpenses = limit ? mockExpenses.slice(0, limit) : mockExpenses;
+  useEffect(() => {
+    fetchExpenses();
+    
+    // Set up realtime subscription for expenses
+    const expensesChannel = supabase
+      .channel('expenses-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'expenses' },
+        () => fetchExpenses()
+      )
+      .subscribe();
 
-  if (displayExpenses.length === 0) {
+    return () => {
+      supabase.removeChannel(expensesChannel);
+    };
+  }, [limit]);
+  
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6 flex justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (expenses.length === 0) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
@@ -58,7 +116,7 @@ export const ExpensesList = ({ limit }: ExpensesListProps) => {
 
   return (
     <div className="space-y-3">
-      {displayExpenses.map((expense) => (
+      {expenses.map((expense) => (
         <Link to={`/expenses/${expense.id}`} key={expense.id}>
           <Card className="hover:bg-secondary/50 transition-colors">
             <CardContent className="p-4">
@@ -66,12 +124,12 @@ export const ExpensesList = ({ limit }: ExpensesListProps) => {
                 <div>
                   <h4 className="font-medium">{expense.title}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Paid by {expense.paidBy} • {new Date(expense.date).toLocaleDateString()}
+                    Paid by {expense.paid_by_user?.name || expense.paid_by_user?.email.split('@')[0] || 'Unknown'} • {new Date(expense.date).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="font-medium">
-                    {expense.amount.toFixed(2)} {expense.currency}
+                    {Number(expense.amount).toFixed(2)} {expense.currency}
                   </p>
                 </div>
               </div>

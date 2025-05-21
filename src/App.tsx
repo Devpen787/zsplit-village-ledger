@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import ExpenseDetail from "./pages/ExpenseDetail";
 import ExpenseForm from "./pages/ExpenseForm";
+import Balances from "./pages/Balances";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/expenses/:id" element={<ExpenseDetail />} />
               <Route path="/expenses/new" element={<ExpenseForm />} />
+              <Route path="/balances" element={<Balances />} />
             </Route>
 
             {/* Admin-only routes */}

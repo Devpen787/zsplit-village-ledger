@@ -3,10 +3,10 @@ import { InviteUserModal } from "@/components/InviteUserModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Plus, Users, AlertCircle, LogOut } from "lucide-react";
+import { Plus, Users, AlertCircle, LogOut, Wallet } from "lucide-react";
 import { BalanceSummary } from "@/components/BalanceSummary";
 import { ExpensesList } from "@/components/ExpensesList";
-import supabase from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,7 +23,7 @@ const Index = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { user: currentUser, signOut } = useAuth();
+  const { user: currentUser, signOut, hasRole } = useAuth();
   const mockGroupName = currentUser?.group_name || "Zuitzerland House";
 
   useEffect(() => {
@@ -61,29 +61,44 @@ const Index = () => {
               <Button variant="outline" size="sm">Signup</Button>
             </Link>
           )}
-          <InviteUserModal onUserAdded={() => {
-            // Refresh users list when a new user is added
-            const fetchUsers = async () => {
-              try {
-                const { data, error } = await supabase
-                  .from('users')
-                  .select('id, name, email, group_name');
-      
-                if (error) throw new Error(error.message);
-                setUsers(data || []);
-              } catch (err) {
-                console.error('Error refreshing users:', err);
-              }
-            };
-            
-            fetchUsers();
-          }} />
+          {hasRole('admin') && (
+            <InviteUserModal onUserAdded={() => {
+              // Refresh users list when a new user is added
+              const fetchUsers = async () => {
+                try {
+                  const { data, error } = await supabase
+                    .from('users')
+                    .select('id, name, email, group_name');
+        
+                  if (error) throw new Error(error.message);
+                  setUsers(data || []);
+                } catch (err) {
+                  console.error('Error refreshing users:', err);
+                }
+              };
+              
+              fetchUsers();
+            }} />
+          )}
         </div>
       </div>
 
       <div className="mb-6">
         <h2 className="text-lg font-medium mb-2">{mockGroupName}</h2>
         <BalanceSummary />
+      </div>
+
+      <div className="flex gap-4 mb-6">
+        <Link to="/expenses/new" className="flex-1">
+          <Button variant="outline" className="w-full">
+            <Plus className="w-4 h-4 mr-2" /> New Expense
+          </Button>
+        </Link>
+        <Link to="/balances" className="flex-1">
+          <Button variant="outline" className="w-full">
+            <Wallet className="w-4 h-4 mr-2" /> View Balances
+          </Button>
+        </Link>
       </div>
 
       {currentUser && (
