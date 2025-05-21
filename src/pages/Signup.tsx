@@ -1,36 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { SignupFormValues } from "@/schemas/authSchemas";
+import SignupForm from "@/components/auth/SignupForm";
+import { checkEmailExists, registerUser } from "@/services/authService";
 
 // UI Components
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-
-// Form validation schema
-const signupSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  groupName: z.string().optional(),
-  walletAddress: z.string().optional(),
-});
-
-type SignupFormValues = z.infer<typeof signupSchema>;
+import { Button } from "@/components/ui/button";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -44,65 +23,20 @@ const Signup = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Initialize react-hook-form with zod validation
-  const form = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      groupName: "",
-      walletAddress: "",
-    },
-  });
-
-  const onSubmit = async (values: SignupFormValues) => {
+  const handleSubmit = async (values: SignupFormValues) => {
     setIsLoading(true);
     try {
-      // Check if email already exists in users table
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', values.email)
-        .maybeSingle();
+      // Check if email already exists
+      const emailExists = await checkEmailExists(values.email);
       
-      if (existingUser) {
+      if (emailExists) {
         toast.error("This email is already registered");
         setIsLoading(false);
         return;
       }
 
-      // Step 1: Register user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          data: {
-            name: values.name,
-            group_name: values.groupName || null,
-            wallet_address: values.walletAddress || null,
-          },
-        },
-      });
-
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error("No user returned after signup");
-      }
-
-      // Step 2: Insert user data into users table with the correct ID
-      const { error: insertError } = await supabase.from('users').insert({
-        id: authData.user.id, // Ensure ID matches auth.uid()
-        email: values.email,
-        name: values.name,
-        group_name: values.groupName || null,
-        wallet_address: values.walletAddress || null,
-        role: 'participant', // Default role for self-registration
-      });
-
-      if (insertError) throw insertError;
-
+      await registerUser(values);
+      
       // Success! Notify and update auth context
       toast.success("Account created successfully!");
       await refreshUser();
@@ -128,87 +62,7 @@ const Signup = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="your@email.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="groupName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Group Name (optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Your group or household name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="walletAddress"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Crypto Wallet Address (optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="0xABC123..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Button 
-                type="submit" 
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Creating Account..." : "Sign Up"}
-              </Button>
-            </form>
-          </Form>
+          <SignupForm onSubmit={handleSubmit} isLoading={isLoading} />
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
