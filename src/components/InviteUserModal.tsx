@@ -92,5 +92,3 @@ export function InviteUserModal({ onUserAdded }: { onUserAdded: () => void }) {
     </Dialog>
   )
 }
-
-feat: add invite user modal with role and wallet support
