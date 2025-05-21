@@ -171,7 +171,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       user,
       loading: loading || !privy.ready,
       signOut,
-      isAuthenticated: !!user && privy.authenticated,
+      isAuthenticated: !!privy.authenticated,
       hasRole,
       refreshUser
     }}>

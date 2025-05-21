@@ -1,35 +1,44 @@
 
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { usePrivy } from '@privy-io/react-auth';
 import { useAuth } from "@/contexts/AuthContext";
 import { LogIn } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, authenticated, ready } = usePrivy();
   const { isAuthenticated, refreshUser } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   
   // Handle navigation if already authenticated
   useEffect(() => {
     if (ready && authenticated) {
+      setIsLoading(true);
       refreshUser().then(() => {
         console.log('User authenticated, navigating to dashboard');
-        navigate('/');
+        // Use stored path or default to home page
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
+        setIsLoading(false);
       });
     }
-  }, [ready, authenticated, navigate, refreshUser]);
+  }, [ready, authenticated, navigate, refreshUser, location]);
 
   // Redirect if authenticated through our context
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, location]);
 
   const handleLogin = () => {
+    setIsLoading(true);
     login();
   };
 
@@ -48,8 +57,13 @@ const Login = () => {
               onClick={handleLogin} 
               className="w-full"
               size="lg"
+              disabled={isLoading}
             >
-              <LogIn className="mr-2 h-4 w-4" />
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <LogIn className="mr-2 h-4 w-4" />
+              )}
               Sign In
             </Button>
             
