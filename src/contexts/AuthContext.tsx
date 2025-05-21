@@ -1,8 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import { cleanupAuthState } from '@/utils/authUtils';
 
 type User = {
   id: string;
@@ -28,6 +29,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const refreshUser = async () => {
     try {
@@ -43,9 +45,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .from('users')
         .select('*')
         .eq('id', authUser.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user data:', error);
+        throw error;
+      }
+
+      if (!userData) {
+        console.warn('User authenticated but profile not found in users table');
+        return;
+      }
 
       setUser({
         id: authUser.id,
@@ -61,16 +71,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Handle URL changes to check for auth redirects
+  useEffect(() => {
+    // Check if we've redirected from auth flow
+    if (location.hash && location.hash.includes('access_token')) {
+      // Allow Supabase auth client to process the URL
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          // We have a session, force refresh the user data
+          setTimeout(() => {
+            refreshUser();
+          }, 0);
+        }
+      });
+    }
+  }, [location]);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // Only synchronous state updates here
         if (event === 'SIGNED_OUT') {
           setUser(null);
           navigate('/signup');
         } else if (event === 'SIGNED_IN' && session?.user) {
           // Defer Supabase calls with setTimeout to prevent deadlocks
+          setTimeout(() => {
+            refreshUser();
+          }, 0);
+        } else if (event === 'USER_UPDATED' && session?.user) {
+          // Handle user updates
           setTimeout(() => {
             refreshUser();
           }, 0);
@@ -103,9 +133,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      // Clean up auth state first
+      cleanupAuthState();
+      
+      // Attempt global sign out
+      await supabase.auth.signOut({ scope: 'global' });
+      
       setUser(null);
-      navigate('/signup');
+      
+      // Force page reload to ensure clean state
+      window.location.href = '/signup';
+      
       toast.success('Logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);

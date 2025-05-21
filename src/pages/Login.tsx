@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginFormValues } from "@/schemas/authSchemas";
@@ -13,8 +13,24 @@ import { Button } from "@/components/ui/button";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated, refreshUser } = useAuth();
+
+  // Check for hash in URL (from auth redirects)
+  useEffect(() => {
+    if (location.hash && location.hash.includes('access_token')) {
+      // Auth redirect detected, wait a bit for Supabase client to process
+      setTimeout(() => {
+        refreshUser().then(() => {
+          toast.success("Successfully authenticated!");
+          navigate('/');
+        }).catch(() => {
+          toast.error("Failed to load profile after authentication");
+        });
+      }, 500);
+    }
+  }, [location.hash, refreshUser, navigate]);
 
   // Redirect if already authenticated
   useEffect(() => {
