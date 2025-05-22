@@ -22,16 +22,10 @@ import GroupPulse from "./pages/GroupPulse";
 import Settings from "./pages/Settings";
 import { PrivyProvider } from '@privy-io/react-auth';
 import { WagmiConfig } from 'wagmi';
-import { wagmiConfig } from '@/utils/walletConfig';
+import { wagmiConfig, queryClient } from '@/utils/walletConfig';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 10 * 1000, // 10 seconds
-    },
-  },
-});
+// We'll use the query client from the Wagmi config
+// instead of creating a new one here
 
 // Privy configuration
 const PRIVY_APP_ID = "cmayii9yh00fpl40mgq8kod1g";
