@@ -27,7 +27,7 @@ export const useExpenseSplit = ({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isValid, setIsValid] = useState(true);
 
-  // Initialize or reset split data when users or split method changes
+  // Initialize or reset split data when users, split method, or total amount changes
   useEffect(() => {
     if (users.length > 0) {
       const initialData = users.map(user => {
@@ -42,9 +42,15 @@ export const useExpenseSplit = ({
               shares: 1,
             };
           case 'amount':
-            return { ...baseData, amount: 0 };
+            return { 
+              ...baseData, 
+              amount: user.id === paidBy ? totalAmount : 0 
+            };
           case 'percentage':
-            return { ...baseData, percentage: 0 };
+            return { 
+              ...baseData, 
+              percentage: user.id === paidBy ? 100 : 0 
+            };
           case 'shares':
             return { ...baseData, shares: 1 };
           default:
@@ -60,7 +66,7 @@ export const useExpenseSplit = ({
       setValidationError("No participants selected");
       setIsValid(false);
     }
-  }, [users, splitMethod, totalAmount]);
+  }, [users, splitMethod, totalAmount, paidBy]);
 
   // Validate and update parent component when split data changes
   useEffect(() => {
@@ -71,7 +77,7 @@ export const useExpenseSplit = ({
         onSplitDataChange(splitData);
       }
     }
-  }, [splitData, totalAmount]);
+  }, [splitData, splitMethod, totalAmount]);
 
   const calculateEqualSplit = (numUsers: number): number => {
     if (numUsers === 0 || !totalAmount) return 0;

@@ -11,7 +11,6 @@ import ExpenseFormFields from './ExpenseFormFields';
 import ExpenseFormHeader from './ExpenseFormHeader';
 import ExpenseFormSubmitButton from './ExpenseFormSubmitButton';
 import ExpenseSplitMethodFields from './ExpenseSplitMethodFields';
-import ExpenseParticipantsSelector from './ExpenseParticipantsSelector';
 
 interface ExpenseFormProps {
   groupId: string | null;
@@ -30,29 +29,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
 
   const [splitMethod, setSplitMethod] = useState<string>("equal");
   const [isSplitValid, setIsSplitValid] = useState<boolean>(true);
-  const [selectedUsers, setSelectedUsers] = useState<Record<string, boolean>>({});
   
-  // Filter users for split calculation
-  const filteredUsers = users.filter(user => selectedUsers[user.id] === true);
-
-  // Initialize all users as selected
-  useEffect(() => {
-    if (users.length > 0) {
-      const initialSelectedUsers: Record<string, boolean> = {};
-      users.forEach(user => {
-        initialSelectedUsers[user.id] = true;
-      });
-      setSelectedUsers(initialSelectedUsers);
-    }
-  }, [users]);
-
-  const toggleUser = (userId: string) => {
-    setSelectedUsers(prev => ({
-      ...prev,
-      [userId]: !prev[userId]
-    }));
-  };
-
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
     defaultValues: getDefaultValues(),
@@ -80,20 +57,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
               {/* Basic expense information */}
               <ExpenseFormFields form={form} users={users} />
               
-              {/* Participant selection */}
-              <Card className="border border-muted">
-                <CardContent className="pt-4">
-                  <ExpenseParticipantsSelector 
-                    users={users}
-                    selectedUsers={selectedUsers}
-                    toggleUser={toggleUser}
-                  />
-                </CardContent>
-              </Card>
-              
-              {/* Split method configuration */}
+              {/* Consolidated split method and participant selection */}
               <ExpenseSplitMethodFields 
-                users={filteredUsers}
+                users={users}
                 splitMethod={splitMethod}
                 setSplitMethod={setSplitMethod}
                 totalAmount={form.watch('amount')}
