@@ -5,7 +5,7 @@ import { useBalances } from '@/hooks/useBalances';
 import { BalancesHeader } from '@/components/balances/BalancesHeader';
 import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable';
 import { BalanceSummaryCards } from '@/components/balances/BalanceSummaryCards';
-import { SettlementActions } from '@/components/balances/SettlementActions';
+import { SettlementActions } from '@/components/balances/settlements/SettlementActions';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/layouts/AppLayout';
