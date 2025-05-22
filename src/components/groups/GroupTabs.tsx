@@ -9,7 +9,7 @@ import { MembersList } from "@/components/groups/MembersList";
 import { GroupMember } from '@/types/supabase';
 import { useBalances } from '@/hooks/useBalances';
 import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable';
-import { SettlementActions } from '@/components/balances/SettlementActions';
+import { SettlementActions } from '@/components/balances/settlements/SettlementActions';
 import { BalanceSummaryCards } from '@/components/balances/BalanceSummaryCards';
 import { Loader2 } from 'lucide-react';
 
