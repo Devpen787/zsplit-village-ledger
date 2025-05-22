@@ -14,6 +14,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
+  SidebarProvider
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import SignInButton from "@/components/auth/SignInButton";
@@ -66,50 +67,52 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
-      {/* Sidebar on desktop */}
-      {!isMobile && (
-        <Sidebar className="hidden md:block">
-          <SidebarHeader>
-            <div className="p-2">
-              <h2 className="text-xl font-bold">Zsplit</h2>
-              <p className="text-sm text-muted-foreground">Split expenses easily</p>
-            </div>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navItems.map((item) => (
-                    <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton asChild>
-                        <Link to={item.path}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-          <SidebarFooter>
-            {authenticated ? (
-              <UserProfileDropdown />
-            ) : (
-              <SignInButton />
-            )}
-          </SidebarFooter>
-        </Sidebar>
-      )}
-      
-      {/* Main content */}
-      <div className="flex-1 flex flex-col">
-        {renderHeader}
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+    <SidebarProvider>
+      <div className="min-h-screen bg-background flex flex-col md:flex-row">
+        {/* Sidebar on desktop */}
+        {!isMobile && (
+          <Sidebar className="hidden md:block">
+            <SidebarHeader>
+              <div className="p-2">
+                <h2 className="text-xl font-bold">Zsplit</h2>
+                <p className="text-sm text-muted-foreground">Split expenses easily</p>
+              </div>
+            </SidebarHeader>
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {navItems.map((item) => (
+                      <SidebarMenuItem key={item.path}>
+                        <SidebarMenuButton asChild>
+                          <Link to={item.path}>
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+            <SidebarFooter>
+              {authenticated ? (
+                <UserProfileDropdown />
+              ) : (
+                <SignInButton />
+              )}
+            </SidebarFooter>
+          </Sidebar>
+        )}
+        
+        {/* Main content */}
+        <div className="flex-1 flex flex-col">
+          {renderHeader}
+          <main className="flex-1 p-4 md:p-6">{children}</main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
