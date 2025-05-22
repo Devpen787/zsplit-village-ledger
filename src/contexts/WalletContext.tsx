@@ -31,7 +31,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { user, refreshUser } = useAuth();
   const { address: wagmiAddress, isConnected: wagmiIsConnected } = useAccount();
   const { disconnect: wagmiDisconnect } = useDisconnect();
-  const { connectAsync: wagmiConnect, isPending } = useConnect();
+  const { connectAsync: wagmiConnect, isLoading: isConnectLoading } = useConnect();
   const [isConnecting, setIsConnecting] = useState(false);
   const [savedAddress, setSavedAddress] = useState<string | null>(null);
   
@@ -125,7 +125,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Handle external wallet connect trigger
   useEffect(() => {
     const handleWalletConnect = () => {
-      if (isPending || !user) return;
+      if (isConnectLoading || !user) return;
       
       setIsConnecting(true);
       
@@ -139,7 +139,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       document.removeEventListener('wallet-connect', handleWalletConnect);
     };
-  }, [isPending, user]);
+  }, [isConnectLoading, user]);
   
   // When component mounts, initialize the saved address from the user object
   useEffect(() => {
@@ -155,7 +155,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       value={{
         address: user?.wallet_address || null,
         isConnected: !!user?.wallet_address,
-        isConnecting: isConnecting || isPending,
+        isConnecting: isConnecting || isConnectLoading,
         connect,
         disconnect,
         shortenAddress

@@ -7,9 +7,21 @@ import { PotContributionsCard } from './PotContributionsCard';
 import { RequestPayoutForm } from './RequestPayoutForm';
 import { PendingPayoutRequests } from './PendingPayoutRequests';
 import { PotActivityFeed } from './PotActivityFeed';
+import { useGroupPot } from '@/hooks/useGroupPot';
 
 export const GroupPot = ({ groupId }: { groupId: string }) => {
   const { isConnected } = useWallet();
+  const {
+    totalContributions,
+    activities,
+    contributors,
+    handleContribute,
+    handlePayoutRequest,
+    handleApproveRequest,
+    handleRejectRequest,
+    isAdmin,
+    loading
+  } = useGroupPot(groupId);
 
   return (
     <div className="grid gap-6">
@@ -38,13 +50,26 @@ export const GroupPot = ({ groupId }: { groupId: string }) => {
       {isConnected && (
         <>
           <div className="grid gap-6 md:grid-cols-2">
-            <PotContributionsCard groupId={groupId} />
-            <RequestPayoutForm groupId={groupId} />
+            <PotContributionsCard 
+              totalContributions={totalContributions}
+              onContribute={handleContribute}
+              contributors={contributors}
+            />
+            <RequestPayoutForm 
+              onSubmit={handlePayoutRequest}
+            />
           </div>
           
           <div className="grid gap-6 md:grid-cols-2">
-            <PendingPayoutRequests groupId={groupId} />
-            <PotActivityFeed groupId={groupId} />
+            <PendingPayoutRequests 
+              activities={activities}
+              onApprove={handleApproveRequest}
+              onReject={handleRejectRequest}
+              isAdmin={isAdmin}
+            />
+            <PotActivityFeed 
+              activities={activities}
+            />
           </div>
         </>
       )}

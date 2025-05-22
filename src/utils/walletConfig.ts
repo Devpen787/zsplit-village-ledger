@@ -48,8 +48,10 @@ export const initializeWeb3Modal = () => {
     projectId,
     enableAnalytics: false,
     themeMode: 'light',
+    // Fix: Use correctly typed theme variables
     themeVariables: {
-      '--w3m-accent-color': '#0ea5e9', // Match the app's primary color
+      // Use valid theme variables
+      '--w3m-accent': '#0ea5e9', // Match the app's primary color
     },
   });
 };

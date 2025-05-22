@@ -5,13 +5,30 @@ import { Progress } from "@/components/ui/progress";
 import { useWallet } from '@/contexts/WalletContext';
 import WalletInfo from '@/components/wallet/WalletInfo';
 import { PendingPayoutRequestsList } from './PendingPayoutRequestsList';
+import { useGroupPulse } from '@/hooks/useGroupPulse';
 
 export const GroupPulse = ({ groupId }: { groupId: string }) => {
   const { isConnected } = useWallet();
+  const {
+    loading,
+    potBalance,
+    averagePayoutSize,
+    estimatedPayoutsRemaining,
+    recentExpensesCount,
+    latestExpenseDate,
+    pendingPayoutsCount,
+    averageApprovalTime,
+    pendingRequests,
+    connectedWalletsCount,
+    totalMembersCount,
+    handleApproveRequest,
+    handleRejectRequest,
+    isAdmin
+  } = useGroupPulse(groupId);
   
   // This will be replaced with actual data from your API
   const groupStats = {
-    potBalance: 500,
+    potBalance: potBalance || 500,
     totalExpenses: 1200,
     expensesPaid: 950,
     expensesUnpaid: 250,
@@ -73,7 +90,13 @@ export const GroupPulse = ({ groupId }: { groupId: string }) => {
           </div>
           
           <div className="grid gap-6">
-            <PendingPayoutRequestsList groupId={groupId} />
+            {pendingRequests && pendingRequests.length > 0 && (
+              <PendingPayoutRequestsList
+                pendingRequests={pendingRequests}
+                onApprove={handleApproveRequest}
+                onReject={handleRejectRequest}
+              />
+            )}
           </div>
         </>
       )}
