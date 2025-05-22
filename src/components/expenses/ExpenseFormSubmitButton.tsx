@@ -6,12 +6,17 @@ import { Loader2 } from "lucide-react";
 interface ExpenseFormSubmitButtonProps {
   loading: boolean;
   isEditing: boolean;
+  disabled?: boolean;
 }
 
-const ExpenseFormSubmitButton: React.FC<ExpenseFormSubmitButtonProps> = ({ loading, isEditing }) => {
+const ExpenseFormSubmitButton: React.FC<ExpenseFormSubmitButtonProps> = ({ 
+  loading, 
+  isEditing, 
+  disabled = false 
+}) => {
   return (
     <div>
-      <Button type="submit" disabled={loading}>
+      <Button type="submit" disabled={loading || disabled}>
         {loading ? (
           <>
             {isEditing ? "Updating..." : "Saving..."}

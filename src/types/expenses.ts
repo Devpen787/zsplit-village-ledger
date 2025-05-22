@@ -36,3 +36,5 @@ export type ExpensesListProps = {
   limit?: number;
   groupId?: string;
 };
+
+export type SplitMethod = 'equal' | 'amount' | 'percentage' | 'shares';

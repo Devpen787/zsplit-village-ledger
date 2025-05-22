@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,11 +28,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
   } = useExpenseForm(groupId);
 
   const [splitMethod, setSplitMethod] = useState<string>("equal");
+  const [isSplitValid, setIsSplitValid] = useState<boolean>(true);
 
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
     defaultValues: getDefaultValues(),
   });
+
+  // Track form validity separately from React Hook Form
+  const isFormValid = form.formState.isValid && isSplitValid;
 
   if (loading) {
     return (
@@ -60,10 +64,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
                 paidBy={form.watch('paidBy')}
                 onSplitDataChange={(splitData) => {
                   form.setValue('splitData', splitData);
+                  // Split is valid when we receive data from the component
+                  setIsSplitValid(true);
                 }}
               />
               
-              <ExpenseFormSubmitButton loading={submitLoading} isEditing={isEditing} />
+              <ExpenseFormSubmitButton 
+                loading={submitLoading} 
+                isEditing={isEditing} 
+                disabled={!isFormValid}
+              />
             </form>
           </Form>
         </CardContent>
