@@ -38,6 +38,9 @@ const Login = () => {
         setAuthError("Authentication error. Please try again later.");
         setIsLoading(false);
       });
+    } else if (ready && !authenticated) {
+      // Reset loading state if not authenticated
+      setIsLoading(false);
     }
   }, [ready, authenticated, navigate, refreshUser, location]);
 
