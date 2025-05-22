@@ -200,12 +200,11 @@ export const useGroupPot = (groupId: string): GroupPotData => {
 
   const handleApproveRequest = async (activityId: string) => {
     try {
+      console.log("Approving request:", activityId);
       const { error } = await supabase
         .from('group_pot_activity')
         .update({ status: 'approved' })
-        .eq('id', activityId)
-        .eq('type', 'payout')
-        .eq('status', 'pending');
+        .eq('id', activityId);
 
       if (error) throw error;
       
@@ -227,12 +226,11 @@ export const useGroupPot = (groupId: string): GroupPotData => {
 
   const handleRejectRequest = async (activityId: string) => {
     try {
+      console.log("Rejecting request:", activityId);
       const { error } = await supabase
         .from('group_pot_activity')
         .update({ status: 'rejected' })
-        .eq('id', activityId)
-        .eq('type', 'payout')
-        .eq('status', 'pending');
+        .eq('id', activityId);
 
       if (error) throw error;
       
