@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/contexts';
@@ -37,4 +38,3 @@ const Settings = () => {
 };
 
 export default Settings;
-
