@@ -2,13 +2,14 @@
 import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard } from "lucide-react";
+import { CreditCard, HelpCircle } from "lucide-react";
 import { BalanceData } from '../BalancesTable';
 import { useAuth } from '@/contexts';
 import { SettlementStatus } from './SettlementStatus';
 import { SettlementList } from './SettlementList';
 import { useSettlements } from '@/hooks/useSettlements';
 import { toast } from '@/components/ui/sonner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SettlementActionsProps {
   balances: BalanceData[];
@@ -29,20 +30,35 @@ export const SettlementActions = ({ balances }: SettlementActionsProps) => {
   
   // Automatically show settlements if there are unbalanced accounts
   useEffect(() => {
-    if (hasUnsettledBalances && settlements.length === 0) {
-      handleSettleUp();
+    if (hasUnsettledBalances) {
+      setShowSettlements(true);
     }
-  }, [hasUnsettledBalances, settlements.length, handleSettleUp]);
+  }, [hasUnsettledBalances, setShowSettlements]);
   
   return (
     <Card className="mb-6">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          <span>Settlement Actions</span>
-          {!showSettlements && (
+          <div className="flex items-center gap-2">
+            <span>Settlement Actions</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent className="w-80 p-2">
+                  <p className="text-sm">
+                    This section shows suggested payments that will help balance everyone's accounts. 
+                    Users with negative balances should pay users with positive balances 
+                    to settle all debts efficiently.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          {!showSettlements && hasUnsettledBalances && (
             <Button 
               onClick={handleSettleUp} 
-              disabled={!hasUnsettledBalances}
               className="flex items-center gap-2"
             >
               <CreditCard className="h-4 w-4" />
@@ -59,13 +75,13 @@ export const SettlementActions = ({ balances }: SettlementActionsProps) => {
         />
         
         {/* Show Settlements Display */}
-        {!showSettlements && hasUnsettledBalances ? (
+        {!hasUnsettledBalances ? null : !showSettlements ? (
           <p className="text-center text-muted-foreground py-4">
             Calculating suggested payments...
           </p>
-        ) : !showSettlements ? null : settlements.length === 0 ? (
+        ) : settlements.length === 0 ? (
           <p className="text-center text-muted-foreground py-4">
-            No settlement suggestions available.
+            Everyone is settled up – no payments needed.
           </p>
         ) : (
           <div className="space-y-4">
@@ -88,7 +104,7 @@ export const SettlementActions = ({ balances }: SettlementActionsProps) => {
             />
             
             {/* Hide Settlements Button */}
-            {showSettlements && !allSettled && (
+            {showSettlements && !allSettled && hasUnsettledBalances && settlements.length > 0 && (
               <div className="flex justify-end mt-4">
                 <Button variant="outline" onClick={hideSettlements}>
                   Hide Settlements

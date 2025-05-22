@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { BalanceData } from '@/components/balances/BalancesTable';
 import { toast } from '@/components/ui/sonner';
 
@@ -16,7 +16,7 @@ export const useSettlements = (balances: BalanceData[]) => {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [showSettlements, setShowSettlements] = useState(false);
   
-  // Calculate if there are any unsettled balances
+  // Calculate if there are any unsettled balances - use a small threshold to handle floating point errors
   const hasUnsettledBalances = balances.some(balance => 
     Math.abs(balance.netBalance) > 0.01
   );
@@ -35,6 +35,8 @@ export const useSettlements = (balances: BalanceData[]) => {
       .filter(balance => balance.netBalance > 0.01) // Small threshold to handle floating point errors
       .sort((a, b) => b.netBalance - a.netBalance); // Sort from largest credit to smallest
 
+    console.log('Calculating settlements with debtors:', debtors.length, 'creditors:', creditors.length);
+    
     // Calculate the optimal payments to settle balances
     const payments: Settlement[] = [];
     
@@ -79,11 +81,19 @@ export const useSettlements = (balances: BalanceData[]) => {
       }
     }
     
+    console.log('Settlement payments calculated:', payments);
     setSettlements(payments);
     setShowSettlements(true);
     
     return payments;
   }, [balances]);
+  
+  // Automatically calculate settlements when there are unsettled balances
+  useEffect(() => {
+    if (hasUnsettledBalances && settlements.length === 0) {
+      calculateSettlements();
+    }
+  }, [hasUnsettledBalances, settlements.length, calculateSettlements]);
   
   const handleSettleUp = useCallback(() => {
     const payments = calculateSettlements();
