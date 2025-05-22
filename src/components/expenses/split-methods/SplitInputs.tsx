@@ -4,6 +4,7 @@ import EqualSplit from "./EqualSplit";
 import AmountSplit from "./AmountSplit";
 import PercentageSplit from "./PercentageSplit";
 import SharesSplit from "./SharesSplit";
+import { Card, CardContent } from "@/components/ui/card";
 import { UserSplitData } from "@/types/expenses";
 
 type User = {
@@ -35,56 +36,67 @@ const SplitInputs: React.FC<SplitInputsProps> = ({
   getCalculatedAmount,
   getTotalShares
 }) => {
-  switch (splitMethod) {
-    case "equal":
-      return (
-        <EqualSplit 
-          splitData={splitData} 
-          totalAmount={totalAmount} 
-          users={users} 
-        />
-      );
-    
-    case "amount":
-      return (
-        <AmountSplit 
-          splitData={splitData} 
-          users={users} 
-          totalAmount={totalAmount} 
-          paidBy={paidBy} 
-          onInputChange={onInputChange} 
-        />
-      );
-    
-    case "percentage":
-      return (
-        <PercentageSplit 
-          splitData={splitData} 
-          users={users} 
-          totalAmount={totalAmount} 
-          paidBy={paidBy} 
-          onInputChange={onInputChange} 
-          getCalculatedAmount={getCalculatedAmount} 
-        />
-      );
-    
-    case "shares":
-      return (
-        <SharesSplit 
-          splitData={splitData} 
-          users={users} 
-          totalAmount={totalAmount} 
-          paidBy={paidBy} 
-          onInputChange={onInputChange} 
-          adjustShares={adjustShares} 
-          getCalculatedAmount={getCalculatedAmount} 
-          getTotalShares={getTotalShares} 
-        />
-      );
+  // Render appropriate split inputs based on method
+  const renderSplitInputs = () => {
+    switch (splitMethod) {
+      case "equal":
+        return (
+          <EqualSplit 
+            splitData={splitData} 
+            totalAmount={totalAmount} 
+            users={users} 
+          />
+        );
       
-    default:
-      return null;
-  }
+      case "amount":
+        return (
+          <AmountSplit 
+            splitData={splitData} 
+            users={users} 
+            totalAmount={totalAmount} 
+            paidBy={paidBy} 
+            onInputChange={onInputChange} 
+          />
+        );
+      
+      case "percentage":
+        return (
+          <PercentageSplit 
+            splitData={splitData} 
+            users={users} 
+            totalAmount={totalAmount} 
+            paidBy={paidBy} 
+            onInputChange={onInputChange} 
+            getCalculatedAmount={getCalculatedAmount} 
+          />
+        );
+      
+      case "shares":
+        return (
+          <SharesSplit 
+            splitData={splitData} 
+            users={users} 
+            totalAmount={totalAmount} 
+            paidBy={paidBy} 
+            onInputChange={onInputChange} 
+            adjustShares={adjustShares} 
+            getCalculatedAmount={getCalculatedAmount} 
+            getTotalShares={getTotalShares} 
+          />
+        );
+        
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Card className="mt-4">
+      <CardContent className="pt-4 pb-2">
+        {renderSplitInputs()}
+      </CardContent>
+    </Card>
+  );
 };
 
 export default SplitInputs;

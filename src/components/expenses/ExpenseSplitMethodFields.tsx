@@ -51,6 +51,7 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
       <SplitMethodSelector splitMethod={splitMethod} setSplitMethod={setSplitMethod} />
       <ValidationAlert validationError={validationError} />
       
+      {/* This is the input section for each split method */}
       <SplitInputs
         splitMethod={splitMethod}
         splitData={splitData}
@@ -63,6 +64,7 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
         getTotalShares={getTotalShares}
       />
       
+      {/* This is the summary table that should be the ONLY table */}
       <SplitSummary 
         splitData={splitData}
         totalAmount={totalAmount}
