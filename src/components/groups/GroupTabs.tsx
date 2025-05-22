@@ -12,6 +12,7 @@ import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable'
 import { SettlementActions } from '@/components/balances/settlements/SettlementActions';
 import { BalanceSummaryCards } from '@/components/balances/BalanceSummaryCards';
 import { Loader2 } from 'lucide-react';
+import { GroupPot } from '@/components/group-pot/GroupPot';
 
 interface GroupTabsProps {
   groupId: string;
@@ -51,29 +52,14 @@ export const GroupTabs = ({
 
   return (
     <Tabs defaultValue="expenses" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="expenses">Expenses</TabsTrigger>
-        <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
         <TabsTrigger value="balances">Balances</TabsTrigger>
+        <TabsTrigger value="group-pot">Group Pot</TabsTrigger>
+        <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
       </TabsList>
       <TabsContent value="expenses" className="mt-4">
         <ExpensesList groupId={groupId} />
-      </TabsContent>
-      <TabsContent value="members" className="mt-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Group Members</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <MembersList
-              members={members}
-              isAdmin={isAdmin}
-              onInviteClick={onInviteClick}
-              currentUserId={currentUser?.id}
-              displayStyle="grid"
-            />
-          </CardContent>
-        </Card>
       </TabsContent>
       <TabsContent value="balances" className="mt-4">
         {loading ? (
@@ -109,6 +95,25 @@ export const GroupTabs = ({
             <SettlementActions balances={balanceData} />
           </>
         )}
+      </TabsContent>
+      <TabsContent value="group-pot" className="mt-4">
+        <GroupPot groupId={groupId} />
+      </TabsContent>
+      <TabsContent value="members" className="mt-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Group Members</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <MembersList
+              members={members}
+              isAdmin={isAdmin}
+              onInviteClick={onInviteClick}
+              currentUserId={currentUser?.id}
+              displayStyle="grid"
+            />
+          </CardContent>
+        </Card>
       </TabsContent>
     </Tabs>
   );
