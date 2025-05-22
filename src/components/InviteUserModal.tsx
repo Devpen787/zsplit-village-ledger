@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -6,9 +5,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/sonner"
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuth } from "@/contexts" // Updated import
 import { supabase } from "@/integrations/supabase/client"
-import { isValidRole } from "@/contexts/AuthContext"
+import { isValidRole } from "@/contexts" // Updated import
 
 export function InviteUserModal({ onUserAdded }: { onUserAdded: () => void }) {
   const [open, setOpen] = useState(false)

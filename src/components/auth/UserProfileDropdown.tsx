@@ -1,97 +1,48 @@
-
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { usePrivy } from '@privy-io/react-auth';
-import { useAuth } from '@/contexts/AuthContext';
+import React from 'react';
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, LogOut, Settings, CreditCard, UserCircle, Wallet } from 'lucide-react';
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button";
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts'; // Updated import
 
-export default function UserProfileDropdown() {
-  const { user, signOut } = useAuth();
-  const { ready, authenticated, user: privyUser } = usePrivy();
+const UserProfileDropdown = () => {
   const navigate = useNavigate();
-  const [initials, setInitials] = useState('');
+  const { user, signOut, loading } = useAuth();
 
-  useEffect(() => {
-    if (user?.name) {
-      const nameParts = user.name.split(' ');
-      const initials = nameParts
-        .map(part => part.charAt(0).toUpperCase())
-        .join('')
-        .slice(0, 2);
-      setInitials(initials || 'U');
-    } else {
-      setInitials('U');
-    }
-  }, [user]);
-
-  // If not authenticated or not ready, return null
-  if (!ready || !authenticated || !user) {
-    return null;
-  }
-
-  // Get wallet addresses from Privy
-  const linkedAccounts = privyUser?.linkedAccounts || [];
-  const wallets = linkedAccounts.filter((account: any) => account.type === 'wallet');
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="outline-none">
-        <Avatar>
-          <AvatarFallback className="bg-primary text-primary-foreground">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={user?.avatar_url || ""} alt={user?.name || "Avatar"} />
+            <AvatarFallback>{user?.name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+          </Avatar>
+        </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>
-          <div className="flex flex-col gap-1">
-            <p className="font-medium">{user.name || 'User'}</p>
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-          </div>
-        </DropdownMenuLabel>
+      <DropdownMenuContent className="w-56" align="end" forceMount>
+        <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
-        {user.wallet_address && (
-          <>
-            <DropdownMenuItem className="gap-2 text-xs text-muted-foreground">
-              <Wallet className="h-4 w-4" />
-              <span className="truncate">{user.wallet_address}</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </>
-        )}
-        
-        <DropdownMenuItem onClick={() => navigate('/profile')}>
-          <UserCircle className="mr-2 h-4 w-4" />
-          Profile
-        </DropdownMenuItem>
-        
-        <DropdownMenuItem onClick={() => navigate('/balances')}>
-          <CreditCard className="mr-2 h-4 w-4" />
-          Balances
-        </DropdownMenuItem>
-        
-        <DropdownMenuItem onClick={() => navigate('/settings')}>
-          <Settings className="mr-2 h-4 w-4" />
-          Settings
-        </DropdownMenuItem>
-        
+        <DropdownMenuItem disabled={loading} onClick={() => navigate('/profile')}>Profile</DropdownMenuItem>
+        <DropdownMenuItem disabled={loading} onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
         <DropdownMenuSeparator />
-        
-        <DropdownMenuItem onClick={signOut} className="text-destructive focus:bg-destructive focus:text-destructive-foreground">
-          <LogOut className="mr-2 h-4 w-4" />
-          Log Out
+        <DropdownMenuItem disabled={loading} onClick={handleSignOut}>
+          Sign Out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};
+
+export default UserProfileDropdown;

@@ -16,7 +16,7 @@ import {
   SidebarGroupContent,
   SidebarProvider
 } from "@/components/ui/sidebar";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts"; // Updated import
 import SignInButton from "@/components/auth/SignInButton";
 import UserProfileDropdown from "@/components/auth/UserProfileDropdown";
 import { usePrivy } from '@privy-io/react-auth';

@@ -1,155 +1,235 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { CalendarIcon, PlusCircle, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { DatePicker } from "@/components/ui/date-picker";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts"; // Updated import
+import { useExpenseUsers } from '@/hooks/useExpenseUsers';
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "@/components/ui/sonner";
-import { useAuth } from "@/contexts/AuthContext";
-import { useExpenseUsers } from "@/hooks/useExpenseUsers";
-
-// Import our new components
-import ExpenseFormHeader from "@/components/expenses/ExpenseFormHeader";
-import ExpenseFormBasicFields from "@/components/expenses/ExpenseFormBasicFields";
-import ExpensePaidBySelector from "@/components/expenses/ExpensePaidBySelector";
-import ExpenseParticipantsSelector from "@/components/expenses/ExpenseParticipantsSelector";
-import ExpenseOptionsFields from "@/components/expenses/ExpenseOptionsFields";
-import ExpenseFormSubmitButton from "@/components/expenses/ExpenseFormSubmitButton";
+type Expense = {
+  id?: string;
+  title: string;
+  amount: number;
+  currency: string;
+  date: string;
+  paid_by: string;
+};
 
 const ExpenseForm = () => {
-  // Basic expense fields
-  const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("CHF");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [visibility, setVisibility] = useState("group");
-  const [splitMethod, setSplitMethod] = useState("equal");
-  const [notes, setNotes] = useState("");
+  const [expense, setExpense] = useState<Expense>({
+    title: '',
+    amount: 0,
+    currency: 'CHF',
+    date: new Date().toISOString(),
+    paid_by: '',
+  });
   const [loading, setLoading] = useState(false);
-  
-  // User management with custom hook
-  const {
-    users,
-    paidBy,
-    setPaidBy,
-    selectedUsers,
-    toggleUser,
-    loading: usersLoading
-  } = useExpenseUsers();
-  
-  const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const { users, loading: usersLoading, error: usersError } = useExpenseUsers();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!title || !amount || !paidBy || parseFloat(amount) <= 0) {
-      toast.error('Please fill in all required fields');
-      return;
+  useEffect(() => {
+    if (!user) return;
+    setExpense(prev => ({ ...prev, paid_by: user.id }));
+  }, [user]);
+
+  useEffect(() => {
+    if (id) {
+      fetchExpense(id);
     }
+  }, [id]);
 
-    const participants = Object.keys(selectedUsers).filter(id => selectedUsers[id]);
-    if (participants.length === 0) {
-      toast.error('Please select at least one participant');
-      return;
-    }
-
+  const fetchExpense = async (id: string) => {
     setLoading(true);
-    
     try {
-      // Since we're having issues with the database, let's simulate a successful submission
-      setTimeout(() => {
-        toast.success('Expense added successfully!');
-        navigate('/');
-      }, 1500);
-      
-      // In a real implementation, we'd use this code:
-      /*
-      // Insert the expense with the currently authenticated user as paid_by
-      const { data: expenseData, error: expenseError } = await supabase
+      const { data, error } = await supabase
         .from('expenses')
-        .insert({
-          title,
-          amount: parseFloat(amount),
-          currency,
-          paid_by: paidBy,
-          date: new Date(date).toISOString(),
-          visibility,
-          leftover_notes: notes
-        })
-        .select('id')
+        .select('*')
+        .eq('id', id)
         .single();
 
-      if (expenseError) throw expenseError;
-      
-      if (!expenseData) throw new Error('Failed to create expense');
+      if (error) throw error;
 
-      const expenseId = expenseData.id;
-
-      // Create expense members for each participant
-      const expenseMembers = participants.map(userId => ({
-        expense_id: expenseId,
-        user_id: userId,
-        share_type: splitMethod,
-        // For equal split, divide by number of participants
-        share_value: splitMethod === 'equal' ? parseFloat(amount) / participants.length : parseFloat(amount),
-        paid_status: userId === paidBy // Mark as paid if this user paid
-      }));
-
-      const { error: memberError } = await supabase
-        .from('expense_members')
-        .insert(expenseMembers);
-
-      if (memberError) throw memberError;
-      */
-      
+      if (data) {
+        setExpense({
+          title: data.title || '',
+          amount: data.amount || 0,
+          currency: data.currency || 'CHF',
+          date: data.date || new Date().toISOString(),
+          paid_by: data.paid_by || '',
+        });
+      }
     } catch (error: any) {
-      console.error('Error adding expense:', error);
-      toast.error(error.message || 'Failed to add expense');
+      toast({
+        title: "Error fetching expense",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setExpense(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setIsSaving(true);
+    try {
+      if (id) {
+        // Update existing expense
+        const { error } = await supabase
+          .from('expenses')
+          .update(expense)
+          .eq('id', id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Expense updated",
+        });
+      } else {
+        // Create new expense
+        const { error } = await supabase
+          .from('expenses')
+          .insert(expense);
+
+        if (error) throw error;
+
+        toast({
+          title: "Expense created",
+        });
+      }
+
+      navigate('/');
+    } catch (error: any) {
+      toast({
+        title: "Error saving expense",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (loading || usersLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (usersError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-red-500">
+        Error: {usersError.message}
+      </div>
+    );
+  }
+
   return (
-    <div className="container max-w-md mx-auto px-4 py-6">
-      <ExpenseFormHeader />
-
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-6">
-          <ExpenseFormBasicFields
-            title={title}
-            setTitle={setTitle}
-            amount={amount}
-            setAmount={setAmount}
-            currency={currency}
-            setCurrency={setCurrency}
-            date={date}
-            setDate={setDate}
-          />
-
-          <ExpensePaidBySelector
-            users={users}
-            paidBy={paidBy}
-            setPaidBy={setPaidBy}
-            loading={usersLoading}
-          />
-
-          <ExpenseParticipantsSelector
-            users={users}
-            selectedUsers={selectedUsers}
-            toggleUser={toggleUser}
-          />
-
-          <ExpenseOptionsFields
-            visibility={visibility}
-            setVisibility={setVisibility}
-            splitMethod={splitMethod}
-            setSplitMethod={setSplitMethod}
-            notes={notes}
-            setNotes={setNotes}
-          />
-
-          <ExpenseFormSubmitButton loading={loading} />
-        </div>
-      </form>
+    <div className="flex justify-center items-center min-h-screen px-4 py-10 bg-background">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">{id ? 'Edit Expense' : 'Add Expense'}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="title">Title</Label>
+              <Input
+                type="text"
+                id="title"
+                name="title"
+                value={expense.title}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="amount">Amount</Label>
+              <Input
+                type="number"
+                id="amount"
+                name="amount"
+                value={expense.amount}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="currency">Currency</Label>
+              <Select value={expense.currency} onValueChange={(value) => setExpense(prev => ({ ...prev, currency: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CHF">CHF</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="date">Date</Label>
+              <DatePicker
+                value={expense.date ? new Date(expense.date) : undefined}
+                onValueChange={(date) => {
+                  if (date) {
+                    setExpense(prev => ({ ...prev, date: date.toISOString() }));
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <Label htmlFor="paid_by">Paid By</Label>
+              <Select value={expense.paid_by} onValueChange={(value) => setExpense(prev => ({ ...prev, paid_by: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users?.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>{user.name || user.email}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" className="w-full" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                id ? 'Update Expense' : 'Add Expense'
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
