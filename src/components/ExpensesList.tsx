@@ -1,13 +1,13 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts";
-import { Loader2, PlusCircle } from "lucide-react";
+import { Loader2, PlusCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 
 type Expense = {
   id: string;
@@ -31,6 +31,7 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasRecursionError, setHasRecursionError] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [groupedExpenses, setGroupedExpenses] = useState<Record<string, Expense[]>>({});
@@ -39,6 +40,7 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
     try {
       setLoading(true);
       setError(null);
+      setHasRecursionError(false);
       
       if (!user) {
         setError("Not authenticated");
@@ -79,8 +81,12 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
         console.error("Error fetching expenses:", supabaseError);
         
         // Special handling for recursive RLS policy errors
-        if (supabaseError.message?.includes('infinite recursion')) {
-          setError("Unable to load expenses due to a database policy issue.");
+        if (supabaseError.message?.includes('infinite recursion') || supabaseError.code === '42P17') {
+          setHasRecursionError(true);
+          setError("Database policy configuration issue");
+          setExpenses([]);
+          setGroupedExpenses({});
+          return;
         } else {
           setError(supabaseError.message);
         }
@@ -236,18 +242,41 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
     );
   }
 
-  if (error) {
+  if (hasRecursionError) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Database Configuration Issue</AlertTitle>
+            <AlertDescription>
+              <p className="mb-2">We're experiencing a temporary database issue. This will be resolved soon.</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                The database has a policy configuration that needs to be updated by administrators.
+              </p>
+              <div className="flex justify-center space-x-2">
+                <Button variant="outline" size="sm" onClick={() => fetchExpenses()} className="flex items-center gap-1">
+                  <RefreshCw className="h-4 w-4" /> Try Again
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCreateExpense}>
+                  Add Expense
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error && !hasRecursionError) {
     return (
       <Card>
         <CardContent className="p-6">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error loading expenses</AlertTitle>
-            <AlertDescription>
-              {error.includes('recursion') 
-                ? "We're experiencing a temporary database issue. Please try again later." 
-                : error}
-            </AlertDescription>
+            <AlertDescription>{error}</AlertDescription>
           </Alert>
           <div className="mt-4 flex justify-center">
             <Button variant="outline" size="sm" onClick={() => fetchExpenses()}>

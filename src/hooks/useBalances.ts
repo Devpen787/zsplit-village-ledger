@@ -10,11 +10,13 @@ export const useBalances = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasRecursionError, setHasRecursionError] = useState(false);
   const { user } = useAuth();
 
   const fetchBalances = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setHasRecursionError(false);
 
     try {
       if (!user) {
@@ -32,8 +34,21 @@ export const useBalances = () => {
         console.error("Error fetching balances:", error);
         
         // Special handling for recursive RLS policy errors
-        if (error.message?.includes('infinite recursion')) {
-          setError("Unable to calculate balances due to a database policy issue. Please contact support.");
+        if (error.message?.includes('infinite recursion') || error.code === '42P17') {
+          setHasRecursionError(true);
+          setError("Database policy configuration issue");
+          
+          // Create mock data for UI to show something rather than error
+          if (user) {
+            const mockBalance: Balance = {
+              user_id: user.id,
+              user_name: user.name || user.email.split('@')[0],
+              user_email: user.email,
+              amount: 0
+            };
+            setBalances([mockBalance]);
+          }
+          
           toast.error("A database error occurred. This is likely due to a policy configuration issue.", {
             duration: 5000,
           });
@@ -76,5 +91,5 @@ export const useBalances = () => {
     }
   }, [user, fetchBalances]);
 
-  return { balances, loading, error, refreshing, handleRefresh };
+  return { balances, loading, error, refreshing, handleRefresh, hasRecursionError };
 };

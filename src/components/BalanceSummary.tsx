@@ -2,10 +2,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useBalances } from "@/hooks/useBalances";
 import { useAuth } from "@/contexts";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const BalanceSummary = () => {
-  const { balances, loading, error } = useBalances();
+  const { balances, loading, error, hasRecursionError, handleRefresh } = useBalances();
   const { user } = useAuth();
 
   // Calculate summary data for the current user
@@ -42,17 +43,44 @@ export const BalanceSummary = () => {
     );
   }
 
-  if (error) {
+  if (error && !hasRecursionError) {
     return (
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center space-x-2 text-red-500">
             <AlertCircle className="h-4 w-4" />
             <span className="text-sm">
-              {error.includes('recursion') 
-                ? "Balance data unavailable" 
-                : "Error loading balances"}
+              {error}
             </span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (hasRecursionError) {
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 text-amber-500">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                Balance data unavailable
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              There's a database configuration issue preventing access to your balance information. 
+              This will be resolved soon.
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh} 
+              className="w-full flex items-center justify-center gap-1"
+            >
+              <RefreshCw className="h-3 w-3" /> Try Again
+            </Button>
           </div>
         </CardContent>
       </Card>

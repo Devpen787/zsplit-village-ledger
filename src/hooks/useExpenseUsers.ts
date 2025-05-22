@@ -14,11 +14,13 @@ export const useExpenseUsers = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasRecursionError, setHasRecursionError] = useState(false);
   const { user } = useAuth();
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setHasRecursionError(false);
 
     try {
       if (!user) {
@@ -38,8 +40,19 @@ export const useExpenseUsers = () => {
         console.error("Error fetching users:", supabaseError);
         
         // Special handling for recursive RLS policy errors
-        if (supabaseError.message?.includes('infinite recursion')) {
-          setError("Unable to fetch users due to a database policy issue.");
+        if (supabaseError.message?.includes('infinite recursion') || supabaseError.code === '42P17') {
+          setHasRecursionError(true);
+          setError("Database policy configuration issue");
+          
+          // Create mock data with just the current user for UI to show something
+          if (user) {
+            setUsers([{
+              id: user.id,
+              name: user.name,
+              email: user.email
+            }]);
+          }
+          
           toast.error("A database error occurred. This is likely due to a policy configuration issue.", {
             duration: 5000,
           });
@@ -72,6 +85,7 @@ export const useExpenseUsers = () => {
     loading, 
     error,
     expenseUsers: users,
-    isLoading: loading
+    isLoading: loading,
+    hasRecursionError
   };
 };

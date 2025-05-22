@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/layouts/AppLayout';
 
 const Balances = () => {
-  const { balances, loading, error, refreshing, handleRefresh } = useBalances();
+  const { balances, loading, error, hasRecursionError, refreshing, handleRefresh } = useBalances();
   const navigate = useNavigate();
 
   // Transform Balance[] to BalanceData[]
@@ -21,8 +21,6 @@ const Balances = () => {
     amountOwed: balance.amount < 0 ? Math.abs(balance.amount) : 0,
     netBalance: balance.amount
   }));
-
-  const isRecursionError = error?.toLowerCase().includes('recursion');
 
   if (loading && !refreshing) {
     return (
@@ -39,10 +37,10 @@ const Balances = () => {
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <BalancesHeader refreshing={refreshing} onRefresh={handleRefresh} />
 
-        {isRecursionError ? (
+        {hasRecursionError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Database Configuration Error</AlertTitle>
+            <AlertTitle>Database Configuration Issue</AlertTitle>
             <AlertDescription className="space-y-4">
               <p>We're experiencing an issue with database policies that prevents loading balances.</p>
               <p className="text-sm">
@@ -66,17 +64,15 @@ const Balances = () => {
           </Alert>
         ) : null}
 
-        {balances.length === 0 && !error ? (
+        {balances.length === 0 && !error && !hasRecursionError ? (
           <Alert className="mb-6">
             <Info className="h-4 w-4" />
             <AlertTitle>No balances found</AlertTitle>
             <AlertDescription>
-              {isRecursionError 
-                ? "Unable to load balances due to a system issue." 
-                : "There are no expenses or balances to display yet."}
+              There are no expenses or balances to display yet.
             </AlertDescription>
           </Alert>
-        ) : !isRecursionError && (
+        ) : !hasRecursionError && (
           <>
             <BalancesTable balances={balanceData} />
             <BalancePaymentSuggestions balances={balanceData} />

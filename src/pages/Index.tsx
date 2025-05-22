@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -6,18 +7,21 @@ import { ExpensesList } from "@/components/ExpensesList";
 import AppLayout from "@/layouts/AppLayout";
 import { useAuth } from '@/contexts';
 import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Users, Wallet, ChevronRight } from "lucide-react";
+import { PlusCircle, Users, RefreshCw, ChevronRight, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
 import { GroupCreationModal } from '@/components/groups/GroupCreationModal';
 import { Group } from '@/types/supabase';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [hasRecursionError, setHasRecursionError] = useState(false);
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
 
   useEffect(() => {
@@ -44,6 +48,9 @@ const Index = () => {
     if (!user) return;
 
     setLoading(true);
+    setError(null);
+    setHasRecursionError(false);
+    
     try {
       console.log("Fetching groups for user:", user.id);
       
@@ -53,6 +60,14 @@ const Index = () => {
         
       if (functionError) {
         console.error("Error fetching group IDs:", functionError);
+        
+        // Special handling for recursive RLS policy errors
+        if (functionError.message?.includes('infinite recursion') || functionError.code === '42P17') {
+          setHasRecursionError(true);
+          setError("Database policy configuration issue");
+          return;
+        }
+        
         throw functionError;
       }
       
@@ -67,6 +82,14 @@ const Index = () => {
 
         if (groupsError) {
           console.error("Error fetching groups:", groupsError);
+          
+          // Special handling for recursive RLS policy errors
+          if (groupsError.message?.includes('infinite recursion') || groupsError.code === '42P17') {
+            setHasRecursionError(true);
+            setError("Database policy configuration issue");
+            return;
+          }
+          
           throw groupsError;
         }
         
@@ -78,6 +101,7 @@ const Index = () => {
       }
     } catch (error: any) {
       console.error('Error fetching groups:', error);
+      setError(`Failed to load groups: ${error.message}`);
       toast.error(`Failed to load groups: ${error.message}`);
     } finally {
       setLoading(false);
@@ -142,6 +166,43 @@ const Index = () => {
                 </Card>
               ))}
             </div>
+          ) : hasRecursionError ? (
+            <Card>
+              <CardContent className="p-6">
+                <Alert variant="warning" className="bg-amber-50 dark:bg-amber-900/20">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertTitle className="text-amber-600">Database Configuration Issue</AlertTitle>
+                  <AlertDescription className="text-amber-700 dark:text-amber-300">
+                    <p className="mb-2">We're experiencing a temporary issue with database policies.</p>
+                    <div className="flex justify-start mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={fetchGroups}
+                        className="flex items-center gap-1 bg-amber-100 dark:bg-amber-800/30 border-amber-200"
+                      >
+                        <RefreshCw className="h-3 w-3" /> Try Again
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          ) : error ? (
+            <Card>
+              <CardContent className="p-6">
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+                <div className="mt-4 flex justify-center">
+                  <Button variant="outline" size="sm" onClick={fetchGroups}>
+                    Try Again
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ) : groups.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {groups.map((group) => (
