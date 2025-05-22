@@ -1,6 +1,7 @@
 
 import { ExpenseFormValues } from '@/schemas/expenseFormSchema';
 import { supabase } from "@/integrations/supabase/client";
+import { UserSplitData } from '@/types/expenses';
 
 export const processSplitData = async (
   expenseId: string, 
@@ -11,8 +12,8 @@ export const processSplitData = async (
     return;
   }
 
-  // Filter out inactive users before processing
-  const splitData = values.splitData.filter(data => data.isActive !== false);
+  // Ensure we're using the correct UserSplitData type that includes isActive
+  const splitData = values.splitData.filter((data: UserSplitData) => data.isActive !== false);
   if (splitData.length === 0) return;
   
   const totalAmount = values.amount;

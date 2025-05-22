@@ -1,5 +1,6 @@
 
 import { z } from 'zod';
+import { UserSplitData } from '@/types/expenses';
 
 // Define the split data types
 export const splitDataSchema = z.array(
@@ -8,6 +9,7 @@ export const splitDataSchema = z.array(
     amount: z.number().optional(),
     percentage: z.number().optional(),
     shares: z.number().optional(),
+    isActive: z.boolean().optional(), // Added isActive property
   })
 );
 
