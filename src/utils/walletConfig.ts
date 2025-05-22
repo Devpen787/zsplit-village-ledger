@@ -1,8 +1,8 @@
 
 import { createConfig } from '@wagmi/core';
 import { mainnet, sepolia } from 'viem/chains';
-import { injected, walletConnect } from 'wagmi/connectors';
 import { http } from 'viem';
+import { metaMaskWallet, walletConnectWallet } from '@wagmi/core/connectors';
 
 // Use the provided WalletConnect Project ID
 export const projectId = '15e72db89587fa8bd14473b8ff73a0bb';
@@ -15,7 +15,7 @@ export const wagmiConfig = createConfig({
     [sepolia.id]: http(),
   },
   connectors: [
-    injected({ target: 'metaMask' }),
-    walletConnect({ projectId }),
+    metaMaskWallet(),
+    walletConnectWallet({ projectId }),
   ],
 });
