@@ -24,7 +24,7 @@ const Settings = () => {
     await signOut();
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString(undefined, {
       year: 'numeric',
