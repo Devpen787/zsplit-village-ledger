@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get the user's email from Privy
     const linkedAccounts = privyUser.linkedAccounts || [];
     const emailAccount = linkedAccounts.find((account: any) => account.type === 'email');
-    const email = emailAccount ? emailAccount.address : null;
+    const email = emailAccount ? emailAccount.email : null; // Fix: Changed from address to email
     
     const userData = await fetchOrCreateUser(privyUser.id, email);
     if (userData) {
@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Get the user's email from Privy
         const linkedAccounts = privyUser.linkedAccounts || [];
         const emailAccount = linkedAccounts.find((account: any) => account.type === 'email');
-        const email = emailAccount ? emailAccount.address : null;
+        const email = emailAccount ? emailAccount.email : null; // Fix: Changed from address to email
         
         const userData = await fetchOrCreateUser(privyUser.id, email);
         
@@ -141,4 +141,9 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+export const isValidRole = (role: string): boolean => {
+  const validRoles = ['admin', 'participant'];
+  return validRoles.includes(role);
 };
