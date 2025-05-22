@@ -14,7 +14,7 @@ const Balances = () => {
   const { balances, loading, error, hasRecursionError, refreshing, handleRefresh } = useBalances();
   const navigate = useNavigate();
 
-  // Transform Balance[] to BalanceData[]
+  // Transform Balance[] to BalanceData[] with correct owed values
   const balanceData: BalanceData[] = balances.map(balance => ({
     userId: balance.user_id,
     userName: balance.user_name || balance.user_email,

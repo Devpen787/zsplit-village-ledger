@@ -62,62 +62,64 @@ export const BalancesTable = ({ balances }: BalancesTableProps) => {
         )}
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead className="text-right">Total Paid</TableHead>
-              <TableHead className="text-right">Total Owed</TableHead>
-              <TableHead className="text-right">
-                <div className="flex items-center justify-end">
-                  Net Balance
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <HelpCircle className="h-3.5 w-3.5 ml-1 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        <p className="text-xs">Net Balance = Total Paid - Total Owed</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </TableHead>
-              <TableHead>Owes / Is Owed</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {balances.map((balance) => {
-              const isCurrentUser = balance.userId === user?.id;
-              return (
-                <TableRow key={balance.userId} className={isCurrentUser ? 'bg-primary/5' : ''}>
-                  <TableCell className="font-medium">
-                    {isCurrentUser ? `${balance.userName} (You)` : balance.userName}
-                  </TableCell>
-                  <TableCell className="text-right">{balance.amountPaid.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">{balance.amountOwed.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={balance.netBalance > 0 ? "success" : balance.netBalance < 0 ? "destructive" : "outline"} className="font-mono">
-                      {balance.netBalance.toFixed(2)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {Math.abs(balance.netBalance) > 0.01 && (
-                      <div className="flex items-center gap-1">
-                        {balance.netBalance < 0 ? (
-                          <ArrowUp className="h-3 w-3 text-red-500" />
-                        ) : (
-                          <ArrowDown className="h-3 w-3 text-green-500" />
-                        )}
-                        <span className="text-sm">{getDebtRelationship(balance)}</span>
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead className="text-right">Total Paid</TableHead>
+                <TableHead className="text-right">Total Owed</TableHead>
+                <TableHead className="text-right">
+                  <div className="flex items-center justify-end">
+                    Net Balance
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-3.5 w-3.5 ml-1 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-xs">Net Balance = Total Paid - Total Owed</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </TableHead>
+                <TableHead>Owes / Is Owed</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {balances.map((balance) => {
+                const isCurrentUser = balance.userId === user?.id;
+                return (
+                  <TableRow key={balance.userId} className={isCurrentUser ? 'bg-primary/5' : ''}>
+                    <TableCell className="font-medium">
+                      {isCurrentUser ? `${balance.userName} (You)` : balance.userName}
+                    </TableCell>
+                    <TableCell className="text-right">{balance.amountPaid.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{balance.amountOwed.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={balance.netBalance > 0 ? "success" : balance.netBalance < 0 ? "destructive" : "outline"} className="font-mono">
+                        {balance.netBalance.toFixed(2)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {Math.abs(balance.netBalance) > 0.01 && (
+                        <div className="flex items-center gap-1">
+                          {balance.netBalance < 0 ? (
+                            <ArrowUp className="h-3 w-3 text-red-500" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3 text-green-500" />
+                          )}
+                          <span className="text-sm">{getDebtRelationship(balance)}</span>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
