@@ -31,8 +31,10 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   // Get expenses data for metrics
   const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
   
-  // Calculate total expenses
-  const totalExpenses = expenses.reduce((sum: number, expense) => sum + Number(expense.amount || 0), 0);
+  // Calculate total expenses - fixed to use reduce with proper typing
+  const totalExpenses = expenses.reduce((sum: number, expense) => {
+    return sum + Number(expense.amount || 0);
+  }, 0);
   
   useEffect(() => {
     if (!id) return;
