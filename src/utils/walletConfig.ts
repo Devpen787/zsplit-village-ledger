@@ -1,7 +1,8 @@
 
-import { createConfig, http } from '@wagmi/core';
-import { mainnet, sepolia } from '@wagmi/core/chains';
-import { injected, walletConnect } from '@wagmi/connectors';
+import { createConfig } from '@wagmi/core';
+import { mainnet, sepolia } from 'viem/chains';
+import { injected, walletConnect } from 'wagmi/connectors';
+import { http } from 'viem';
 
 // Use the provided WalletConnect Project ID
 export const projectId = '15e72db89587fa8bd14473b8ff73a0bb';
