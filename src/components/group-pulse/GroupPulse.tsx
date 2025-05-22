@@ -51,8 +51,9 @@ export const GroupPulse = ({ groupId }: { groupId: string }) => {
               <WalletInfo 
                 showLabel={true} 
                 showMessage={true} 
-                labelPrefix="Wallet: "
+                labelPrefix="Wallet: " 
                 showConnectingState={false}
+                connectMessage="Connect your wallet to submit payout requests or receive reimbursements."
               />
             </div>
           </div>

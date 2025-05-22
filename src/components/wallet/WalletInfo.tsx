@@ -16,6 +16,7 @@ interface WalletInfoProps {
   labelPrefix?: string;
   labelSuffix?: string;
   className?: string;
+  connectMessage?: string;
 }
 
 const WalletInfo = ({ 
@@ -26,7 +27,8 @@ const WalletInfo = ({
   showConnectingState = true,
   labelPrefix = "Connected Wallet: ",
   labelSuffix = "",
-  className = ""
+  className = "",
+  connectMessage = "Connect a wallet for future reimbursements"
 }: WalletInfoProps) => {
   const { address, isConnected, isConnecting, connect, disconnect, shortenAddress } = useWallet();
   const { user } = useAuth();
@@ -63,7 +65,7 @@ const WalletInfo = ({
         </Button>
         {showMessage && (
           <span className="ml-2 text-sm text-muted-foreground">
-            Connect a wallet for future reimbursements
+            {connectMessage}
           </span>
         )}
       </div>
