@@ -1,4 +1,3 @@
-
 import { ReactNode } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -27,7 +26,8 @@ import {
   Users, 
   Settings as SettingsIcon, 
   User,
-  ArrowLeft
+  ArrowLeft,
+  PiggyBank
 } from "lucide-react";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -73,12 +73,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </header>
   );
 
-  // Sidebar navigation items
+  // Updated navItems to include the Group Pot link
   const navItems = [
     { icon: Home, label: "Dashboard", path: "/" },
     { icon: Receipt, label: "Add Expense", path: "/expenses/new" },
     { icon: Wallet, label: "Balances", path: "/balances" },
     { icon: Users, label: "Group", path: "/group" },
+    { icon: PiggyBank, label: "Group Pot", path: "/group-pot" },
     { icon: User, label: "Profile", path: "/profile" },
     { icon: SettingsIcon, label: "Settings", path: "/settings" },
   ];

@@ -16,6 +16,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import Profile from "./pages/Profile";
 import GroupDashboard from "./pages/GroupDashboard";
 import GroupView from "./pages/GroupView";
+import GroupPot from "./pages/GroupPot";
 import Settings from "./pages/Settings";
 import { PrivyProvider } from '@privy-io/react-auth';
 
@@ -63,6 +64,8 @@ const App = () => (
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/group" element={<GroupDashboard />} />
                 <Route path="/group/:id" element={<GroupView />} />
+                <Route path="/group-pot" element={<GroupPot />} />
+                <Route path="/group-pot/:id" element={<GroupPot />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
               
