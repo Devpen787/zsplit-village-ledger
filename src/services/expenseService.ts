@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Expense } from '@/types/expenses';
@@ -119,6 +118,29 @@ export const saveExpense = async (values: ExpenseFormValues, id: string | undefi
   } catch (error) {
     console.error("Error saving expense:", error);
     toast.error("Failed to save expense.");
+    return null;
+  }
+};
+
+// Add this new function to fetch group details by ID
+export const fetchGroupDetails = async (groupId: string) => {
+  try {
+    const { data: group, error } = await supabase
+      .from('groups')
+      .select('*')
+      .eq('id', groupId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching group details:", error);
+      toast.error("Failed to load group details");
+      return null;
+    }
+    
+    return group;
+  } catch (error) {
+    console.error("Error fetching group details:", error);
+    toast.error("Failed to load group details");
     return null;
   }
 };
