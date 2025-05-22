@@ -45,6 +45,18 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
     splitMethod,
     onSplitDataChange
   });
+  
+  // If no users are selected, show a message
+  if (users.length === 0) {
+    return (
+      <div className="space-y-4">
+        <SplitMethodSelector splitMethod={splitMethod} setSplitMethod={setSplitMethod} />
+        <div className="text-amber-500 text-center p-4">
+          Please select at least one participant to split the expense with.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -64,15 +76,17 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
         getTotalShares={getTotalShares}
       />
       
-      {/* This is the summary table that should be the ONLY table */}
-      <SplitSummary 
-        splitData={splitData}
-        totalAmount={totalAmount}
-        paidBy={paidBy}
-        getCalculatedAmount={getCalculatedAmount}
-        getUserName={getUserName}
-        splitMethod={splitMethod}
-      />
+      {/* Only show the summary table if we have a valid amount */}
+      {totalAmount > 0 && (
+        <SplitSummary 
+          splitData={splitData}
+          totalAmount={totalAmount}
+          paidBy={paidBy}
+          getCalculatedAmount={getCalculatedAmount}
+          getUserName={getUserName}
+          splitMethod={splitMethod}
+        />
+      )}
     </div>
   );
 };

@@ -16,11 +16,9 @@ const EqualSplit: React.FC<EqualSplitProps> = ({ splitData, totalAmount, users }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="text-sm text-green-600 mb-4 flex items-center">
-        <Check className="h-4 w-4 mr-2" />
-        Each person will pay {calculateEqualSplit().toFixed(2)}
-      </div>
+    <div className="text-sm text-green-600 flex items-center">
+      <Check className="h-4 w-4 mr-2" />
+      Each person will pay {calculateEqualSplit().toFixed(2)}
     </div>
   );
 };

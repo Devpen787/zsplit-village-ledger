@@ -54,6 +54,11 @@ export const useExpenseSplit = ({
       
       setSplitData(initialData);
       validateSplitData(initialData, splitMethod);
+    } else {
+      // If no users are selected, clear the split data
+      setSplitData([]);
+      setValidationError("No participants selected");
+      setIsValid(false);
     }
   }, [users, splitMethod, totalAmount]);
 
@@ -76,6 +81,12 @@ export const useExpenseSplit = ({
   const validateSplitData = (data: UserSplitData[], method: string): boolean => {
     if (!totalAmount || totalAmount <= 0) {
       setValidationError("Please enter a valid total amount");
+      setIsValid(false);
+      return false;
+    }
+
+    if (data.length === 0) {
+      setValidationError("No participants selected");
       setIsValid(false);
       return false;
     }
