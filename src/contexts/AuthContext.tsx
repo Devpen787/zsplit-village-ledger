@@ -36,10 +36,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log("User not found, will attempt to create new user");
       
-      // If no user exists, create one directly
-      // First, prepare the user data
+      // If no user exists, create one directly using insert instead of RPC
       const newUser: User = {
-        id: privyUserId, // Ensure ID is stored as string
+        id: privyUserId,
         email: email || '',
         name: null,
         role: 'participant' // Default role
