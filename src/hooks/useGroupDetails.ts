@@ -33,8 +33,8 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   // Get expenses data for metrics
   const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
   
-  // Calculate total expenses - fixing the typing issue
-  const totalExpenses = expenses.reduce<number>((sum, expense) => {
+  // Calculate total expenses - fixing the typing issues properly
+  const totalExpenses = expenses.reduce((sum, expense) => {
     // Ensure expense.amount is converted to a number
     return sum + (Number(expense.amount) || 0);
   }, 0);
