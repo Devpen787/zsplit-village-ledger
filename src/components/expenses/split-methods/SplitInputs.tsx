@@ -4,7 +4,6 @@ import EqualSplit from "./EqualSplit";
 import AmountSplit from "./AmountSplit";
 import PercentageSplit from "./PercentageSplit";
 import SharesSplit from "./SharesSplit";
-import { Card, CardContent } from "@/components/ui/card";
 import { UserSplitData } from "@/types/expenses";
 
 type User = {
@@ -91,11 +90,9 @@ const SplitInputs: React.FC<SplitInputsProps> = ({
   };
 
   return (
-    <Card className="mt-4">
-      <CardContent className="pt-4 pb-2">
-        {renderSplitInputs()}
-      </CardContent>
-    </Card>
+    <div className="py-2">
+      {renderSplitInputs()}
+    </div>
   );
 };
 

@@ -6,6 +6,7 @@ import SplitSummary from "./split-methods/SplitSummary";
 import ValidationAlert from "./split-methods/ValidationAlert";
 import { UserSplitData } from "@/types/expenses";
 import { useExpenseSplit } from "@/hooks/useExpenseSplit";
+import { Card, CardContent } from "@/components/ui/card";
 
 type User = {
   id: string;
@@ -60,21 +61,28 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Split Method Selector */}
       <SplitMethodSelector splitMethod={splitMethod} setSplitMethod={setSplitMethod} />
+      
+      {/* Validation Alert */}
       <ValidationAlert validationError={validationError} />
       
-      {/* This is the input section for each split method */}
-      <SplitInputs
-        splitMethod={splitMethod}
-        splitData={splitData}
-        users={users}
-        totalAmount={totalAmount}
-        paidBy={paidBy}
-        onInputChange={handleInputChange}
-        adjustShares={adjustShares}
-        getCalculatedAmount={getCalculatedAmount}
-        getTotalShares={getTotalShares}
-      />
+      {/* Split method inputs wrapped in a single card */}
+      <Card>
+        <CardContent className="pt-6 pb-4">
+          <SplitInputs
+            splitMethod={splitMethod}
+            splitData={splitData}
+            users={users}
+            totalAmount={totalAmount}
+            paidBy={paidBy}
+            onInputChange={handleInputChange}
+            adjustShares={adjustShares}
+            getCalculatedAmount={getCalculatedAmount}
+            getTotalShares={getTotalShares}
+          />
+        </CardContent>
+      </Card>
       
       {/* Only show the summary table if we have a valid amount */}
       {totalAmount > 0 && (
