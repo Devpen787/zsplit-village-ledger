@@ -13,42 +13,64 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, authenticated, ready } = usePrivy();
-  const { isAuthenticated, refreshUser, loading: authLoading, authError } = useAuth();
+  const { isAuthenticated, refreshUser, loading: authLoading, authError, clearAuthError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  
+  // Clear errors when component mounts or unmounts
+  useEffect(() => {
+    clearAuthError();
+    return () => clearAuthError();
+  }, [clearAuthError]);
   
   // Handle navigation if already authenticated
   useEffect(() => {
-    if (ready && authenticated) {
-      setIsLoading(true);
-      console.log('Privy authenticated, refreshing user profile');
-      
-      // Add a small delay to ensure state is up to date
-      const timer = setTimeout(() => {
-        refreshUser().then((user) => {
-          if (user) {
+    let isActive = true;
+    
+    const checkAuthentication = async () => {
+      if (ready && authenticated) {
+        if (isActive) setIsLoading(true);
+        console.log('Privy authenticated, refreshing user profile');
+        
+        try {
+          const user = await refreshUser();
+          
+          if (user && isActive) {
             console.log('User profile refreshed, navigating to dashboard or stored path');
-            // Use stored path or default to home page
             const from = location.state?.from?.pathname || '/';
             navigate(from, { replace: true });
-          } else {
+          } else if (isActive) {
             console.log('Failed to refresh user profile');
             setLocalError("Failed to load your profile. Please try again.");
             setIsLoading(false);
+            
+            // If we've tried multiple times and still failing, show more helpful error
+            if (loginAttempts > 2) {
+              setLocalError("Persistent login issues. Please try refreshing the page or clearing your browser cache.");
+            }
+            
+            setLoginAttempts(prev => prev + 1);
           }
-        }).catch(error => {
-          console.error('Error refreshing user profile:', error);
-          setLocalError("Authentication error. Please try again later.");
-          setIsLoading(false);
-        });
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    } else if (ready && !authenticated) {
-      // Reset loading state if not authenticated
-      setIsLoading(false);
-    }
-  }, [ready, authenticated, navigate, refreshUser, location]);
+        } catch (error) {
+          if (isActive) {
+            console.error('Error refreshing user profile:', error);
+            setLocalError("Authentication error. Please try again later.");
+            setIsLoading(false);
+          }
+        }
+      } else if (ready && !authenticated && isActive) {
+        // Reset loading state if not authenticated
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuthentication();
+    
+    return () => {
+      isActive = false;
+    };
+  }, [ready, authenticated, navigate, refreshUser, location, loginAttempts]);
 
   // Redirect if authenticated through our context
   useEffect(() => {
@@ -61,10 +83,15 @@ const Login = () => {
   const handleLogin = () => {
     setIsLoading(true);
     setLocalError(null);
+    clearAuthError();
     
     try {
       login();
       // The privy login will redirect, so we don't need to handle success here
+      // Add a timeout to reset loading state if Privy doesn't redirect
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 5000);
     } catch (error) {
       console.error("Login error:", error);
       setIsLoading(false);
@@ -75,6 +102,9 @@ const Login = () => {
 
   // Determine which error to display (local or from auth context)
   const displayError = localError || authError;
+
+  // Determine if button should be in loading state
+  const showLoadingButton = isLoading || authLoading;
 
   return (
     <div className="flex justify-center items-center min-h-screen px-4 py-10 bg-background">
@@ -98,9 +128,9 @@ const Login = () => {
               onClick={handleLogin} 
               className="w-full"
               size="lg"
-              disabled={isLoading || authLoading}
+              disabled={showLoadingButton}
             >
-              {(isLoading || authLoading) ? (
+              {showLoadingButton ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <LogIn className="mr-2 h-4 w-4" />
@@ -118,6 +148,7 @@ const Login = () => {
               onClick={() => navigate('/signup')} 
               variant="outline"
               className="w-full"
+              disabled={showLoadingButton}
             >
               Need an account? Sign up
             </Button>

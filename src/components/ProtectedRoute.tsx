@@ -1,11 +1,17 @@
 
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 export const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, loading, authError } = useAuth();
+  const { isAuthenticated, loading, authError, clearAuthError } = useAuth();
+  const location = useLocation();
+
+  // Clear auth errors when leaving protected routes
+  useEffect(() => {
+    return () => clearAuthError();
+  }, [clearAuthError]);
 
   if (loading) {
     return (
@@ -21,5 +27,9 @@ export const ProtectedRoute: React.FC = () => {
     );
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
+  return isAuthenticated ? (
+    <Outlet />
+  ) : (
+    <Navigate to="/login" state={{ from: location }} replace />
+  );
 };
