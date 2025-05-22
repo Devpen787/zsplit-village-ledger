@@ -17,6 +17,7 @@ import Profile from "./pages/Profile";
 import GroupDashboard from "./pages/GroupDashboard";
 import GroupView from "./pages/GroupView";
 import GroupPot from "./pages/GroupPot";
+import GroupPulse from "./pages/GroupPulse";
 import Settings from "./pages/Settings";
 import { PrivyProvider } from '@privy-io/react-auth';
 
@@ -66,6 +67,8 @@ const App = () => (
                 <Route path="/group/:id" element={<GroupView />} />
                 <Route path="/group-pot" element={<GroupPot />} />
                 <Route path="/group-pot/:id" element={<GroupPot />} />
+                <Route path="/group-pulse" element={<GroupPulse />} />
+                <Route path="/group-pulse/:id" element={<GroupPulse />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
               

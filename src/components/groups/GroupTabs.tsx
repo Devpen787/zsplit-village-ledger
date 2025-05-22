@@ -13,6 +13,7 @@ import { SettlementActions } from '@/components/balances/settlements/SettlementA
 import { BalanceSummaryCards } from '@/components/balances/BalanceSummaryCards';
 import { Loader2 } from 'lucide-react';
 import { GroupPot } from '@/components/group-pot/GroupPot';
+import { GroupPulse } from '@/components/group-pulse/GroupPulse';
 
 interface GroupTabsProps {
   groupId: string;
@@ -52,10 +53,11 @@ export const GroupTabs = ({
 
   return (
     <Tabs defaultValue="expenses" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="expenses">Expenses</TabsTrigger>
         <TabsTrigger value="balances">Balances</TabsTrigger>
         <TabsTrigger value="group-pot">Group Pot</TabsTrigger>
+        <TabsTrigger value="group-pulse">Group Pulse</TabsTrigger>
         <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
       </TabsList>
       <TabsContent value="expenses" className="mt-4">
@@ -98,6 +100,9 @@ export const GroupTabs = ({
       </TabsContent>
       <TabsContent value="group-pot" className="mt-4">
         <GroupPot groupId={groupId} />
+      </TabsContent>
+      <TabsContent value="group-pulse" className="mt-4">
+        <GroupPulse groupId={groupId} />
       </TabsContent>
       <TabsContent value="members" className="mt-4">
         <Card>

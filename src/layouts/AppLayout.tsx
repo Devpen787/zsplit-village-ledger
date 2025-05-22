@@ -1,3 +1,4 @@
+
 import { ReactNode } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -27,7 +28,8 @@ import {
   Settings as SettingsIcon, 
   User,
   ArrowLeft,
-  PiggyBank
+  PiggyBank,
+  Activity
 } from "lucide-react";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -73,13 +75,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </header>
   );
 
-  // Updated navItems to include the Group Pot link
+  // Updated navItems to include the Group Pulse link
   const navItems = [
     { icon: Home, label: "Dashboard", path: "/" },
     { icon: Receipt, label: "Add Expense", path: "/expenses/new" },
     { icon: Wallet, label: "Balances", path: "/balances" },
     { icon: Users, label: "Group", path: "/group" },
     { icon: PiggyBank, label: "Group Pot", path: "/group-pot" },
+    { icon: Activity, label: "Group Pulse", path: "/group-pulse" },
     { icon: User, label: "Profile", path: "/profile" },
     { icon: SettingsIcon, label: "Settings", path: "/settings" },
   ];
@@ -134,7 +137,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           {isMobile && (
             <nav className="border-t bg-background p-2 sticky bottom-0 z-10">
               <div className="flex justify-around">
-                {navItems.slice(0, 5).map((item) => (
+                {navItems.slice(0, 6).map((item) => (
                   <Link 
                     key={item.path} 
                     to={item.path} 
