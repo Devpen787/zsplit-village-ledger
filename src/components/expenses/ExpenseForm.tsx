@@ -47,7 +47,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6 pb-24">
       <ExpenseFormHeader isEditing={isEditing} />
       
       <Card>
@@ -68,16 +68,29 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
                   setIsSplitValid(true);
                 }}
               />
-              
-              <ExpenseFormSubmitButton 
-                loading={submitLoading} 
-                isEditing={isEditing} 
-                disabled={!isFormValid}
-              />
             </form>
           </Form>
         </CardContent>
       </Card>
+      
+      {/* Sticky buttons at the bottom */}
+      <div className="fixed bottom-0 left-0 w-full bg-background border-t p-4 z-10">
+        <div className="container mx-auto flex justify-between">
+          <button 
+            type="button" 
+            className="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-md text-gray-700 font-medium"
+            onClick={() => navigate(-1)}
+          >
+            Cancel
+          </button>
+          <ExpenseFormSubmitButton 
+            loading={submitLoading} 
+            isEditing={isEditing} 
+            disabled={!isFormValid}
+            onClick={() => form.handleSubmit(onSubmit)()}
+          />
+        </div>
+      </div>
     </div>
   );
 };
