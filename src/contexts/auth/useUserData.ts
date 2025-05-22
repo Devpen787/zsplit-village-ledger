@@ -15,6 +15,9 @@ export const useUserData = () => {
     try {
       console.log("Attempting to fetch user with ID:", privyUserId);
       
+      // Set Supabase auth with the Privy user ID
+      await setSupabaseAuth(privyUserId);
+      
       // Using maybeSingle() to handle case where user might not exist yet
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')

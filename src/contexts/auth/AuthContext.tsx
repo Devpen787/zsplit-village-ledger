@@ -37,7 +37,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearAuthError();
     
     try {
-      // First try to fetch the user
+      // First set up Supabase auth with the Privy user ID
+      await setSupabaseAuth(privyUser.id);
+      
+      // Then try to fetch the user
       let userData = await fetchUser(privyUser.id);
       
       // If user doesn't exist, create it
@@ -103,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return () => clearTimeout(timeoutId);
     } else if (!authenticated) {
       // Clear user state when no longer authenticated
+      clearAuthState();
       setUser(null);
       setLoading(false);
     }

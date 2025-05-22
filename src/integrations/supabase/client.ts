@@ -30,41 +30,27 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 // Function to set custom JWT from Privy into Supabase
 export const setSupabaseAuth = async (privyUserId: string) => {
-  console.log("Setting up custom Supabase access for Privy user:", privyUserId);
+  console.log("[Auth] Setting Supabase session from Privy token...", privyUserId);
   
   try {
-    // IMPORTANT: For Privy integration with RLS policies
-    // We need to bypass the auth.uid() check by allowing anonymous access temporarily
-    // while still ensuring data integrity by checking the user ID in the application
-    
-    // Option A: Set a custom header to indicate this is a Privy user
+    // Set the auth for function calls
     supabase.functions.setAuth(privyUserId);
     
-    // Option B: Set global headers for all requests
+    // Set the session for database operations
     const { data, error } = await supabase.auth.setSession({
-      access_token: privyUserId, // Not a real JWT, but used as identifier
-      refresh_token: '',
+      access_token: privyUserId,
+      refresh_token: '', // Optional
     });
     
     if (error) {
-      console.warn("Non-critical: Could not set custom session:", error);
-      // Continue anyway as we're using the functions.setAuth as backup
-    } else {
-      console.log("Custom session initialized", data);
+      console.error("Error setting Supabase session:", error);
+      return false;
     }
     
-    // We no longer directly access protected properties
-    // Instead we'll initialize a new Supabase client if needed
-    // This is a workaround to ensure the client is properly configured
-    
-    // For debugging - let's check if we can retrieve the session
-    const { data: sessionData } = await supabase.auth.getSession();
-    console.log("Current session after setup:", sessionData);
-    
-    console.log("Custom auth setup completed for user:", privyUserId);
+    console.log("Supabase session set successfully:", data);
     return true;
   } catch (error) {
-    console.error("Failed to set custom auth:", error);
+    console.error("Failed to set Supabase auth:", error);
     return false;
   }
 };
