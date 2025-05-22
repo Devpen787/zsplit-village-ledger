@@ -11,6 +11,8 @@ export type Expense = {
     email: string;
   };
   group_name?: string | null;
+  leftover_notes?: string | null;
+  group_id?: string | null;
 };
 
 export type ExpensesListProps = {
