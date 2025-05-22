@@ -7,6 +7,7 @@ export type User = {
   group_name?: string | null;
   wallet_address?: string | null;
   avatar_url?: string | null;
+  avatar_emoji?: string | null;
 };
 
 export interface AuthContextType {
