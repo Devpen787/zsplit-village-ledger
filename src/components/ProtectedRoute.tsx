@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 export const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, authError } = useAuth();
 
   if (loading) {
     return (
@@ -13,6 +13,9 @@ export const ProtectedRoute: React.FC = () => {
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">Loading your profile...</p>
+          {authError && (
+            <p className="text-sm text-destructive mt-2">{authError}</p>
+          )}
         </div>
       </div>
     );

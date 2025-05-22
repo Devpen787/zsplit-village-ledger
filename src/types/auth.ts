@@ -15,4 +15,5 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   hasRole: (role: string) => boolean;
   refreshUser: () => Promise<User | null>;
+  authError: string | null;
 }

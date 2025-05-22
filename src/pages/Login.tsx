@@ -13,31 +13,37 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, authenticated, ready } = usePrivy();
-  const { isAuthenticated, refreshUser, loading: authLoading } = useAuth();
+  const { isAuthenticated, refreshUser, loading: authLoading, authError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   
   // Handle navigation if already authenticated
   useEffect(() => {
     if (ready && authenticated) {
       setIsLoading(true);
       console.log('Privy authenticated, refreshing user profile');
-      refreshUser().then((user) => {
-        if (user) {
-          console.log('User profile refreshed, navigating to dashboard or stored path');
-          // Use stored path or default to home page
-          const from = location.state?.from?.pathname || '/';
-          navigate(from, { replace: true });
-        } else {
-          console.log('Failed to refresh user profile');
-          setAuthError("Failed to load your profile. Please try again.");
+      
+      // Add a small delay to ensure state is up to date
+      const timer = setTimeout(() => {
+        refreshUser().then((user) => {
+          if (user) {
+            console.log('User profile refreshed, navigating to dashboard or stored path');
+            // Use stored path or default to home page
+            const from = location.state?.from?.pathname || '/';
+            navigate(from, { replace: true });
+          } else {
+            console.log('Failed to refresh user profile');
+            setLocalError("Failed to load your profile. Please try again.");
+            setIsLoading(false);
+          }
+        }).catch(error => {
+          console.error('Error refreshing user profile:', error);
+          setLocalError("Authentication error. Please try again later.");
           setIsLoading(false);
-        }
-      }).catch(error => {
-        console.error('Error refreshing user profile:', error);
-        setAuthError("Authentication error. Please try again later.");
-        setIsLoading(false);
-      });
+        });
+      }, 100);
+      
+      return () => clearTimeout(timer);
     } else if (ready && !authenticated) {
       // Reset loading state if not authenticated
       setIsLoading(false);
@@ -54,7 +60,7 @@ const Login = () => {
 
   const handleLogin = () => {
     setIsLoading(true);
-    setAuthError(null);
+    setLocalError(null);
     
     try {
       login();
@@ -62,10 +68,13 @@ const Login = () => {
     } catch (error) {
       console.error("Login error:", error);
       setIsLoading(false);
-      setAuthError("Failed to initiate login. Please try again.");
+      setLocalError("Failed to initiate login. Please try again.");
       toast.error("Login failed. Please try again.");
     }
   };
+
+  // Determine which error to display (local or from auth context)
+  const displayError = localError || authError;
 
   return (
     <div className="flex justify-center items-center min-h-screen px-4 py-10 bg-background">
@@ -77,10 +86,10 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {authError && (
+          {displayError && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4 mr-2" />
-              <AlertDescription>{authError}</AlertDescription>
+              <AlertDescription>{displayError}</AlertDescription>
             </Alert>
           )}
           
