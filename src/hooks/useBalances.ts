@@ -27,7 +27,8 @@ export const useBalances = () => {
         return;
       }
 
-      const { data, error } = await supabase.rpc('calculate_balances');
+      // Use type assertion to bypass the TypeScript error
+      const { data, error } = await supabase.rpc('calculate_balances' as any);
 
       if (error) {
         console.error("Error fetching balances:", error);
