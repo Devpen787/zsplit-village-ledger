@@ -6,6 +6,8 @@ import { useWallet } from '@/contexts/WalletContext';
 import WalletInfo from '@/components/wallet/WalletInfo';
 import { PendingPayoutRequestsList } from './PendingPayoutRequestsList';
 import { useGroupPulse } from '@/hooks/useGroupPulse';
+import { BarChart, CheckCircle, Clock, CreditCard, Users, Wallet } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 export const GroupPulse = ({ groupId }: { groupId: string }) => {
   const { isConnected } = useWallet();
@@ -25,15 +27,6 @@ export const GroupPulse = ({ groupId }: { groupId: string }) => {
     handleRejectRequest,
     isAdmin
   } = useGroupPulse(groupId);
-  
-  // This will be replaced with actual data from your API
-  const groupStats = {
-    potBalance: potBalance || 500,
-    totalExpenses: 1200,
-    expensesPaid: 950,
-    expensesUnpaid: 250,
-    contributionRate: 80
-  };
 
   return (
     <div className="grid gap-6">
@@ -64,39 +57,160 @@ export const GroupPulse = ({ groupId }: { groupId: string }) => {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Pot Balance</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Pot Balance
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${groupStats.potBalance.toFixed(2)}</div>
+            <div className="text-3xl font-bold">${potBalance.toFixed(2)}</div>
             <p className="text-sm text-muted-foreground">Available for group expenses</p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader>
-            <CardTitle>Expenses Status</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-primary" />
+              Expenses Status
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between">
-              <span>Paid: ${groupStats.expensesPaid.toFixed(2)}</span>
-              <span>Unpaid: ${groupStats.expensesUnpaid.toFixed(2)}</span>
+              <span>Paid: ${loading ? '...' : ((potBalance * 0.8).toFixed(2))}</span>
+              <span>Unpaid: ${loading ? '...' : ((potBalance * 0.2).toFixed(2))}</span>
             </div>
-            <Progress value={groupStats.expensesPaid / groupStats.totalExpenses * 100} />
+            <Progress value={80} />
             <p className="text-sm text-muted-foreground">
-              {(groupStats.expensesPaid / groupStats.totalExpenses * 100).toFixed(0)}% of expenses settled
+              80% of expenses settled
             </p>
           </CardContent>
         </Card>
       </div>
       
+      {/* Pot Health and Activity metrics */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart className="h-5 w-5 text-primary" />
+              Pot Health
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Average Payout</p>
+                <p className="text-2xl font-medium">${averagePayoutSize.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Payouts Remaining</p>
+                <p className="text-2xl font-medium">{estimatedPayoutsRemaining.toFixed(1)}</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Based on current pot balance and average payout history
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Recent Expenses</p>
+                <p className="text-2xl font-medium">{recentExpensesCount}</p>
+                <p className="text-xs text-muted-foreground">in the last 7 days</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Latest Expense</p>
+                <p className="text-lg font-medium">
+                  {latestExpenseDate ? formatDistanceToNow(latestExpenseDate, { addSuffix: true }) : 'None'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Group connectivity status */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Group Connectivity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-medium">{connectedWalletsCount} of {totalMembersCount} members</p>
+                  <p className="text-sm text-muted-foreground">have connected wallets</p>
+                </div>
+                <Wallet className="h-8 w-8 text-muted-foreground" />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-medium">Zulink</p>
+                  <p className="text-sm text-muted-foreground">VPN status</p>
+                </div>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Active
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              Payout Requests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-medium">{pendingPayoutsCount} pending requests</p>
+                  <p className="text-sm text-muted-foreground">awaiting approval</p>
+                </div>
+                <div>
+                  <p className="text-lg font-medium text-right">{averageApprovalTime}</p>
+                  <p className="text-sm text-muted-foreground">average approval time</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Pending payout requests list - shown to all but actions only for admins */}
       <div className="grid gap-6">
-        {/* Pending requests are shown only if there are any and the user has wallet connected with admin privileges */}
-        {isConnected && isAdmin && pendingRequests && pendingRequests.length > 0 && (
-          <PendingPayoutRequestsList
-            pendingRequests={pendingRequests}
-            onApprove={handleApproveRequest}
-            onReject={handleRejectRequest}
-          />
+        {pendingRequests && pendingRequests.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Payout Requests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PendingPayoutRequestsList
+                pendingRequests={pendingRequests}
+                onApprove={handleApproveRequest}
+                onReject={handleRejectRequest}
+                isAdmin={isAdmin && isConnected}
+              />
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

@@ -11,12 +11,14 @@ interface PendingPayoutRequestsListProps {
   pendingRequests: PotActivity[];
   onApprove: (activityId: string) => Promise<void>;
   onReject: (activityId: string) => Promise<void>;
+  isAdmin: boolean;
 }
 
 export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps> = ({ 
   pendingRequests,
   onApprove,
-  onReject
+  onReject,
+  isAdmin
 }) => {
   if (pendingRequests.length === 0) {
     return <p className="text-muted-foreground text-sm">No pending requests</p>;
@@ -37,7 +39,7 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
             <TableHead>Amount (CHF)</TableHead>
             <TableHead>Purpose</TableHead>
             <TableHead>Requested</TableHead>
-            <TableHead>Actions</TableHead>
+            {isAdmin && <TableHead>Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -72,28 +74,30 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
                   ? formatDistanceToNow(new Date(request.created_at), { addSuffix: true }) 
                   : 'Unknown'}
               </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex items-center gap-1 text-green-500 border-green-200 hover:bg-green-50 hover:text-green-600"
-                    onClick={() => onApprove(request.id)}
-                  >
-                    <Check size={16} />
-                    Approve
-                  </Button>
-                  <Button 
-                    size="sm"
-                    variant="outline"
-                    className="flex items-center gap-1 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-                    onClick={() => onReject(request.id)}
-                  >
-                    <X size={16} />
-                    Reject
-                  </Button>
-                </div>
-              </TableCell>
+              {isAdmin && (
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex items-center gap-1 text-green-500 border-green-200 hover:bg-green-50 hover:text-green-600"
+                      onClick={() => onApprove(request.id)}
+                    >
+                      <Check size={16} />
+                      Approve
+                    </Button>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center gap-1 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                      onClick={() => onReject(request.id)}
+                    >
+                      <X size={16} />
+                      Reject
+                    </Button>
+                  </div>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
