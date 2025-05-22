@@ -29,9 +29,9 @@ export const GroupsList = ({
 }: GroupsListProps) => {
   const navigate = useNavigate();
 
-  // Function to get group stats
-  const useGroupStats = (groupId: string) => {
-    return useQuery({
+  // Function to get group stats - moved outside of the render loop
+  const GroupStats = ({ groupId }: { groupId: string }) => {
+    const { data: stats, isLoading: statsLoading } = useQuery({
       queryKey: ['group-stats', groupId],
       queryFn: async () => {
         // Get total expenses for this group
@@ -56,6 +56,30 @@ export const GroupsList = ({
       },
       staleTime: 60000, // 1 minute
     });
+
+    return (
+      <div className="flex justify-between items-center mt-2 pt-2 border-t border-border/50 text-sm">
+        <div className="flex items-center">
+          <Users className="h-3 w-3 mr-1 text-muted-foreground" />
+          {statsLoading ? (
+            <Skeleton className="h-4 w-6" />
+          ) : (
+            <span>{stats?.memberCount || 0} members</span>
+          )}
+        </div>
+        <div className="font-medium">
+          {statsLoading ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            stats && stats.totalAmount > 0 ? (
+              <span>{stats.totalAmount.toFixed(0)} CHF</span>
+            ) : (
+              <span className="text-muted-foreground">No expenses</span>
+            )
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -118,57 +142,33 @@ export const GroupsList = ({
   if (groups.length > 0) {
     return (
       <div className="flex overflow-x-auto gap-4 pb-4 -mx-2 px-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-x-visible">
-        {groups.map((group) => {
-          // Use the hook to get stats for this group
-          const { data: stats, isLoading: statsLoading } = useGroupStats(group.id);
-          
-          return (
-            <Card 
-              key={group.id} 
-              className="hover:border-primary/50 transition-all cursor-pointer min-w-[260px] md:min-w-0"
-              onClick={() => navigate(`/group/${group.id}`)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10 mr-3">
-                      {group.icon || '🏠'}
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{group.name}</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Created {new Date(group.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
+        {groups.map((group) => (
+          <Card 
+            key={group.id} 
+            className="hover:border-primary/50 transition-all cursor-pointer min-w-[260px] md:min-w-0"
+            onClick={() => navigate(`/group/${group.id}`)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10 mr-3">
+                    {group.icon || '🏠'}
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-                
-                <div className="flex justify-between items-center mt-2 pt-2 border-t border-border/50 text-sm">
-                  <div className="flex items-center">
-                    <Users className="h-3 w-3 mr-1 text-muted-foreground" />
-                    {statsLoading ? (
-                      <Skeleton className="h-4 w-6" />
-                    ) : (
-                      <span>{stats?.memberCount || 0} members</span>
-                    )}
-                  </div>
-                  <div className="font-medium">
-                    {statsLoading ? (
-                      <Skeleton className="h-4 w-16" />
-                    ) : (
-                      stats && stats.totalAmount > 0 ? (
-                        <span>{stats.totalAmount.toFixed(0)} CHF</span>
-                      ) : (
-                        <span className="text-muted-foreground">No expenses</span>
-                      )
-                    )}
+                  <div>
+                    <h3 className="font-medium">{group.name}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Created {new Date(group.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+              
+              {/* Use the GroupStats component instead of inline hook */}
+              <GroupStats groupId={group.id} />
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }
