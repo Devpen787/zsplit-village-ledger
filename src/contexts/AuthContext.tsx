@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,23 +36,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log("User not found, will attempt to create new user");
       
-      // Use the create_new_user function to bypass RLS
-      const { data: newUser, error: createError } = await supabase
-        .rpc('create_new_user', {
-          user_id: privyUserId,
-          user_email: email || '',
-          user_name: null,
-          user_role: 'participant'
-        });
-
-      if (createError) {
-        console.error("Error creating user:", createError);
+      // Create a new user directly with insert
+      const newUser = {
+        id: privyUserId,
+        email: email || '',
+        name: null,
+        role: 'participant' // Default role
+      };
+      
+      // Insert the new user into the database
+      const { data: insertedUser, error: insertError } = await supabase
+        .from('users')
+        .insert(newUser)
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error("Error creating user:", insertError);
         toast.error("Failed to create user profile");
         return null;
       }
       
-      console.log("New user created successfully:", newUser);
-      return newUser as User;
+      console.log("New user created successfully:", insertedUser);
+      return insertedUser as User;
     } catch (error) {
       console.error("Error in fetchOrCreateUser:", error);
       return null;
