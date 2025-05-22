@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -6,9 +7,11 @@ import { Group } from '@/types/supabase';
 import { User } from '@/types/auth';
 import { useGroupPulse } from '@/hooks/useGroupPulse';
 import { useExpenses } from '@/hooks/useExpenses';
+import { GroupMember } from '@/types/supabase';
 import { useGroupMembers } from '@/hooks/useGroupMembers';
 import { useGroupInvites } from '@/hooks/useGroupInvites';
 import { useGroupAdminStatus } from '@/hooks/useGroupAdminStatus';
+import { Expense } from '@/types/expenses';
 
 export const useGroupDetails = (id: string | undefined, user: User | null) => {
   const navigate = useNavigate();
@@ -31,7 +34,7 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
   
   // Calculate total expenses - fixing the typing issue
-  const totalExpenses = expenses.reduce((sum: number, expense) => {
+  const totalExpenses = expenses.reduce<number>((sum, expense) => {
     // Ensure expense.amount is converted to a number
     return sum + (Number(expense.amount) || 0);
   }, 0);
