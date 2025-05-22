@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,16 +13,23 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, authenticated, ready } = usePrivy();
-  const { isAuthenticated, refreshUser, loading: authLoading, authError, clearAuthError } = useAuth();
+  const { isAuthenticated, refreshUser, loading: authLoading, authError, clearAuthError, loginAttempts, resetLoginAttempts } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [loginAttempts, setLoginAttempts] = useState(0);
+  const loginTimeoutRef = useRef<number | null>(null);
   
   // Clear errors when component mounts or unmounts
   useEffect(() => {
     clearAuthError();
-    return () => clearAuthError();
-  }, [clearAuthError]);
+    resetLoginAttempts();
+    return () => {
+      clearAuthError();
+      // Clear any pending timeouts
+      if (loginTimeoutRef.current) {
+        clearTimeout(loginTimeoutRef.current);
+      }
+    };
+  }, [clearAuthError, resetLoginAttempts]);
   
   // Handle navigation if already authenticated
   useEffect(() => {
@@ -49,8 +56,6 @@ const Login = () => {
             if (loginAttempts > 2) {
               setLocalError("Persistent login issues. Please try refreshing the page or clearing your browser cache.");
             }
-            
-            setLoginAttempts(prev => prev + 1);
           }
         } catch (error) {
           if (isActive) {
@@ -87,11 +92,17 @@ const Login = () => {
     
     try {
       login();
-      // The privy login will redirect, so we don't need to handle success here
-      // Add a timeout to reset loading state if Privy doesn't redirect
-      setTimeout(() => {
+      
+      // Add a timeout to reset loading state if Privy doesn't redirect or fails silently
+      if (loginTimeoutRef.current) {
+        clearTimeout(loginTimeoutRef.current);
+      }
+      
+      loginTimeoutRef.current = window.setTimeout(() => {
         setIsLoading(false);
-      }, 5000);
+        setLocalError("Login timed out. Please try again.");
+      }, 10000); // 10 seconds timeout
+      
     } catch (error) {
       console.error("Login error:", error);
       setIsLoading(false);

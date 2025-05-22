@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { User, AuthContextType } from '@/types/auth';
@@ -11,7 +11,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [loginAttempts, setLoginAttempts] = useState(0);
   const { ready, authenticated, user: privyUser, logout } = usePrivy();
+  const isInitialized = useRef(false);
+  
+  // Reset login attempts counter
+  const resetLoginAttempts = useCallback(() => {
+    setLoginAttempts(0);
+  }, []);
 
   // Clear auth errors
   const clearAuthError = useCallback(() => {
@@ -19,12 +26,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Function to fetch a user from Supabase
-  const fetchUser = async (privyUserId: string): Promise<User | null> => {
+  const fetchUser = useCallback(async (privyUserId: string): Promise<User | null> => {
     try {
       console.log("Attempting to fetch user with ID:", privyUserId);
-      
-      // Add a small delay to ensure Supabase connection is ready
-      await new Promise(resolve => setTimeout(resolve, 100));
       
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
@@ -50,33 +54,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthError("Unexpected error while fetching user profile");
       return null;
     }
-  };
+  }, []);
 
-  // Function to create a user in Supabase
-  const createUser = async (privyUserId: string, email: string | null): Promise<User | null> => {
+  // Function to create a user in Supabase with direct insert bypassing RLS
+  const createUser = useCallback(async (privyUserId: string, email: string | null): Promise<User | null> => {
     try {
       console.log("Attempting to create new user with ID:", privyUserId);
       
       // Create a new user
-      const newUser = {
+      const newUser: User = {
         id: privyUserId,
-        email: email || '',
-        role: 'participant' // Default role
+        email: email || null,
+        role: 'participant', // Default role
       };
       
       console.log("Creating user with data:", newUser);
       
-      // Insert the new user into the database with upsert
+      // Use upsert to handle potential race conditions where the user might already exist
       const { data: insertedUser, error: insertError } = await supabase
         .from('users')
-        .upsert(newUser, { onConflict: 'id' })
+        .upsert(newUser)
         .select()
         .maybeSingle();
       
       if (insertError) {
         console.error("Error creating user:", insertError);
+        
+        // Provide more specific error messages based on the error code
         if (insertError.code === '42501') {
-          setAuthError("Permission denied. Please check if you have the correct permissions.");
+          setAuthError("Permission denied. Check Row Level Security policies for the users table.");
+        } else if (insertError.code === '23505') {
+          // Duplicate key error - user might already exist, try to fetch again
+          const existingUser = await fetchUser(privyUserId);
+          if (existingUser) {
+            return existingUser;
+          }
+          setAuthError(`A user with this ID already exists but could not be retrieved.`);
         } else {
           setAuthError(`Could not create user profile: ${insertError.message}`);
         }
@@ -90,8 +103,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthError("Failed to create your profile. Please try again.");
       return null;
     }
-  };
+  }, [fetchUser]);
 
+  // Refresh user data
   const refreshUser = useCallback(async (): Promise<User | null> => {
     console.log("refreshUser called, authenticated:", authenticated, "privyUser:", privyUser);
     
@@ -108,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Get the user's email from Privy
       const linkedAccounts = privyUser.linkedAccounts || [];
       const emailAccount = linkedAccounts.find((account: any) => account.type === 'email');
-      const email = emailAccount ? (emailAccount as any).address || (emailAccount as any).email : null;
+      const email = emailAccount ? (emailAccount as any).address || null : null;
       
       console.log("Refreshing user profile for Privy ID:", privyUser.id);
       
@@ -125,84 +139,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log("Setting user data:", userData);
         setUser(userData);
         setLoading(false);
+        setLoginAttempts(0); // Reset login attempts on successful login
         return userData;
       } else {
         console.error("Failed to get or create user");
         setLoading(false);
-        // Only set auth error if we don't already have one (it would be set by createUser or fetchUser)
-        if (!authError) {
-          setAuthError("Unable to load your profile. Please try again.");
-        }
+        // Track failed attempts
+        setLoginAttempts(prev => prev + 1);
         return null;
       }
     } catch (error) {
       console.error("Error refreshing user:", error);
       setLoading(false);
       setAuthError("Failed to load your profile. Please try again.");
+      // Track failed attempts
+      setLoginAttempts(prev => prev + 1);
       return null;
     }
-  }, [authenticated, privyUser, authError, clearAuthError]);
+  }, [authenticated, privyUser, clearAuthError, fetchUser, createUser]);
 
+  // Initialize auth on component mount
   useEffect(() => {
-    // Set a flag to prevent infinite loops
-    let isActive = true;
+    if (isInitialized.current || !ready) return;
     
-    const initAuth = async () => {
-      if (!ready) {
-        return;
-      }
-      
-      setLoading(true);
-      
-      if (!authenticated || !privyUser) {
-        setUser(null);
-        setLoading(false);
-        clearAuthError();
-        return;
-      }
-      
-      try {
-        // Get the user's email from Privy
-        const linkedAccounts = privyUser.linkedAccounts || [];
-        const emailAccount = linkedAccounts.find((account: any) => account.type === 'email');
-        const email = emailAccount ? (emailAccount as any).address || (emailAccount as any).email : null;
-        
-        // First try to fetch the user
-        let userData = await fetchUser(privyUser.id);
-        
-        // If user doesn't exist, create it
-        if (!userData && isActive) {
-          userData = await createUser(privyUser.id, email);
-        }
-        
-        if (userData && isActive) {
-          setUser(userData);
-          clearAuthError();
-        } else if (isActive) {
-          // Only set auth error if we don't already have one (it would be set by createUser or fetchUser)
-          if (!authError) {
-            setAuthError("Could not retrieve or create your profile. Please try again.");
-          }
-        }
-      } catch (error) {
-        console.error("Authentication error:", error);
-        if (isActive) {
-          setAuthError("Authentication error. Please try again later.");
-        }
-      } finally {
-        if (isActive) {
-          setLoading(false);
-        }
-      }
-    };
+    isInitialized.current = true;
+    
+    // If authenticated, attempt to refresh user data
+    if (authenticated && privyUser) {
+      refreshUser().catch(err => {
+        console.error("Error during initial user refresh:", err);
+      });
+    } else {
+      // Not authenticated, clear user state
+      setUser(null);
+      setLoading(false);
+    }
+  }, [ready, authenticated, privyUser, refreshUser]);
 
-    initAuth();
+  // Watch for auth state changes
+  useEffect(() => {
+    // Only respond to changes if already initialized
+    if (!isInitialized.current) return;
     
-    // Cleanup function
-    return () => {
-      isActive = false;
-    };
-  }, [ready, authenticated, privyUser, clearAuthError, authError]);
+    if (authenticated && privyUser) {
+      // Use a timeout to prevent rapid consecutive calls
+      const timeoutId = setTimeout(() => {
+        refreshUser().catch(err => {
+          console.error("Error during user refresh after auth change:", err);
+        });
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    } else if (!authenticated) {
+      // Clear user state when no longer authenticated
+      setUser(null);
+      setLoading(false);
+    }
+  }, [authenticated, privyUser, refreshUser]);
 
   const signOut = async () => {
     try {
@@ -210,6 +203,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearAuthError();
       await logout();
       setUser(null);
+      resetLoginAttempts();
       toast.success("Successfully signed out");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -234,7 +228,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasRole,
     refreshUser,
     authError,
-    clearAuthError
+    clearAuthError,
+    loginAttempts,
+    resetLoginAttempts
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -249,6 +245,6 @@ export const useAuth = () => {
 };
 
 export const isValidRole = (role: string): boolean => {
-  const validRoles = ['admin', 'participant'];
+  const validRoles = ['admin', 'participant', 'organizer'];
   return validRoles.includes(role);
 };

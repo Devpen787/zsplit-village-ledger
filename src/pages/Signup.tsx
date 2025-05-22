@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,34 +12,67 @@ import { LogIn, Wallet, Loader2, AlertCircle } from "lucide-react";
 const Signup = () => {
   const navigate = useNavigate();
   const { login, authenticated, ready } = usePrivy();
-  const { isAuthenticated, refreshUser, loading } = useAuth();
+  const { isAuthenticated, refreshUser, loading, authError, clearAuthError, loginAttempts } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const loginTimeoutRef = useRef<number | null>(null);
+  
+  // Clear errors when component mounts or unmounts
+  useEffect(() => {
+    clearAuthError();
+    return () => {
+      clearAuthError();
+      // Clear any pending timeouts
+      if (loginTimeoutRef.current) {
+        clearTimeout(loginTimeoutRef.current);
+      }
+    };
+  }, [clearAuthError]);
   
   // Handle navigation if already authenticated
   useEffect(() => {
-    if (ready && authenticated) {
-      setIsLoading(true);
-      console.log('Privy authenticated, refreshing user profile');
-      refreshUser().then((user) => {
-        if (user) {
-          console.log('User profile refreshed, navigating to dashboard');
-          navigate('/');
-        } else {
-          console.log('Failed to refresh user profile');
-          setAuthError("Failed to create your profile. Please try again.");
-          setIsLoading(false);
+    let isActive = true;
+    
+    const checkAuthentication = async () => {
+      if (ready && authenticated) {
+        if (isActive) setIsLoading(true);
+        console.log('Privy authenticated, refreshing user profile');
+        
+        try {
+          const user = await refreshUser();
+          
+          if (user && isActive) {
+            console.log('User profile refreshed, navigating to dashboard');
+            navigate('/', { replace: true });
+          } else if (isActive) {
+            console.log('Failed to refresh user profile');
+            setLocalError("Failed to create your profile. Please try again.");
+            setIsLoading(false);
+            
+            // If we've tried multiple times and still failing, show more helpful error
+            if (loginAttempts > 2) {
+              setLocalError("Persistent signup issues. Please try refreshing the page or clearing your browser cache.");
+            }
+          }
+        } catch (error) {
+          if (isActive) {
+            console.error('Error refreshing user profile:', error);
+            setLocalError("Authentication error. Please try again later.");
+            setIsLoading(false);
+          }
         }
-      }).catch(error => {
-        console.error('Error refreshing user profile:', error);
-        setAuthError("Authentication error. Please try again later.");
+      } else if (ready && !authenticated && isActive) {
+        // Reset loading state if not authenticated
         setIsLoading(false);
-      });
-    } else if (ready && !authenticated) {
-      // Reset loading state if not authenticated
-      setIsLoading(false);
-    }
-  }, [ready, authenticated, navigate, refreshUser]);
+      }
+    };
+    
+    checkAuthentication();
+    
+    return () => {
+      isActive = false;
+    };
+  }, [ready, authenticated, navigate, refreshUser, loginAttempts]);
 
   // Redirect if authenticated through our context
   useEffect(() => {
@@ -50,18 +83,34 @@ const Signup = () => {
 
   const handleLogin = () => {
     setIsLoading(true);
-    setAuthError(null);
+    setLocalError(null);
+    clearAuthError();
     
     try {
       login();
-      // The privy login will redirect, so we don't need to handle success here
+      
+      // Add a timeout to reset loading state if Privy doesn't redirect or fails silently
+      if (loginTimeoutRef.current) {
+        clearTimeout(loginTimeoutRef.current);
+      }
+      
+      loginTimeoutRef.current = window.setTimeout(() => {
+        setIsLoading(false);
+        setLocalError("Signup timed out. Please try again.");
+      }, 10000); // 10 seconds timeout
     } catch (error) {
       console.error("Signup error:", error);
       setIsLoading(false);
-      setAuthError("Failed to initiate signup. Please try again.");
+      setLocalError("Failed to initiate signup. Please try again.");
       toast.error("Signup failed. Please try again.");
     }
   };
+
+  // Determine which error to display (local or from auth context)
+  const displayError = localError || authError;
+  
+  // Determine if button should be in loading state
+  const showLoadingButton = isLoading || loading;
 
   return (
     <div className="flex justify-center items-center min-h-screen px-4 py-10 bg-background">
@@ -73,10 +122,10 @@ const Signup = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {authError && (
+          {displayError && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4 mr-2" />
-              <AlertDescription>{authError}</AlertDescription>
+              <AlertDescription>{displayError}</AlertDescription>
             </Alert>
           )}
           
@@ -85,9 +134,9 @@ const Signup = () => {
               onClick={handleLogin} 
               className="w-full"
               size="lg"
-              disabled={loading || isLoading}
+              disabled={showLoadingButton}
             >
-              {loading || isLoading ? (
+              {showLoadingButton ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <LogIn className="mr-2 h-4 w-4" />
@@ -105,6 +154,7 @@ const Signup = () => {
               onClick={() => navigate('/login')} 
               variant="outline"
               className="w-full"
+              disabled={showLoadingButton}
             >
               Already have an account? Log in
             </Button>
