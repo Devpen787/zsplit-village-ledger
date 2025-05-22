@@ -1,9 +1,20 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
 import { PotActivity } from '@/types/group-pot';
 import { toast } from '@/components/ui/sonner';
 import { useAuth } from '@/contexts';
+import {
+  fetchGroupPotActivities,
+  checkUserIsAdmin,
+  submitPayoutRequest,
+  addContribution,
+  approvePayoutRequest,
+  rejectPayoutRequest
+} from '@/services/groupPotService';
+import {
+  calculateTotalContributions,
+  extractContributors
+} from '@/utils/groupPotUtils';
 
 interface GroupPotData {
   activities: PotActivity[];
@@ -32,68 +43,23 @@ export const useGroupPot = (groupId: string): GroupPotData => {
         setLoading(true);
         
         // Fetch group pot activities
-        const { data: activitiesData, error: activitiesError } = await supabase
-          .from('group_pot_activity')
-          .select(`
-            id,
-            amount,
-            note,
-            type,
-            status,
-            created_at,
-            user_id,
-            group_id,
-            users:user_id (name, email)
-          `)
-          .eq('group_id', groupId)
-          .order('created_at', { ascending: false });
-          
-        if (activitiesError) throw activitiesError;
+        const typedActivities = await fetchGroupPotActivities(groupId);
         
-        console.log("Fetched activities:", activitiesData);
-        
-        // Ensure data conforms to PotActivity type
-        const typedActivities = activitiesData.map(activity => ({
-          ...activity,
-          type: activity.type as 'contribution' | 'payout',
-          status: activity.status as 'pending' | 'approved' | 'complete' | 'rejected' | null
-        }));
-        
-        // Calculate total contributions
-        let total = 0;
-        const uniqueContributors = new Map();
-        
-        typedActivities.forEach((activity: PotActivity) => {
-          if (activity.type === 'contribution' && activity.status === 'complete') {
-            total += activity.amount;
-            
-            // Track unique contributors
-            if (!uniqueContributors.has(activity.user_id)) {
-              uniqueContributors.set(activity.user_id, {
-                id: activity.user_id,
-                name: activity.users?.name
-              });
-            }
-          }
-        });
+        // Calculate total contributions and extract contributors
+        const total = calculateTotalContributions(typedActivities);
+        const uniqueContributors = extractContributors(typedActivities);
         
         console.log("Total contributions:", total);
-        console.log("Unique contributors:", Array.from(uniqueContributors.values()));
+        console.log("Unique contributors:", uniqueContributors);
         
         setActivities(typedActivities);
         setTotalContributions(total);
-        setContributors(Array.from(uniqueContributors.values()));
+        setContributors(uniqueContributors);
 
         // Check if current user is an admin
         if (user) {
-          const { data: memberData } = await supabase
-            .from('group_members')
-            .select('role')
-            .eq('group_id', groupId)
-            .eq('user_id', user.id)
-            .single();
-          
-          setIsAdmin(memberData?.role === 'admin');
+          const admin = await checkUserIsAdmin(groupId, user.id);
+          setIsAdmin(admin);
         }
       } catch (error) {
         console.error('Error fetching group pot data:', error);
@@ -112,33 +78,19 @@ export const useGroupPot = (groupId: string): GroupPotData => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('group_pot_activity')
-        .insert({
-          group_id: groupId,
-          user_id: user.id,
-          amount,
-          note,
-          type: 'payout',
-          status: 'pending'
-        })
-        .select();
-        
-      if (error) throw error;
+      const newActivity = await submitPayoutRequest(
+        groupId,
+        user.id,
+        amount,
+        note,
+        user.name,
+        user.email
+      );
       
       toast.success('Payout request submitted successfully');
       
       // Update activities with the new request
-      if (data && data[0]) {
-        const newActivity: PotActivity = {
-          ...data[0],
-          type: 'payout',
-          status: 'pending',
-          users: { 
-            name: user.name || null, 
-            email: user.email 
-          }
-        };
+      if (newActivity) {
         setActivities([newActivity, ...activities]);
       }
     } catch (error) {
@@ -151,34 +103,20 @@ export const useGroupPot = (groupId: string): GroupPotData => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('group_pot_activity')
-        .insert({
-          group_id: groupId,
-          user_id: user.id,
-          amount,
-          note: note || 'Contribution to group pot',
-          type: 'contribution',
-          status: 'complete'
-        })
-        .select();
-        
-      if (error) throw error;
+      const newActivity = await addContribution(
+        groupId,
+        user.id,
+        amount,
+        note,
+        user.name,
+        user.email
+      );
       
       toast.success('Contribution added successfully');
       
       // Update state
-      if (data && data[0]) {
+      if (newActivity) {
         // Add to activities
-        const newActivity: PotActivity = {
-          ...data[0],
-          type: 'contribution',
-          status: 'complete',
-          users: { 
-            name: user.name || null, 
-            email: user.email 
-          }
-        };
         setActivities([newActivity, ...activities]);
         
         // Update total contributions
@@ -200,13 +138,7 @@ export const useGroupPot = (groupId: string): GroupPotData => {
 
   const handleApproveRequest = async (activityId: string) => {
     try {
-      console.log("Approving request:", activityId);
-      const { error } = await supabase
-        .from('group_pot_activity')
-        .update({ status: 'approved' })
-        .eq('id', activityId);
-
-      if (error) throw error;
+      await approvePayoutRequest(activityId);
       
       toast.success('Payout request approved');
       
@@ -226,13 +158,7 @@ export const useGroupPot = (groupId: string): GroupPotData => {
 
   const handleRejectRequest = async (activityId: string) => {
     try {
-      console.log("Rejecting request:", activityId);
-      const { error } = await supabase
-        .from('group_pot_activity')
-        .update({ status: 'rejected' })
-        .eq('id', activityId);
-
-      if (error) throw error;
+      await rejectPayoutRequest(activityId);
       
       toast.success('Payout request rejected');
       
