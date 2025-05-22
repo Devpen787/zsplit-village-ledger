@@ -5,6 +5,10 @@ import type { Database } from './types';
 
 const SUPABASE_URL = "https://ymwbfotugdtmsoqbxsds.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltd2Jmb3R1Z2R0bXNvcWJ4c2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4MTk4MTUsImV4cCI6MjA2MzM5NTgxNX0.X_cM1p6WLOGgSp4RddJLdsELZONd9Hn5qUl9YiVSv34";
+// IMPORTANT: Never expose this key on the frontend in a production environment
+// For this demo, we're using it only for the specific operation of creating users
+// In a real app, this would be handled through a secure backend service or edge function
+const SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltd2Jmb3R1Z2R0bXNvcWJ4c2RzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzgxOTgxNSwiZXhwIjoyMDYzMzk1ODE1fQ.y6IeUTecklFqqd8B642DxQ6RBV_QR5NrL20Viec3XUw";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -76,21 +80,23 @@ export const clearAuthState = () => {
 };
 
 // Create a service role client for admin operations that bypass RLS
-// This is used only for specific operations like creating new users
+// This should ONLY be used for specific operations like creating new users
 let serviceRoleClient: any = null;
 
 export const getServiceClient = () => {
-  // In a production app, you would get this from environment variables
-  // For this demo, we'll use it directly for new user creation
-  // This function would typically be called from a secure edge function, not directly from frontend
   if (!serviceRoleClient) {
     console.log("[Auth] Creating service role client for admin operations");
     
-    // Since we're just using this for new user creation and don't have
-    // a service role key in this demo, we'll just use the public client
-    // with special flags to indicate it should be treated differently
-    // in our createUser function
-    serviceRoleClient = supabase;
+    // Create a dedicated service role client that bypasses RLS
+    serviceRoleClient = createClient(
+      SUPABASE_URL, 
+      SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          persistSession: false // Don't persist this admin session
+        }
+      }
+    );
   }
   
   return serviceRoleClient;

@@ -1,13 +1,18 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import AuthContainer from "@/components/auth/AuthContainer";
 import AuthButton from "@/components/auth/AuthButton";
 import AuthNavLink from "@/components/auth/AuthNavLink";
 import { Wallet } from "lucide-react";
 import { useAuthFlow } from "@/hooks/useAuthFlow";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const Signup = () => {
   const { handleAuth, displayError, showLoadingButton, loginAttempts } = useAuthFlow(true);
+
+  // Display detailed error information in development mode
+  const showDebugInfo = process.env.NODE_ENV === 'development' && loginAttempts > 1;
 
   return (
     <AuthContainer
@@ -44,6 +49,15 @@ const Signup = () => {
           Connect your wallet for Web3 features
         </p>
       </div>
+
+      {showDebugInfo && (
+        <Alert variant="warning" className="mt-4">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertDescription className="text-xs">
+            Debug Info: Using service role key to create user. Ensure the Supabase RLS policy allows the service role to insert users. Check browser console for detailed logs.
+          </AlertDescription>
+        </Alert>
+      )}
     </AuthContainer>
   );
 };

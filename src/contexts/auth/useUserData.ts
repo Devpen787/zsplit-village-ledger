@@ -53,22 +53,28 @@ export const useUserData = () => {
       // Get email from Privy user
       const email = getPrivyEmail(privyUser);
       
-      // First set up Supabase auth with the Privy user ID
+      if (!email) {
+        console.error("No email found in Privy user data");
+        setAuthError("Could not create user: No email available");
+        return null;
+      }
+      
+      // First set up Supabase auth with the Privy user ID for future operations
       await setSupabaseAuth(privyUserId);
       
       // Create a new user
       const newUser: User = {
         id: privyUserId,
-        email: email || null,
+        email: email,
         role: 'participant', // Default role
       };
       
       console.log("Creating user with data:", newUser);
       
-      // Get the service client for admin operations
+      // Get the service client for admin operations that bypass RLS
       const adminClient = getServiceClient();
       
-      // First attempt: Try direct insert with explicit auth
+      // Using the service client to bypass RLS
       const { data: insertedUser, error: insertError } = await adminClient
         .from('users')
         .upsert(newUser, { 
@@ -80,40 +86,12 @@ export const useUserData = () => {
       
       if (insertError) {
         console.error("Error creating user:", insertError);
-        
-        // Log the full error details for debugging
         console.log("Error code:", insertError.code);
         console.log("Error message:", insertError.message);
         console.log("Error details:", insertError.details);
         
-        // Try a direct insert as a fallback 
-        // (relies on RLS policy allowing anon inserts)
-        if (insertError.message.includes('row-level security policy')) {
-          console.log("Attempting fallback insert method...");
-          
-          const { data: fallbackUser, error: fallbackError } = await supabase
-            .from('users')
-            .insert(newUser)
-            .select()
-            .maybeSingle();
-            
-          if (fallbackError) {
-            console.error("Fallback insert also failed:", fallbackError);
-            setAuthError(`Could not create your profile: ${fallbackError.message}`);
-            return null;
-          }
-          
-          if (fallbackUser) {
-            console.log("Fallback insert succeeded:", fallbackUser);
-            return fallbackUser as User;
-          }
-          
-          setAuthError("Failed to create your profile. No data returned.");
-          return null;
-        } else {
-          setAuthError(`Could not create user profile: ${insertError.message}`);
-          return null;
-        }
+        setAuthError(`Could not create user profile: ${insertError.message}`);
+        return null;
       }
       
       if (!insertedUser) {
