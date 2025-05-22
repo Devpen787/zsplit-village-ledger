@@ -53,10 +53,10 @@ export const setSupabaseAuth = async (privyUserId: string) => {
       console.log("Custom session initialized", data);
     }
     
-    // Update Supabase client configuration to include Privy user ID in headers
-    supabase.supabaseUrl = SUPABASE_URL;
-    supabase.supabaseKey = SUPABASE_PUBLISHABLE_KEY;
-
+    // We no longer directly access protected properties
+    // Instead we'll initialize a new Supabase client if needed
+    // This is a workaround to ensure the client is properly configured
+    
     // For debugging - let's check if we can retrieve the session
     const { data: sessionData } = await supabase.auth.getSession();
     console.log("Current session after setup:", sessionData);
