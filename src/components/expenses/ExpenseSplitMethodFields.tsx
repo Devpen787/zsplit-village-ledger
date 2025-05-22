@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SplitMethodSelector from "./split-methods/SplitMethodSelector";
 import SplitSummary from "./split-methods/SplitSummary";
 import ValidationAlert from "./split-methods/ValidationAlert";
@@ -46,8 +45,12 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
 
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   
-  // Filter users for split calculation
-  const filteredUsers = users.filter(user => selectedUsers[user.id] === true);
+  // We'll now keep all users in the splitData, but mark some as inactive
+  // This is used for the main calculation logic
+  const filteredUsers = users.map(user => ({
+    ...user,
+    isActive: selectedUsers[user.id] !== false
+  }));
 
   const {
     splitData,
@@ -56,7 +59,8 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
     adjustShares,
     getCalculatedAmount,
     getTotalShares,
-    getUserName
+    getUserName,
+    toggleUserActive
   } = useExpenseSplit({
     users: filteredUsers,
     totalAmount,
@@ -66,23 +70,30 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
   });
   
   const toggleUser = (userId: string) => {
+    // Update the local selected users state
     setSelectedUsers(prev => ({
       ...prev,
       [userId]: !prev[userId]
     }));
+    
+    // Also update the active status in the split data
+    toggleUserActive(userId, !selectedUsers[userId]);
   };
   
-  // If no users are selected, show a message
+  // If no users are available, show a message
   if (users.length === 0) {
     return (
       <div className="space-y-4">
         <SplitMethodSelector splitMethod={splitMethod} setSplitMethod={setSplitMethod} />
         <div className="text-amber-500 text-center p-4">
-          Please select at least one participant to split the expense with.
+          Please add participants to your group to split expenses with.
         </div>
       </div>
     );
   }
+
+  // Count how many active users we have
+  const activeUserCount = Object.values(selectedUsers).filter(Boolean).length;
 
   return (
     <div className="space-y-4">
@@ -120,16 +131,16 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
         </Card>
         
         {/* Equal split info displayed directly */}
-        {splitMethod === "equal" && filteredUsers.length > 0 && totalAmount > 0 && (
+        {splitMethod === "equal" && activeUserCount > 0 && totalAmount > 0 && (
           <div className="text-sm text-green-600 flex items-center mt-2">
             <Check className="h-4 w-4 mr-2" />
-            Each person will pay {(totalAmount / filteredUsers.length).toFixed(2)}
+            Each person will pay {(totalAmount / activeUserCount).toFixed(2)}
           </div>
         )}
       </div>
       
       {/* Collapsible Summary - only show if we have a valid amount */}
-      {totalAmount > 0 && filteredUsers.length > 0 && splitMethod !== "equal" && (
+      {totalAmount > 0 && activeUserCount > 0 && splitMethod !== "equal" && (
         <Card className="overflow-hidden">
           <Collapsible open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
             <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 transition-colors">
@@ -141,18 +152,17 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
             <CollapsibleContent>
               <div className="px-4 pb-4">
                 <div className="text-sm space-y-2">
-                  {filteredUsers.map((user) => {
-                    const userData = splitData.find(d => d.userId === user.id);
-                    if (!userData) return null;
-                    
-                    const amount = getCalculatedAmount(userData);
-                    return (
-                      <div key={user.id} className="flex justify-between">
-                        <span>{getUserName(user.id)}</span>
-                        <span className="font-medium">{amount.toFixed(2)}</span>
-                      </div>
-                    );
-                  })}
+                  {splitData
+                    .filter(data => selectedUsers[data.userId] !== false)
+                    .map((userData) => {
+                      const amount = getCalculatedAmount(userData);
+                      return (
+                        <div key={userData.userId} className="flex justify-between">
+                          <span>{getUserName(userData.userId)}</span>
+                          <span className="font-medium">{amount.toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             </CollapsibleContent>

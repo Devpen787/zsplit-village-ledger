@@ -11,7 +11,10 @@ export const processSplitData = async (
     return;
   }
 
-  const splitData = values.splitData;
+  // Filter out inactive users before processing
+  const splitData = values.splitData.filter(data => data.isActive !== false);
+  if (splitData.length === 0) return;
+  
   const totalAmount = values.amount;
   
   // Calculate shares for each user based on split method

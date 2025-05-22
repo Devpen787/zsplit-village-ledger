@@ -45,4 +45,5 @@ export type UserSplitData = {
   amount?: number;
   percentage?: number;
   shares?: number;
+  isActive?: boolean;
 };

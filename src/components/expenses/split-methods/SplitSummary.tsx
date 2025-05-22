@@ -39,8 +39,6 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
   onInputChange,
   adjustShares,
 }) => {
-  if (!totalAmount || totalAmount <= 0) return null;
-  
   // Get initials from user name
   const getInitials = (name: string): string => {
     return name
@@ -88,9 +86,12 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
         {splitMethod === "shares" && (
           <button 
             type="button"
-            className="p-1 rounded-md text-xs bg-gray-200 hover:bg-gray-300"
+            className={cn(
+              "p-1 rounded-md text-xs bg-gray-200 hover:bg-gray-300",
+              !selectedUsers[userId] && "opacity-50 cursor-not-allowed"
+            )}
             onClick={() => adjustShares?.(userId, -1)}
-            disabled={value === 1}
+            disabled={!selectedUsers[userId] || value === 1}
           >
             -
           </button>
@@ -98,18 +99,23 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
         
         <Input
           type="number"
-          className="h-8 w-20"
+          className={cn("h-8 w-20", !selectedUsers[userId] && "opacity-50")}
           placeholder={placeholder}
           step={step}
           value={value === 0 || value === undefined ? '' : value}
           onChange={(e) => onInputChange?.(userId, e.target.value, fieldType)}
+          disabled={!selectedUsers[userId]}
         />
         
         {splitMethod === "shares" && (
           <button 
             type="button"
-            className="p-1 rounded-md text-xs bg-gray-200 hover:bg-gray-300"
+            className={cn(
+              "p-1 rounded-md text-xs bg-gray-200 hover:bg-gray-300",
+              !selectedUsers[userId] && "opacity-50 cursor-not-allowed"
+            )}
             onClick={() => adjustShares?.(userId, 1)}
+            disabled={!selectedUsers[userId]}
           >
             +
           </button>
@@ -138,12 +144,13 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
           const userName = getUserName(data.userId);
           const amount = getCalculatedAmount(data);
           const initials = getInitials(userName);
+          const isActive = selectedUsers[data.userId] !== false;
           
           return (
-            <TableRow key={data.userId} className={!selectedUsers[data.userId] ? "opacity-50" : ""}>
+            <TableRow key={data.userId} className={!isActive ? "opacity-60" : ""}>
               <TableCell>
                 <Checkbox 
-                  checked={selectedUsers[data.userId] || false}
+                  checked={isActive}
                   onCheckedChange={() => toggleUser(data.userId)}
                   id={`user-check-${data.userId}`}
                 />
@@ -159,7 +166,8 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
                     </AvatarFallback>
                   </Avatar>
                   <span className={cn(
-                    data.userId === paidBy ? "font-medium text-green-600" : ""
+                    data.userId === paidBy ? "font-medium text-green-600" : "",
+                    !isActive && "line-through"
                   )}>
                     {userName} {data.userId === paidBy ? "(paid)" : ""}
                   </span>
@@ -169,7 +177,7 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
                 <TableCell>{getInputField(data)}</TableCell>
               ) : null}
               <TableCell className="text-right font-medium">
-                {selectedUsers[data.userId] ? amount.toFixed(2) : "—"}
+                {isActive ? amount.toFixed(2) : "—"}
               </TableCell>
             </TableRow>
           );
