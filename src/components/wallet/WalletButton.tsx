@@ -14,11 +14,14 @@ import {
 
 const WalletButton = () => {
   const { address, isConnected, isConnecting, connect, disconnect, shortenAddress } = useWallet();
+  const [copied, setCopied] = useState(false);
   
   const handleCopyAddress = () => {
     if (address) {
       navigator.clipboard.writeText(address);
       toast.success('Address copied to clipboard');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
   
@@ -34,7 +37,7 @@ const WalletButton = () => {
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={handleCopyAddress}>
             <Copy className="mr-2 h-4 w-4" />
-            Copy Address
+            {copied ? 'Copied!' : 'Copy Address'}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => window.open(`https://etherscan.io/address/${address}`, '_blank')}>
             <ExternalLink className="mr-2 h-4 w-4" />

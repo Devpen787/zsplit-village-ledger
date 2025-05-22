@@ -1,9 +1,11 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Copy, Wallet, Check, AlertCircle } from "lucide-react";
+import { Copy, Wallet, Check, AlertCircle, ExternalLink, Loader2 } from "lucide-react";
 import { useWallet } from "@/contexts/WalletContext";
 import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/contexts";
+import { Progress } from "@/components/ui/progress";
 
 interface WalletInfoProps {
   showDisconnect?: boolean;
@@ -24,7 +26,8 @@ const WalletInfo = ({
   labelSuffix = "",
   className = ""
 }: WalletInfoProps) => {
-  const { address, isConnected, connect, disconnect, shortenAddress } = useWallet();
+  const { address, isConnected, isConnecting, connect, disconnect, shortenAddress } = useWallet();
+  const { user } = useAuth();
   const [copied, setCopied] = React.useState(false);
   
   const handleCopyAddress = () => {
@@ -35,6 +38,19 @@ const WalletInfo = ({
       setTimeout(() => setCopied(false), 2000);
     }
   };
+  
+  // If wallet is connecting, show loading state
+  if (isConnecting) {
+    return (
+      <div className={`flex flex-col space-y-2 ${className}`}>
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">Connecting wallet...</span>
+        </div>
+        <Progress value={50} className="h-1" />
+      </div>
+    );
+  }
   
   if (!isConnected) {
     return (
@@ -72,6 +88,17 @@ const WalletInfo = ({
               onClick={handleCopyAddress}
             >
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          )}
+          
+          {address && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => window.open(`https://etherscan.io/address/${address}`, '_blank')}
+            >
+              <ExternalLink className="h-4 w-4" />
             </Button>
           )}
           

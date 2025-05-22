@@ -1,148 +1,82 @@
 
 import React from 'react';
-import { useGroupPulse } from '@/hooks/useGroupPulse';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, AlertCircle, TrendingUp, Wallet, Info } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useWallet } from '@/contexts/WalletContext';
+import WalletInfo from '@/components/wallet/WalletInfo';
 import { PendingPayoutRequestsList } from './PendingPayoutRequestsList';
-import { Badge } from '@/components/ui/badge';
 
-interface GroupPulseProps {
-  groupId: string;
-}
-
-export const GroupPulse: React.FC<GroupPulseProps> = ({ groupId }) => {
-  const { 
-    loading,
-    potBalance, 
-    averagePayoutSize,
-    estimatedPayoutsRemaining,
-    recentExpensesCount,
-    latestExpenseDate,
-    pendingPayoutsCount,
-    averageApprovalTime,
-    pendingRequests,
-    isAdmin,
-    connectedWalletsCount,
-    totalMembersCount,
-    handleApproveRequest,
-    handleRejectRequest
-  } = useGroupPulse(groupId);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+export const GroupPulse = ({ groupId }: { groupId: string }) => {
+  const { isConnected } = useWallet();
+  
+  // This will be replaced with actual data from your API
+  const groupStats = {
+    potBalance: 500,
+    totalExpenses: 1200,
+    expensesPaid: 950,
+    expensesUnpaid: 250,
+    contributionRate: 80
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Section 1: Pot Health */}
-      <section>
-        <h2 className="text-lg font-medium mb-3">Pot Health</h2>
-        <Card className="rounded-xl">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div>
-                <div className="text-sm text-muted-foreground">Current Pot Balance</div>
-                <div className="text-2xl font-bold">${potBalance.toFixed(2)}</div>
-              </div>
-              
-              <div>
-                <div className="text-sm text-muted-foreground">Average Payout Size</div>
-                <div className="text-xl">${averagePayoutSize.toFixed(2)}</div>
-              </div>
-              
-              <div className="bg-muted/50 p-3 rounded-lg text-sm">
-                {estimatedPayoutsRemaining > 0 ? (
-                  <p>Pot can cover approximately <span className="font-medium">{estimatedPayoutsRemaining}</span> more payouts at current average.</p>
-                ) : (
-                  <p>Add funds to the pot to support future payouts.</p>
-                )}
-              </div>
+    <div className="grid gap-6">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Group Financial Pulse</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              Connect your wallet to see financial activity and statistics for this group.
+            </p>
+            
+            <div className="p-4 border rounded-md bg-muted/30">
+              <WalletInfo 
+                showLabel={true} 
+                showMessage={true} 
+                labelPrefix="Wallet: "
+              />
             </div>
-          </CardContent>
-        </Card>
-      </section>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Section 2: Expense Activity */}
-      <section>
-        <h2 className="text-lg font-medium mb-3">Expense Activity</h2>
-        <Card className="rounded-xl">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-muted-foreground">Expenses in Last 7 Days</div>
-                  <div className="text-2xl font-bold">{recentExpensesCount}</div>
+      {/* Only show group pulse features when wallet is connected */}
+      {isConnected && (
+        <>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pot Balance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">${groupStats.potBalance.toFixed(2)}</div>
+                <p className="text-sm text-muted-foreground">Available for group expenses</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Expenses Status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between">
+                  <span>Paid: ${groupStats.expensesPaid.toFixed(2)}</span>
+                  <span>Unpaid: ${groupStats.expensesUnpaid.toFixed(2)}</span>
                 </div>
-                <TrendingUp className="text-primary h-8 w-8" />
-              </div>
-              
-              {latestExpenseDate ? (
-                <div>
-                  <div className="text-sm text-muted-foreground">Most Recent Expense</div>
-                  <div className="text-xl">{formatDistanceToNow(latestExpenseDate, { addSuffix: true })}</div>
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">No expenses recorded yet</div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Section 3: Pending Payout Requests */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-medium">Pending Payout Requests</h2>
-          {connectedWalletsCount > 0 && totalMembersCount > 0 && (
-            <Badge variant="outline" className="bg-primary/5">
-              <Wallet className="h-3 w-3 mr-1" />
-              {connectedWalletsCount} of {totalMembersCount} have wallets
-            </Badge>
-          )}
-        </div>
-        <Card className="rounded-xl">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-muted-foreground">Pending Requests</div>
-                  <div className="text-2xl font-bold">{pendingPayoutsCount}</div>
-                </div>
-                {pendingPayoutsCount > 0 && (
-                  <AlertCircle className="text-amber-500 h-8 w-8" />
-                )}
-              </div>
-              
-              <div>
-                <div className="text-sm text-muted-foreground">Average Time to Approve</div>
-                <div className="text-xl">{averageApprovalTime}</div>
-              </div>
-              
-              <div className="bg-muted/50 p-3 rounded-lg text-sm">
-                {pendingPayoutsCount > 0 ? (
-                  <p>{pendingPayoutsCount} {pendingPayoutsCount === 1 ? 'request' : 'requests'} waiting – smooth coordination helps!</p>
-                ) : (
-                  <p>No pending requests – the group is all caught up!</p>
-                )}
-              </div>
-              
-              {/* Admin-only: Show list of pending requests with approval/rejection buttons */}
-              {isAdmin && pendingPayoutsCount > 0 && (
-                <PendingPayoutRequestsList 
-                  pendingRequests={pendingRequests}
-                  onApprove={handleApproveRequest}
-                  onReject={handleRejectRequest}
-                />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+                <Progress value={groupStats.expensesPaid / groupStats.totalExpenses * 100} />
+                <p className="text-sm text-muted-foreground">
+                  {(groupStats.expensesPaid / groupStats.totalExpenses * 100).toFixed(0)}% of expenses settled
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid gap-6">
+            <PendingPayoutRequestsList groupId={groupId} />
+          </div>
+        </>
+      )}
     </div>
   );
 };

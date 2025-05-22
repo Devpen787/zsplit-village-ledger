@@ -1,19 +1,13 @@
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { createWeb3Modal } from '@web3modal/wagmi';
-import { wagmiConfig, projectId } from '@/utils/walletConfig';
-import { useAccount, useDisconnect } from 'wagmi';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { useAccount, useDisconnect, useConnect } from 'wagmi';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './auth/AuthContext';
 import { toast } from '@/components/ui/sonner';
+import { initializeWeb3Modal } from '@/utils/walletConfig';
 
-// Initialize web3modal
-createWeb3Modal({
-  wagmiConfig,
-  projectId,
-  enableAnalytics: false,
-  themeMode: 'light',
-});
+// Initialize web3modal during app startup
+initializeWeb3Modal();
 
 type WalletContextType = {
   address: string | null;
@@ -35,27 +29,36 @@ const WalletContext = createContext<WalletContextType>({
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, refreshUser } = useAuth();
-  const { address, isConnected } = useAccount();
+  const { address: wagmiAddress, isConnected: wagmiIsConnected } = useAccount();
   const { disconnect: wagmiDisconnect } = useDisconnect();
+  const { connectAsync: wagmiConnect, isPending } = useConnect();
   const [isConnecting, setIsConnecting] = useState(false);
+  const [savedAddress, setSavedAddress] = useState<string | null>(null);
   
   // Shorten wallet address for display
   const shortenAddress = (address: string) => {
     if (!address) return '';
-    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
   
   // Handle connecting wallet
-  const connect = () => {
+  const connect = useCallback(async () => {
     if (!user) {
       toast.error("Please sign in before connecting your wallet");
       return;
     }
     
     setIsConnecting(true);
-    // Open web3modal
-    document.dispatchEvent(new Event('wallet-connect'));
-  };
+    
+    try {
+      // This triggers the Web3Modal to open
+      document.dispatchEvent(new Event('wallet-connect'));
+    } catch (error) {
+      console.error('Error opening Web3Modal:', error);
+      setIsConnecting(false);
+      toast.error("Failed to open wallet connection dialog");
+    }
+  }, [user]);
   
   // Handle disconnecting wallet
   const disconnect = async () => {
@@ -71,6 +74,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           
         // Refresh user data
         await refreshUser();
+        setSavedAddress(null);
       }
       
       toast.success("Wallet disconnected");
@@ -85,15 +89,24 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const saveWalletAddress = async () => {
       setIsConnecting(false);
       
-      if (isConnected && address && user) {
-        if (user.wallet_address !== address) {
+      if (wagmiIsConnected && wagmiAddress && user) {
+        // Check if address is different from what we already saved
+        if (user.wallet_address !== wagmiAddress && savedAddress !== wagmiAddress) {
           try {
+            console.log("Saving wallet address to database:", wagmiAddress);
             const { error } = await supabase
               .from('users')
-              .update({ wallet_address: address })
+              .update({ wallet_address: wagmiAddress })
               .eq('id', user.id);
               
-            if (error) throw error;
+            if (error) {
+              console.error("Error saving wallet address:", error);
+              toast.error("Failed to save wallet address");
+              throw error;
+            }
+            
+            // Set saved address to avoid duplicate saves
+            setSavedAddress(wagmiAddress);
             
             // Refresh user data
             await refreshUser();
@@ -107,14 +120,42 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     
     saveWalletAddress();
-  }, [isConnected, address, user, refreshUser]);
+  }, [wagmiIsConnected, wagmiAddress, user, refreshUser, savedAddress]);
+  
+  // Handle external wallet connect trigger
+  useEffect(() => {
+    const handleWalletConnect = () => {
+      if (isPending || !user) return;
+      
+      setIsConnecting(true);
+      
+      // We don't need to do anything else here - wagmi's useConnect hook will handle the actual connection
+      // and the address will be picked up by the other effect
+    };
+    
+    // Listen for the custom event that triggers wallet connection
+    document.addEventListener('wallet-connect', handleWalletConnect);
+    
+    return () => {
+      document.removeEventListener('wallet-connect', handleWalletConnect);
+    };
+  }, [isPending, user]);
+  
+  // When component mounts, initialize the saved address from the user object
+  useEffect(() => {
+    if (user?.wallet_address) {
+      setSavedAddress(user.wallet_address);
+    } else {
+      setSavedAddress(null);
+    }
+  }, [user]);
   
   return (
     <WalletContext.Provider 
       value={{
         address: user?.wallet_address || null,
         isConnected: !!user?.wallet_address,
-        isConnecting,
+        isConnecting: isConnecting || isPending,
         connect,
         disconnect,
         shortenAddress

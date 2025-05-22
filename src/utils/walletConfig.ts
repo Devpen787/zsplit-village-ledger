@@ -6,6 +6,7 @@ import { InjectedConnector } from 'wagmi/connectors/injected';
 import { WalletConnectConnector } from 'wagmi/connectors/walletConnect';
 import { createPublicClient } from 'viem';
 import { QueryClient } from '@tanstack/react-query';
+import { createWeb3Modal } from '@web3modal/wagmi';
 
 // Use the provided WalletConnect Project ID
 export const projectId = '15e72db89587fa8bd14473b8ff73a0bb';
@@ -38,3 +39,17 @@ export const wagmiConfig = createConfig({
     }),
   ],
 });
+
+// Initialize Web3Modal with our configuration
+// This should be called once during app startup
+export const initializeWeb3Modal = () => {
+  return createWeb3Modal({
+    wagmiConfig,
+    projectId,
+    enableAnalytics: false,
+    themeMode: 'light',
+    themeVariables: {
+      '--w3m-accent-color': '#0ea5e9', // Match the app's primary color
+    },
+  });
+};

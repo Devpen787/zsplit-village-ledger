@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { useAuth } from '@/contexts';
-import { useWallet } from '@/contexts/WalletContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +20,6 @@ const Profile = () => {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState(user?.name || '');
   const [selectedEmoji, setSelectedEmoji] = useState(user?.avatar_emoji || '😀');
-  const [walletAddress, setWalletAddress] = useState(user?.wallet_address || '');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -29,7 +27,6 @@ const Profile = () => {
     if (user) {
       setDisplayName(user.name || '');
       setSelectedEmoji(user.avatar_emoji || '😀');
-      setWalletAddress(user.wallet_address || '');
     }
   }, [user]);
 
@@ -43,8 +40,7 @@ const Profile = () => {
         .from('users')
         .update({ 
           name: displayName,
-          avatar_emoji: selectedEmoji,
-          wallet_address: walletAddress
+          avatar_emoji: selectedEmoji
         })
         .eq('id', user.id);
 

@@ -4,7 +4,7 @@ import Login from "./pages/Login";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import ExpenseDetail from "./pages/ExpenseDetail";
@@ -23,9 +23,6 @@ import Settings from "./pages/Settings";
 import { PrivyProvider } from '@privy-io/react-auth';
 import { WagmiConfig } from 'wagmi';
 import { wagmiConfig, queryClient } from '@/utils/walletConfig';
-
-// We'll use the query client from the Wagmi config
-// instead of creating a new one here
 
 // Privy configuration
 const PRIVY_APP_ID = "cmayii9yh00fpl40mgq8kod1g";
