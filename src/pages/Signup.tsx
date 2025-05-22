@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { usePrivy } from '@privy-io/react-auth';
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts"; // Updated import
 import { clearAuthState } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
