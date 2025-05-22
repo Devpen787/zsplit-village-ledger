@@ -38,3 +38,11 @@ export type ExpensesListProps = {
 };
 
 export type SplitMethod = 'equal' | 'amount' | 'percentage' | 'shares';
+
+// Add the UserSplitData type that's used by split components
+export type UserSplitData = {
+  userId: string;
+  amount?: number;
+  percentage?: number;
+  shares?: number;
+};
