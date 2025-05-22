@@ -111,6 +111,7 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
         const newActivity: PotActivity = {
           ...data[0],
           type: 'payout',
+          status: 'pending', // Explicitly cast to one of the allowed status values
           users: { 
             name: user.name || null, 
             email: user.email 
@@ -150,6 +151,7 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
         const newActivity: PotActivity = {
           ...data[0],
           type: 'contribution',
+          status: 'complete', // Explicitly cast to one of the allowed status values
           users: { 
             name: user.name || null, 
             email: user.email 
