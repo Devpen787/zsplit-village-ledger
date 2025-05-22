@@ -34,7 +34,7 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
   
   // Calculate total expenses - fixing the typing issues properly
-  const totalExpenses = expenses.reduce((sum, expense) => {
+  const totalExpenses = expenses.reduce((sum: number, expense: Expense) => {
     // Ensure expense.amount is converted to a number
     return sum + (Number(expense.amount) || 0);
   }, 0);
