@@ -34,7 +34,7 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   // Calculate total expenses - fixed to use reduce with proper typing
   const totalExpenses = expenses.reduce((sum: number, expense) => {
     return sum + Number(expense.amount || 0);
-  }, 0);
+  }, 0); // Explicitly specify the initial value as 0
   
   useEffect(() => {
     if (!id) return;
