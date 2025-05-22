@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { fetchGroupExpenses } from '@/services/groupPulseService';
-import { fetchGroupPotActivities } from '@/services/groupPotService';
+import { fetchGroupPotActivities, approvePayoutRequest, rejectPayoutRequest } from '@/services/groupPotService';
+import { checkUserIsAdmin } from '@/services/groupPotService';
 import { 
   calculatePotBalance, 
   calculateAveragePayoutSize,
@@ -14,6 +15,7 @@ import {
 import { toast } from '@/components/ui/sonner';
 import { Expense } from '@/types/expenses';
 import { PotActivity } from '@/types/group-pot';
+import { useAuth } from '@/contexts';
 
 interface GroupPulseData {
   loading: boolean;
@@ -24,13 +26,20 @@ interface GroupPulseData {
   latestExpenseDate: Date | null;
   pendingPayoutsCount: number;
   averageApprovalTime: string;
+  pendingRequests: PotActivity[];
+  isAdmin: boolean;
+  handleApproveRequest: (activityId: string) => Promise<void>;
+  handleRejectRequest: (activityId: string) => Promise<void>;
 }
 
 export const useGroupPulse = (groupId: string): GroupPulseData => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [activities, setActivities] = useState<PotActivity[]>([]);
-  const [pulseData, setPulseData] = useState<Omit<GroupPulseData, 'loading'>>({
+  const [pendingRequests, setPendingRequests] = useState<PotActivity[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [pulseData, setPulseData] = useState<Omit<GroupPulseData, 'loading' | 'pendingRequests' | 'isAdmin' | 'handleApproveRequest' | 'handleRejectRequest'>>({
     potBalance: 0,
     averagePayoutSize: 0,
     estimatedPayoutsRemaining: 0,
@@ -45,7 +54,7 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
       try {
         setLoading(true);
         
-        // Fetch both data sets in parallel
+        // Fetch data in parallel
         const [expensesData, activitiesData] = await Promise.all([
           fetchGroupExpenses(groupId),
           fetchGroupPotActivities(groupId)
@@ -53,6 +62,12 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
         
         setExpenses(expensesData);
         setActivities(activitiesData);
+        
+        // Extract pending requests
+        const pending = activitiesData.filter(
+          activity => activity.type === 'payout' && activity.status === 'pending'
+        );
+        setPendingRequests(pending);
         
         // Calculate all metrics
         const potBalance = calculatePotBalance(activitiesData);
@@ -67,6 +82,12 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
           pendingPayoutsCount: countPendingPayouts(activitiesData),
           averageApprovalTime: calculateApprovalTime(activitiesData)
         });
+        
+        // Check if user is admin
+        if (user) {
+          const admin = await checkUserIsAdmin(groupId, user.id);
+          setIsAdmin(admin);
+        }
       } catch (error) {
         console.error('Error fetching group pulse data:', error);
         toast.error('Failed to load group pulse data');
@@ -78,10 +99,66 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
     if (groupId) {
       fetchData();
     }
-  }, [groupId]);
+  }, [groupId, user]);
+
+  const handleApproveRequest = async (activityId: string) => {
+    try {
+      await approvePayoutRequest(activityId);
+      
+      toast.success('Payout request approved');
+      
+      // Update the activities in state
+      setActivities(prevActivities => 
+        prevActivities.map(activity => 
+          activity.id === activityId 
+            ? { ...activity, status: 'approved' } 
+            : activity
+        )
+      );
+      
+      // Update pending requests
+      setPendingRequests(prevRequests => 
+        prevRequests.filter(request => request.id !== activityId)
+      );
+      
+    } catch (error) {
+      console.error('Error approving payout request:', error);
+      toast.error('Failed to approve payout request');
+    }
+  };
+  
+  const handleRejectRequest = async (activityId: string) => {
+    try {
+      await rejectPayoutRequest(activityId);
+      
+      toast.success('Payout request rejected');
+      
+      // Update the activities in state
+      setActivities(prevActivities => 
+        prevActivities.map(activity => 
+          activity.id === activityId 
+            ? { ...activity, status: 'rejected' } 
+            : activity
+        )
+      );
+      
+      // Update pending requests
+      setPendingRequests(prevRequests => 
+        prevRequests.filter(request => request.id !== activityId)
+      );
+      
+    } catch (error) {
+      console.error('Error rejecting payout request:', error);
+      toast.error('Failed to reject payout request');
+    }
+  };
   
   return {
     loading,
-    ...pulseData
+    ...pulseData,
+    pendingRequests,
+    isAdmin,
+    handleApproveRequest,
+    handleRejectRequest
   };
 };

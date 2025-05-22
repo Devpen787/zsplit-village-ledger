@@ -4,6 +4,7 @@ import { useGroupPulse } from '@/hooks/useGroupPulse';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertCircle, TrendingUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { PendingPayoutRequestsList } from './PendingPayoutRequestsList';
 
 interface GroupPulseProps {
   groupId: string;
@@ -18,7 +19,11 @@ export const GroupPulse: React.FC<GroupPulseProps> = ({ groupId }) => {
     recentExpensesCount,
     latestExpenseDate,
     pendingPayoutsCount,
-    averageApprovalTime
+    averageApprovalTime,
+    pendingRequests,
+    isAdmin,
+    handleApproveRequest,
+    handleRejectRequest
   } = useGroupPulse(groupId);
 
   if (loading) {
@@ -114,6 +119,15 @@ export const GroupPulse: React.FC<GroupPulseProps> = ({ groupId }) => {
                   <p>No pending requests – the group is all caught up!</p>
                 )}
               </div>
+              
+              {/* Admin-only: Show list of pending requests with approval/rejection buttons */}
+              {isAdmin && pendingPayoutsCount > 0 && (
+                <PendingPayoutRequestsList 
+                  pendingRequests={pendingRequests}
+                  onApprove={handleApproveRequest}
+                  onReject={handleRejectRequest}
+                />
+              )}
             </div>
           </CardContent>
         </Card>
