@@ -243,6 +243,10 @@ export type Database = {
         Args: { expense_id: string; user_id: string }
         Returns: boolean
       }
+      is_group_member: {
+        Args: { group_id_param: string; user_id_param: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

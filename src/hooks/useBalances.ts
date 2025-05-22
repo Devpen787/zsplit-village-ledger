@@ -18,16 +18,20 @@ export const useBalances = () => {
     try {
       if (!user) {
         setError("Not authenticated");
+        setLoading(false);
         return;
       }
 
-      // Call the calculate_balances function with the improved implementation
+      console.log("Fetching balances for user:", user.id);
+      
+      // Call the calculate_balances function
       const { data, error } = await supabase.rpc('calculate_balances');
 
       if (error) {
         console.error("Error fetching balances:", error);
         setError(error.message);
       } else if (Array.isArray(data)) {
+        console.log("Balances data received:", data);
         // Map the response to the Balance type
         const formattedBalances: Balance[] = data.map(item => ({
           user_id: item.user_id,
@@ -55,7 +59,9 @@ export const useBalances = () => {
   };
 
   useEffect(() => {
-    fetchBalances();
+    if (user) {
+      fetchBalances();
+    }
   }, [user]);
 
   return { balances, loading, error, refreshing, handleRefresh };

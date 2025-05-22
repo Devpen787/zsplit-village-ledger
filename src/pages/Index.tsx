@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -22,21 +21,23 @@ const Index = () => {
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchGroups();
+    if (user) {
+      fetchGroups();
+      
+      // Set up real-time subscription for groups
+      const groupsChannel = supabase
+        .channel('groups-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'groups' },
+          () => fetchGroups()
+        )
+        .subscribe();
 
-    // Set up real-time subscription for groups
-    const groupsChannel = supabase
-      .channel('groups-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'groups' },
-        () => fetchGroups()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(groupsChannel);
-    };
+      return () => {
+        supabase.removeChannel(groupsChannel);
+      };
+    }
   }, [user]);
 
   const fetchGroups = async () => {
@@ -46,24 +47,21 @@ const Index = () => {
     try {
       console.log("Fetching groups for user:", user.id);
       
-      // Fetch groups where the user is a member
-      const { data: groupMemberships, error: membershipError } = await (supabase
-        .from('group_members') as any)
-        .select('group_id')
-        .eq('user_id', user.id);
-
-      if (membershipError) {
-        console.error("Error fetching group memberships:", membershipError);
-        throw membershipError;
+      // Use the get_user_groups function to fetch group IDs securely
+      const { data: groupIds, error: functionError } = await supabase
+        .rpc('get_user_groups', { user_id_param: user.id });
+        
+      if (functionError) {
+        console.error("Error fetching group IDs:", functionError);
+        throw functionError;
       }
       
-      console.log("Group memberships:", groupMemberships);
-
-      if (groupMemberships && groupMemberships.length > 0) {
-        const groupIds = groupMemberships.map((membership: any) => membership.group_id);
-        
-        const { data: groupsData, error: groupsError } = await (supabase
-          .from('groups') as any)
+      console.log("Group IDs:", groupIds);
+      
+      if (groupIds && groupIds.length > 0) {
+        // Fetch group details
+        const { data: groupsData, error: groupsError } = await supabase
+          .from('groups')
           .select('*')
           .in('id', groupIds);
 
@@ -75,7 +73,7 @@ const Index = () => {
         console.log("Groups data:", groupsData);
         setGroups(groupsData || []);
       } else {
-        console.log("No group memberships found");
+        console.log("No groups found for user");
         setGroups([]);
       }
     } catch (error: any) {

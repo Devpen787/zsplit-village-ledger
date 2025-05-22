@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -7,6 +6,8 @@ import { useAuth } from "@/contexts";
 import { Loader2, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 type Expense = {
   id: string;
@@ -29,6 +30,7 @@ type ExpensesListProps = {
 export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [groupedExpenses, setGroupedExpenses] = useState<Record<string, Expense[]>>({});
@@ -36,11 +38,18 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
   const fetchExpenses = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      if (!user) {
+        setError("Not authenticated");
+        return;
+      }
+      
       console.log("Fetching expenses", { limit, groupId, userId: user?.id });
       
       // Build the query
-      let query = (supabase
-        .from('expenses') as any)
+      let query = supabase
+        .from('expenses')
         .select(`
           id,
           title,
@@ -64,14 +73,21 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
         query = query.limit(limit);
       }
 
-      const { data, error } = await query;
+      const { data, error: supabaseError } = await query;
 
-      if (error) {
-        console.error("Error fetching expenses:", error);
-        throw error;
+      if (supabaseError) {
+        console.error("Error fetching expenses:", supabaseError);
+        setError(supabaseError.message);
+        return;
       }
 
       console.log("Expenses data:", data);
+
+      if (!data || data.length === 0) {
+        setExpenses([]);
+        setGroupedExpenses({});
+        return;
+      }
 
       // Transform the data to match our Expense type
       const formattedExpenses = data.map((expense: any) => ({
@@ -100,30 +116,33 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
       }, {});
       
       setGroupedExpenses(grouped);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching expenses:', err);
+      setError(err.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchExpenses();
-    
-    // Set up realtime subscription for expenses
-    const expensesChannel = supabase
-      .channel('expenses-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'expenses' },
-        () => fetchExpenses()
-      )
-      .subscribe();
+    if (user) {
+      fetchExpenses();
+      
+      // Set up realtime subscription for expenses
+      const expensesChannel = supabase
+        .channel('expenses-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'expenses' },
+          () => fetchExpenses()
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(expensesChannel);
-    };
-  }, [limit, groupId]);
+      return () => {
+        supabase.removeChannel(expensesChannel);
+      };
+    }
+  }, [limit, groupId, user]);
 
   const formatDateForDisplay = (dateString: string) => {
     const date = new Date(dateString);
@@ -206,6 +225,20 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
       <Card>
         <CardContent className="p-6 flex justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error loading expenses</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     );

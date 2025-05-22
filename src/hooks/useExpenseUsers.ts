@@ -21,23 +21,36 @@ export const useExpenseUsers = () => {
       setError(null);
 
       try {
+        if (!user) {
+          setError("Not authenticated");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Fetching users for expense selection");
+        
         const { data, error: supabaseError } = await supabase
           .from('users')
           .select('id, name, email');
 
         if (supabaseError) {
+          console.error("Error fetching users:", supabaseError);
           setError(supabaseError.message);
         } else {
+          console.log("Users data received:", data);
           setUsers(data || []);
         }
       } catch (err: any) {
+        console.error("Unexpected error fetching users:", err);
         setError(err.message || 'Failed to fetch users');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUsers();
+    if (user) {
+      fetchUsers();
+    }
   }, [user]);
 
   // For backward compatibility with ExpenseDetail.tsx
