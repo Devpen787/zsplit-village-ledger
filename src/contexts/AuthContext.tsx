@@ -61,7 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get the user's email from Privy
     const linkedAccounts = privyUser.linkedAccounts || [];
     const emailAccount = linkedAccounts.find((account: any) => account.type === 'email');
-    const email = emailAccount ? emailAccount.email : null; // Fix: Changed from address to email
+    // Fix: Access email property correctly based on account type
+    const email = emailAccount ? emailAccount.address || emailAccount.email : null;
     
     const userData = await fetchOrCreateUser(privyUser.id, email);
     if (userData) {
@@ -85,7 +86,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Get the user's email from Privy
         const linkedAccounts = privyUser.linkedAccounts || [];
         const emailAccount = linkedAccounts.find((account: any) => account.type === 'email');
-        const email = emailAccount ? emailAccount.email : null; // Fix: Changed from address to email
+        // Fix: Access email property correctly based on account type
+        const email = emailAccount ? emailAccount.address || emailAccount.email : null;
         
         const userData = await fetchOrCreateUser(privyUser.id, email);
         
