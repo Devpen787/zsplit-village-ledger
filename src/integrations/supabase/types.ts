@@ -235,6 +235,10 @@ export type Database = {
           amount: number
         }[]
       }
+      get_user_groups: {
+        Args: { user_id_param: string }
+        Returns: string[]
+      }
       is_expense_member: {
         Args: { expense_id: string; user_id: string }
         Returns: boolean

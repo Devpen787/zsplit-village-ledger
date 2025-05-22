@@ -21,7 +21,7 @@ export const useBalances = () => {
         return;
       }
 
-      // Call the calculate_balances function
+      // Call the calculate_balances function with the improved implementation
       const { data, error } = await supabase.rpc('calculate_balances');
 
       if (error) {

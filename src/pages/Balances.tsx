@@ -38,8 +38,18 @@ const Balances = () => {
         </Alert>
       )}
 
-      <BalancesTable balances={balanceData} />
-      <BalancePaymentSuggestions balances={balanceData} />
+      {balances.length === 0 && !error ? (
+        <Alert className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No balances found</AlertTitle>
+          <AlertDescription>There are no expenses or balances to display yet.</AlertDescription>
+        </Alert>
+      ) : (
+        <>
+          <BalancesTable balances={balanceData} />
+          <BalancePaymentSuggestions balances={balanceData} />
+        </>
+      )}
     </div>
   );
 };
