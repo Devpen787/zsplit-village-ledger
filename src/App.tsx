@@ -21,6 +21,8 @@ import GroupPot from "./pages/GroupPot";
 import GroupPulse from "./pages/GroupPulse";
 import Settings from "./pages/Settings";
 import { PrivyProvider } from '@privy-io/react-auth';
+import { WagmiConfig } from 'wagmi';
+import { wagmiConfig } from '@/utils/walletConfig';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,32 +54,34 @@ const App = () => (
       >
         <BrowserRouter>
           <AuthProvider>
-            <WalletProvider>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/login" element={<Login />} />
-                
-                {/* Protected routes (require authentication) */}
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/expenses/:id" element={<ExpenseDetail />} />
-                  <Route path="/expenses/new" element={<ExpenseForm />} />
-                  <Route path="/balances" element={<Balances />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/group" element={<GroupDashboard />} />
-                  <Route path="/group/:id" element={<GroupView />} />
-                  <Route path="/group-pot" element={<GroupPot />} />
-                  <Route path="/group-pot/:id" element={<GroupPot />} />
-                  <Route path="/group-pulse" element={<GroupPulse />} />
-                  <Route path="/group-pulse/:id" element={<GroupPulse />} />
-                  <Route path="/settings" element={<Settings />} />
-                </Route>
-                
-                {/* Redirect for authenticated users */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </WalletProvider>
+            <WagmiConfig config={wagmiConfig}>
+              <WalletProvider>
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/login" element={<Login />} />
+                  
+                  {/* Protected routes (require authentication) */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/expenses/:id" element={<ExpenseDetail />} />
+                    <Route path="/expenses/new" element={<ExpenseForm />} />
+                    <Route path="/balances" element={<Balances />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/group" element={<GroupDashboard />} />
+                    <Route path="/group/:id" element={<GroupView />} />
+                    <Route path="/group-pot" element={<GroupPot />} />
+                    <Route path="/group-pot/:id" element={<GroupPot />} />
+                    <Route path="/group-pulse" element={<GroupPulse />} />
+                    <Route path="/group-pulse/:id" element={<GroupPulse />} />
+                    <Route path="/settings" element={<Settings />} />
+                  </Route>
+                  
+                  {/* Redirect for authenticated users */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </WalletProvider>
+            </WagmiConfig>
           </AuthProvider>
         </BrowserRouter>
       </PrivyProvider>
