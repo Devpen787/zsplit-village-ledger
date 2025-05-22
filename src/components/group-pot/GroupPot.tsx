@@ -5,6 +5,7 @@ import { useGroupPot } from '@/hooks/useGroupPot';
 import { PotContributionsCard } from './PotContributionsCard';
 import { PotActivityFeed } from './PotActivityFeed';
 import { RequestPayoutForm } from './RequestPayoutForm';
+import { PendingPayoutRequests } from './PendingPayoutRequests';
 import { Loader2 } from 'lucide-react';
 
 interface GroupPotProps {
@@ -18,7 +19,10 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
     contributors, 
     loading, 
     handlePayoutRequest, 
-    handleContribute 
+    handleContribute,
+    isAdmin,
+    handleApproveRequest,
+    handleRejectRequest
   } = useGroupPot(groupId);
   
   // Default target amount - could be fetched from group settings in the future
@@ -40,6 +44,15 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
         contributors={contributors}
         onContribute={handleContribute}
       />
+      
+      {/* Admin Panel - Only visible to admins */}
+      {isAdmin && (
+        <PendingPayoutRequests 
+          activities={activities}
+          onApprove={handleApproveRequest}
+          onReject={handleRejectRequest}
+        />
+      )}
       
       <Card>
         <CardHeader>

@@ -12,6 +12,9 @@ interface GroupPotData {
   loading: boolean;
   handlePayoutRequest: (amount: number, note: string) => Promise<void>;
   handleContribute: (amount: number, note: string) => Promise<void>;
+  isAdmin: boolean;
+  handleApproveRequest: (activityId: string) => Promise<void>;
+  handleRejectRequest: (activityId: string) => Promise<void>;
 }
 
 export const useGroupPot = (groupId: string): GroupPotData => {
@@ -19,6 +22,7 @@ export const useGroupPot = (groupId: string): GroupPotData => {
   const [activities, setActivities] = useState<PotActivity[]>([]);
   const [totalContributions, setTotalContributions] = useState(0);
   const [contributors, setContributors] = useState<{id: string; name?: string | null}[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { user } = useAuth();
   
   // Load group pot data
@@ -79,6 +83,18 @@ export const useGroupPot = (groupId: string): GroupPotData => {
         setActivities(typedActivities);
         setTotalContributions(total);
         setContributors(Array.from(uniqueContributors.values()));
+
+        // Check if current user is an admin
+        if (user) {
+          const { data: memberData } = await supabase
+            .from('group_members')
+            .select('role')
+            .eq('group_id', groupId)
+            .eq('user_id', user.id)
+            .single();
+          
+          setIsAdmin(memberData?.role === 'admin');
+        }
       } catch (error) {
         console.error('Error fetching group pot data:', error);
         toast.error('Failed to load group pot data');
@@ -90,7 +106,7 @@ export const useGroupPot = (groupId: string): GroupPotData => {
     if (groupId) {
       fetchGroupPotData();
     }
-  }, [groupId]);
+  }, [groupId, user]);
   
   const handlePayoutRequest = async (amount: number, note: string) => {
     if (!user) return;
@@ -181,6 +197,60 @@ export const useGroupPot = (groupId: string): GroupPotData => {
       toast.error('Failed to add contribution');
     }
   };
+
+  const handleApproveRequest = async (activityId: string) => {
+    try {
+      const { error } = await supabase
+        .from('group_pot_activity')
+        .update({ status: 'approved' })
+        .eq('id', activityId)
+        .eq('type', 'payout')
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      
+      toast.success('Payout request approved');
+      
+      // Update the activity in state
+      setActivities(prevActivities => 
+        prevActivities.map(activity => 
+          activity.id === activityId 
+            ? { ...activity, status: 'approved' } 
+            : activity
+        )
+      );
+    } catch (error) {
+      console.error('Error approving payout request:', error);
+      toast.error('Failed to approve payout request');
+    }
+  };
+
+  const handleRejectRequest = async (activityId: string) => {
+    try {
+      const { error } = await supabase
+        .from('group_pot_activity')
+        .update({ status: 'rejected' })
+        .eq('id', activityId)
+        .eq('type', 'payout')
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      
+      toast.success('Payout request rejected');
+      
+      // Update the activity in state
+      setActivities(prevActivities => 
+        prevActivities.map(activity => 
+          activity.id === activityId 
+            ? { ...activity, status: 'rejected' } 
+            : activity
+        )
+      );
+    } catch (error) {
+      console.error('Error rejecting payout request:', error);
+      toast.error('Failed to reject payout request');
+    }
+  };
   
   return {
     activities,
@@ -188,6 +258,9 @@ export const useGroupPot = (groupId: string): GroupPotData => {
     contributors,
     loading,
     handlePayoutRequest,
-    handleContribute
+    handleContribute,
+    isAdmin,
+    handleApproveRequest,
+    handleRejectRequest
   };
 };
