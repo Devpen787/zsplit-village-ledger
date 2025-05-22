@@ -5,6 +5,8 @@ import { toast } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
 import { Group, GroupMember } from '@/types/supabase';
 import { User } from '@/types/auth';
+import { useGroupPulse } from '@/hooks/useGroupPulse';
+import { useExpenses } from '@/hooks/useExpenses';
 
 export const useGroupDetails = (id: string | undefined, user: User | null) => {
   const navigate = useNavigate();
@@ -12,6 +14,19 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Get group pulse data for metrics
+  const { 
+    potBalance = 0, 
+    pendingPayoutsCount = 0, 
+    connectedWalletsCount = 0 
+  } = id ? useGroupPulse(id) : { potBalance: 0, pendingPayoutsCount: 0, connectedWalletsCount: 0 };
+  
+  // Get expenses data for metrics
+  const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
+  
+  // Calculate total expenses
+  const totalExpenses = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
   
   useEffect(() => {
     if (!id) return;
@@ -107,7 +122,8 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
           users:user_id (
             id,
             name,
-            email
+            email,
+            wallet_address
           )
         `)
         .eq('group_id', id);
@@ -177,6 +193,11 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
     loading,
     isAdmin,
     inviteMember,
-    refreshData: fetchGroupDetails
+    refreshData: fetchGroupDetails,
+    // Add these properties to fix the errors
+    potBalance,
+    totalExpenses,
+    pendingPayoutsCount,
+    connectedWalletsCount
   };
 };

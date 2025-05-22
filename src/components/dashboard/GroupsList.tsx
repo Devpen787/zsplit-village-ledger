@@ -1,195 +1,132 @@
 
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Plus, AlertCircle, RefreshCw, UserPlus } from "lucide-react";
 import { Group } from '@/types/supabase';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { PlusCircle, Users, RefreshCw, ChevronRight, AlertCircle } from "lucide-react";
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type GroupsListProps = {
+export interface GroupsListProps {
   groups: Group[];
   loading: boolean;
   error: string | null;
-  hasRecursionError: boolean;
+  hasRecursionError?: boolean;
   onCreateGroup: () => void;
   onRefresh: () => Promise<void>;
-};
+  onGroupSelect?: (groupId: string) => void;
+}
 
 export const GroupsList = ({ 
   groups, 
   loading, 
   error, 
-  hasRecursionError, 
-  onCreateGroup, 
-  onRefresh 
+  hasRecursionError = false, 
+  onCreateGroup,
+  onRefresh,
+  onGroupSelect
 }: GroupsListProps) => {
-  const navigate = useNavigate();
-
-  // Function to get group stats - moved outside of the render loop
-  const GroupStats = ({ groupId }: { groupId: string }) => {
-    const { data: stats, isLoading: statsLoading } = useQuery({
-      queryKey: ['group-stats', groupId],
-      queryFn: async () => {
-        // Get total expenses for this group
-        const { data: expenses, error: expensesError } = await supabase
-          .from('expenses')
-          .select('amount')
-          .eq('group_id', groupId);
-          
-        if (expensesError) throw expensesError;
-        
-        const totalAmount = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
-        
-        // Get member count for this group
-        const { count, error: countError } = await supabase
-          .from('group_members')
-          .select('*', { count: 'exact', head: true })
-          .eq('group_id', groupId);
-          
-        if (countError) throw countError;
-        
-        return { totalAmount, memberCount: count || 0 };
-      },
-      staleTime: 60000, // 1 minute
-    });
-
-    return (
-      <div className="flex justify-between items-center mt-2 pt-2 border-t border-border/50 text-sm">
-        <div className="flex items-center">
-          <Users className="h-3 w-3 mr-1 text-muted-foreground" />
-          {statsLoading ? (
-            <Skeleton className="h-4 w-6" />
-          ) : (
-            <span>{stats?.memberCount || 0} members</span>
-          )}
-        </div>
-        <div className="font-medium">
-          {statsLoading ? (
-            <Skeleton className="h-4 w-16" />
-          ) : (
-            stats && stats.totalAmount > 0 ? (
-              <span>{stats.totalAmount.toFixed(0)} CHF</span>
-            ) : (
-              <span className="text-muted-foreground">No expenses</span>
-            )
-          )}
-        </div>
-      </div>
-    );
-  };
-
   if (loading) {
     return (
-      <div className="flex overflow-x-auto gap-4 pb-4 -mx-2 px-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-x-visible">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="animate-pulse min-w-[260px] md:min-w-0">
-            <CardContent className="h-32 p-6" />
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  if (hasRecursionError) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <Alert variant="warning" className="bg-amber-50 dark:bg-amber-900/20">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-600">Database Configuration Issue</AlertTitle>
-            <AlertDescription className="text-amber-700 dark:text-amber-300">
-              <p className="mb-2">We're experiencing a temporary issue with database policies.</p>
-              <div className="flex justify-start mt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={onRefresh}
-                  className="flex items-center gap-1 bg-amber-100 dark:bg-amber-800/30 border-amber-200"
-                >
-                  <RefreshCw className="h-3 w-3" /> Try Again
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-          <div className="mt-4 flex justify-center">
-            <Button variant="outline" size="sm" onClick={onRefresh}>
-              Try Again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (groups.length > 0) {
-    return (
-      <div className="flex overflow-x-auto gap-4 pb-4 -mx-2 px-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-x-visible">
-        {groups.map((group) => (
-          <Card 
-            key={group.id} 
-            className="hover:border-primary/50 transition-all cursor-pointer min-w-[260px] md:min-w-0"
-            onClick={() => navigate(`/group/${group.id}`)}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10 mr-3">
-                    {group.icon || '🏠'}
-                  </div>
-                  <div>
-                    <h3 className="font-medium">{group.name}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Created {new Date(group.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-              
-              {/* Use the GroupStats component instead of inline hook */}
-              <GroupStats groupId={group.id} />
+          <Card key={i} className="cursor-pointer hover:bg-accent/20 transition-colors">
+            <CardContent className="p-6">
+              <Skeleton className="h-8 w-8 rounded-full mb-4" />
+              <Skeleton className="h-5 w-40 mb-2" />
+              <Skeleton className="h-4 w-20" />
             </CardContent>
           </Card>
         ))}
       </div>
     );
   }
-
-  return (
-    <Card>
-      <CardContent className="p-6 text-center">
-        <div className="flex flex-col items-center justify-center space-y-3">
-          <Users className="h-12 w-12 text-muted-foreground opacity-50" />
-          <div className="space-y-1">
-            <h3 className="font-medium">No groups yet</h3>
-            <p className="text-sm text-muted-foreground">
-              Create a group to start tracking expenses with friends
-            </p>
+  
+  if (hasRecursionError) {
+    return (
+      <Card className="bg-amber-50 border-amber-200">
+        <CardContent className="p-6">
+          <div className="flex items-start space-x-4">
+            <AlertCircle className="h-6 w-6 text-amber-500 flex-shrink-0 mt-1" />
+            <div className="space-y-2">
+              <h3 className="font-medium">Database Configuration Issue</h3>
+              <p className="text-sm text-muted-foreground">
+                There's a recursive policy issue in the database. Please contact support for assistance.
+              </p>
+              <Button variant="outline" size="sm" onClick={onRefresh}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+            </div>
           </div>
-          <Button onClick={onCreateGroup} className="mt-2">
-            <PlusCircle className="mr-2 h-4 w-4" />
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (error) {
+    return (
+      <Card className="bg-red-50 border-red-200">
+        <CardContent className="p-6">
+          <div className="flex items-start space-x-4">
+            <AlertCircle className="h-6 w-6 text-red-500 flex-shrink-0 mt-1" />
+            <div className="space-y-2">
+              <h3 className="font-medium">Error Loading Groups</h3>
+              <p className="text-sm text-muted-foreground">{error}</p>
+              <Button variant="outline" size="sm" onClick={onRefresh}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (groups.length === 0) {
+    return (
+      <Card className="border-dashed border-2 border-muted">
+        <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+          <UserPlus className="h-10 w-10 text-muted-foreground mb-4" />
+          <h3 className="font-medium mb-2">No Groups Yet</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Create your first group to start tracking shared expenses
+          </p>
+          <Button onClick={onCreateGroup}>
+            <Plus className="h-4 w-4 mr-2" />
             Create Group
           </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {groups.map((group) => (
+        <Card 
+          key={group.id} 
+          className="cursor-pointer hover:bg-accent/20 transition-colors"
+          onClick={() => onGroupSelect && onGroupSelect(group.id)}
+        >
+          <CardContent className="p-6">
+            <div className="text-3xl mb-4">{group.icon}</div>
+            <h3 className="font-medium text-lg mb-1">{group.name}</h3>
+            <p className="text-sm text-muted-foreground">
+              Created {new Date(group.created_at).toLocaleDateString()}
+            </p>
+          </CardContent>
+        </Card>
+      ))}
+      <Card 
+        className="cursor-pointer hover:bg-accent/20 transition-colors border-dashed border-2 border-muted"
+        onClick={onCreateGroup}
+      >
+        <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
+          <Plus className="h-10 w-10 text-muted-foreground mb-4" />
+          <h3 className="font-medium">Create New Group</h3>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

@@ -16,6 +16,7 @@ import { GroupPulse } from '@/components/group-pulse/GroupPulse';
 import { GroupOverview } from './GroupOverview';
 import { useGroupPulse } from '@/hooks/useGroupPulse';
 import { useExpenses } from '@/hooks/useExpenses';
+import { Dispatch, SetStateAction } from 'react';
 
 interface GroupTabsProps {
   groupId: string;
@@ -30,6 +31,8 @@ interface GroupTabsProps {
     icon: string;
     created_at: string;
   } | null;
+  activeTab?: string;
+  onTabChange?: Dispatch<SetStateAction<string>>;
 }
 
 export const GroupTabs = ({ 
@@ -38,7 +41,9 @@ export const GroupTabs = ({
   isAdmin, 
   onInviteClick, 
   currentUser,
-  group
+  group,
+  activeTab = "overview",
+  onTabChange
 }: GroupTabsProps) => {
   // Get balance data
   const { balances, loading, error, refreshing, handleRefresh } = useBalances();
@@ -72,8 +77,15 @@ export const GroupTabs = ({
     }
   }, [groupId]);
 
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    if (onTabChange) {
+      onTabChange(value);
+    }
+  };
+
   return (
-    <Tabs defaultValue="overview" className="w-full">
+    <Tabs defaultValue={activeTab} value={activeTab} onValueChange={handleTabChange} className="w-full">
       <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="expenses">Expenses</TabsTrigger>
