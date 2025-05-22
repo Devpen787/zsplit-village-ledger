@@ -15,6 +15,23 @@ export type Expense = {
   group_id?: string | null;
 };
 
+export type ExpenseSplitData = {
+  userId: string;
+  amount?: number;
+  percentage?: number;
+  shares?: number;
+};
+
+export type ExpenseMember = {
+  id: string;
+  expense_id: string;
+  user_id: string;
+  share_type: 'equal' | 'amount' | 'percentage' | 'shares';
+  share_value: number;
+  share: number;
+  paid_status?: boolean;
+};
+
 export type ExpensesListProps = {
   limit?: number;
   groupId?: string;

@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { ExpenseFormValues } from '@/hooks/useExpenseForm';
-import { Switch } from "@/components/ui/switch";
 
 interface ExpenseFormFieldsProps {
   form: UseFormReturn<ExpenseFormValues>;
@@ -122,27 +121,6 @@ const ExpenseFormFields: React.FC<ExpenseFormFieldsProps> = ({ form, users }) =>
               </SelectContent>
             </Select>
             <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="splitEqually"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-            <div className="space-y-0.5">
-              <FormLabel>Split Equally</FormLabel>
-              <FormDescription>
-                Split the expense equally among all participants
-              </FormDescription>
-            </div>
-            <FormControl>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
-            </FormControl>
           </FormItem>
         )}
       />

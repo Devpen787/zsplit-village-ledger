@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { expenseFormSchema, useExpenseForm, ExpenseFormValues } from '@/hooks/us
 import ExpenseFormFields from './ExpenseFormFields';
 import ExpenseFormHeader from './ExpenseFormHeader';
 import ExpenseFormSubmitButton from './ExpenseFormSubmitButton';
+import ExpenseSplitMethodFields from './ExpenseSplitMethodFields';
 
 interface ExpenseFormProps {
   groupId: string | null;
@@ -25,6 +26,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
     users,
     isEditing
   } = useExpenseForm(groupId);
+
+  const [splitMethod, setSplitMethod] = useState<string>("equal");
 
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
@@ -48,6 +51,18 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <ExpenseFormFields form={form} users={users} />
+              
+              <ExpenseSplitMethodFields 
+                users={users}
+                splitMethod={splitMethod}
+                setSplitMethod={setSplitMethod}
+                totalAmount={form.watch('amount')}
+                paidBy={form.watch('paidBy')}
+                onSplitDataChange={(splitData) => {
+                  form.setValue('splitData', splitData);
+                }}
+              />
+              
               <ExpenseFormSubmitButton loading={submitLoading} isEditing={isEditing} />
             </form>
           </Form>
