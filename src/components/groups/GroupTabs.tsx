@@ -7,6 +7,11 @@ import { UserPlus } from "lucide-react";
 import { ExpensesList } from "@/components/ExpensesList";
 import { MembersList } from "@/components/groups/MembersList";
 import { GroupMember } from '@/types/supabase';
+import { useBalances } from '@/hooks/useBalances';
+import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable';
+import { SettlementActions } from '@/components/balances/SettlementActions';
+import { BalanceSummaryCards } from '@/components/balances/BalanceSummaryCards';
+import { Loader2 } from 'lucide-react';
 
 interface GroupTabsProps {
   groupId: string;
@@ -25,6 +30,18 @@ export const GroupTabs = ({
   onInviteClick, 
   currentUser 
 }: GroupTabsProps) => {
+  // Get balance data
+  const { balances, loading, error } = useBalances();
+  
+  // Transform Balance[] to BalanceData[]
+  const balanceData: BalanceData[] = balances.map(balance => ({
+    userId: balance.user_id,
+    userName: balance.user_name || balance.user_email,
+    amountPaid: balance.amount > 0 ? balance.amount : 0,
+    amountOwed: balance.amount < 0 ? Math.abs(balance.amount) : 0,
+    netBalance: balance.amount
+  }));
+
   return (
     <Tabs defaultValue="expenses" className="w-full">
       <TabsList className="grid w-full grid-cols-3">
@@ -52,16 +69,39 @@ export const GroupTabs = ({
         </Card>
       </TabsContent>
       <TabsContent value="balances" className="mt-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Balance Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center py-4 text-muted-foreground">
-              Balance visualization will be available soon
-            </p>
-          </CardContent>
-        </Card>
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : error ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Balance Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-center py-4 text-red-500">
+                Error loading balance data. Please try again.
+              </p>
+            </CardContent>
+          </Card>
+        ) : balances.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Balance Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-center py-4 text-muted-foreground">
+                No balance data available yet. Create some expenses to see balances.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <BalanceSummaryCards balances={balanceData} groupId={groupId} />
+            <BalancesTable balances={balanceData} />
+            <SettlementActions balances={balanceData} />
+          </>
+        )}
       </TabsContent>
     </Tabs>
   );

@@ -4,7 +4,8 @@ import { AlertCircle, Loader2, Info } from 'lucide-react';
 import { useBalances } from '@/hooks/useBalances';
 import { BalancesHeader } from '@/components/balances/BalancesHeader';
 import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable';
-import { BalancePaymentSuggestions } from '@/components/BalancePaymentSuggestions';
+import { BalanceSummaryCards } from '@/components/balances/BalanceSummaryCards';
+import { SettlementActions } from '@/components/balances/SettlementActions';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/layouts/AppLayout';
@@ -74,8 +75,9 @@ const Balances = () => {
           </Alert>
         ) : !hasRecursionError && (
           <>
+            <BalanceSummaryCards balances={balanceData} />
             <BalancesTable balances={balanceData} />
-            <BalancePaymentSuggestions balances={balanceData} />
+            <SettlementActions balances={balanceData} />
           </>
         )}
       </div>
