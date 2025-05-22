@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { createWeb3Modal } from '@web3modal/wagmi/react';
+import { createWeb3Modal } from '@web3modal/wagmi';
 import { wagmiConfig, projectId } from '@/utils/walletConfig';
 import { useAccount, useDisconnect } from 'wagmi';
 import { supabase } from '@/integrations/supabase/client';
