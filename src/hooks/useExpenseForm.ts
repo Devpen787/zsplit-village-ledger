@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts';
 import { ExpenseFormValues } from '@/schemas/expenseFormSchema';
-import { fetchExpenseById, fetchUsers, saveExpense } from '@/services/expenseService';
+import { fetchExpenseById, fetchUsers, saveExpense, fetchGroupDetails } from '@/services/expenseService';
 import { Expense } from '@/types/expenses';
 
 // Re-export the schema for convenience
@@ -18,6 +18,7 @@ export const useExpenseForm = (groupId: string | null) => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [groupName, setGroupName] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -32,6 +33,18 @@ export const useExpenseForm = (groupId: string | null) => {
       // Load users
       const usersData = await fetchUsers(groupId);
       setUsers(usersData);
+      
+      // Load group name if groupId is provided
+      if (groupId) {
+        try {
+          const groupDetails = await fetchGroupDetails(groupId);
+          if (groupDetails) {
+            setGroupName(groupDetails.name);
+          }
+        } catch (error) {
+          console.error("Error fetching group details:", error);
+        }
+      }
       
       setLoading(false);
     };
@@ -82,6 +95,7 @@ export const useExpenseForm = (groupId: string | null) => {
     submitLoading,
     getDefaultValues,
     onSubmit,
-    isEditing: !!id
+    isEditing: !!id,
+    groupName
   };
 };

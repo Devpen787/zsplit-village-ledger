@@ -1,16 +1,14 @@
 
 import React, { useState } from "react";
 import SplitMethodSelector from "./split-methods/SplitMethodSelector";
-import SplitInputs from "./split-methods/SplitInputs";
 import SplitSummary from "./split-methods/SplitSummary";
 import ValidationAlert from "./split-methods/ValidationAlert";
 import { UserSplitData } from "@/types/expenses";
 import { useExpenseSplit } from "@/hooks/useExpenseSplit";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Check } from "lucide-react";
 
 type User = {
   id: string;
@@ -25,6 +23,7 @@ interface ExpenseSplitMethodFieldsProps {
   totalAmount: number;
   paidBy: string;
   onSplitDataChange: (splitData: UserSplitData[]) => void;
+  groupName?: string | null;
 }
 
 const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
@@ -34,6 +33,7 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
   totalAmount,
   paidBy,
   onSplitDataChange,
+  groupName
 }) => {
   const [selectedUsers, setSelectedUsers] = useState<Record<string, boolean>>(() => {
     // Initialize all users as selected by default
@@ -86,75 +86,74 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Group Context if provided */}
+      {groupName && (
+        <div className="text-sm text-muted-foreground">
+          You're adding an expense to: <span className="font-medium">{groupName}</span>
+        </div>
+      )}
+      
       {/* Split Method Selector */}
       <SplitMethodSelector splitMethod={splitMethod} setSplitMethod={setSplitMethod} />
       
-      {/* Participant Selection and Split Inputs in one card */}
-      <Card>
-        <CardContent className="pt-6 pb-4 space-y-6">
-          {/* Participant Selection */}
-          <div className="space-y-2">
-            <Label>Split with</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {users.map((user) => (
-                <div key={user.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`user-${user.id}`}
-                    checked={selectedUsers[user.id] || false}
-                    onCheckedChange={() => toggleUser(user.id)}
-                  />
-                  <Label htmlFor={`user-${user.id}`} className="cursor-pointer">
-                    {user.name || user.email}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Validation Alert */}
-          <ValidationAlert validationError={validationError} />
-          
-          {/* Split Inputs */}
-          {filteredUsers.length > 0 ? (
-            <SplitInputs
-              splitMethod={splitMethod}
+      {/* Validation Alert */}
+      <ValidationAlert validationError={validationError} />
+      
+      {/* Consolidated Split Input Table */}
+      <div>
+        <Label className="mb-2 block">Split with</Label>
+        <Card>
+          <CardContent className="pt-4 pb-2 overflow-x-auto">
+            <SplitSummary
               splitData={splitData}
-              users={filteredUsers}
               totalAmount={totalAmount}
               paidBy={paidBy}
+              getCalculatedAmount={getCalculatedAmount}
+              getUserName={getUserName}
+              splitMethod={splitMethod}
+              selectedUsers={selectedUsers}
+              toggleUser={toggleUser}
               onInputChange={handleInputChange}
               adjustShares={adjustShares}
-              getCalculatedAmount={getCalculatedAmount}
-              getTotalShares={getTotalShares}
             />
-          ) : (
-            <div className="text-amber-500 text-center py-2">
-              Please select at least one participant to split the expense with.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        
+        {/* Equal split info displayed directly */}
+        {splitMethod === "equal" && filteredUsers.length > 0 && totalAmount > 0 && (
+          <div className="text-sm text-green-600 flex items-center mt-2">
+            <Check className="h-4 w-4 mr-2" />
+            Each person will pay {(totalAmount / filteredUsers.length).toFixed(2)}
+          </div>
+        )}
+      </div>
       
       {/* Collapsible Summary - only show if we have a valid amount */}
-      {totalAmount > 0 && filteredUsers.length > 0 && (
+      {totalAmount > 0 && filteredUsers.length > 0 && splitMethod !== "equal" && (
         <Card className="overflow-hidden">
           <Collapsible open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
             <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-              <h4 className="text-base font-medium">Payment Summary</h4>
+              <h4 className="text-base font-medium">Show payment breakdown</h4>
               <div className="flex items-center text-muted-foreground">
                 {isSummaryOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="px-4 pb-4">
-                <SplitSummary 
-                  splitData={splitData}
-                  totalAmount={totalAmount}
-                  paidBy={paidBy}
-                  getCalculatedAmount={getCalculatedAmount}
-                  getUserName={getUserName}
-                  splitMethod={splitMethod}
-                />
+                <div className="text-sm space-y-2">
+                  {filteredUsers.map((user) => {
+                    const userData = splitData.find(d => d.userId === user.id);
+                    if (!userData) return null;
+                    
+                    const amount = getCalculatedAmount(userData);
+                    return (
+                      <div key={user.id} className="flex justify-between">
+                        <span>{getUserName(user.id)}</span>
+                        <span className="font-medium">{amount.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </CollapsibleContent>
           </Collapsible>

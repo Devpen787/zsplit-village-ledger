@@ -6,9 +6,10 @@ import { useNavigate } from 'react-router-dom';
 
 interface ExpenseFormHeaderProps {
   isEditing: boolean;
+  groupName?: string | null;
 }
 
-const ExpenseFormHeader: React.FC<ExpenseFormHeaderProps> = ({ isEditing }) => {
+const ExpenseFormHeader: React.FC<ExpenseFormHeaderProps> = ({ isEditing, groupName }) => {
   const navigate = useNavigate();
   
   return (
@@ -17,7 +18,12 @@ const ExpenseFormHeader: React.FC<ExpenseFormHeaderProps> = ({ isEditing }) => {
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back
       </Button>
-      <h2 className="text-2xl font-bold mb-4">{isEditing ? "Edit Expense" : "New Expense"}</h2>
+      <h2 className="text-2xl font-bold mb-2">{isEditing ? "Edit Expense" : "New Expense"}</h2>
+      {groupName && (
+        <p className="text-muted-foreground mb-4">
+          You're adding an expense to: <span className="font-medium">{groupName}</span>
+        </p>
+      )}
     </>
   );
 };

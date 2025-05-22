@@ -24,7 +24,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
     getDefaultValues,
     onSubmit,
     users,
-    isEditing
+    isEditing,
+    groupName
   } = useExpenseForm(groupId);
 
   const [splitMethod, setSplitMethod] = useState<string>("equal");
@@ -48,7 +49,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
 
   return (
     <div className="container mx-auto py-6 pb-24">
-      <ExpenseFormHeader isEditing={isEditing} />
+      <ExpenseFormHeader isEditing={isEditing} groupName={groupName} />
       
       <Card>
         <CardContent className="pt-6">
@@ -64,6 +65,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
                 setSplitMethod={setSplitMethod}
                 totalAmount={form.watch('amount')}
                 paidBy={form.watch('paidBy')}
+                groupName={groupName}
                 onSplitDataChange={(splitData) => {
                   form.setValue('splitData', splitData);
                   // Split is valid when we receive data from the component

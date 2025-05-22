@@ -2,6 +2,8 @@
 import React from "react";
 import { UserSplitData } from "@/types/expenses";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { 
   Table,
@@ -19,6 +21,10 @@ interface SplitSummaryProps {
   getCalculatedAmount: (userData: UserSplitData) => number;
   getUserName: (userId: string) => string;
   splitMethod: string;
+  selectedUsers: Record<string, boolean>;
+  toggleUser: (userId: string) => void;
+  onInputChange?: (userId: string, value: string, field: 'amount' | 'percentage' | 'shares') => void;
+  adjustShares?: (userId: string, adjustment: number) => void;
 }
 
 const SplitSummary: React.FC<SplitSummaryProps> = ({
@@ -28,6 +34,10 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
   getCalculatedAmount,
   getUserName,
   splitMethod,
+  selectedUsers,
+  toggleUser,
+  onInputChange,
+  adjustShares,
 }) => {
   if (!totalAmount || totalAmount <= 0) return null;
   
@@ -41,18 +51,86 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
       .substring(0, 2);
   };
 
+  const getInputField = (userData: UserSplitData) => {
+    if (splitMethod === "equal") return null;
+    
+    const userId = userData.userId;
+    let value: number | undefined;
+    let fieldType: 'amount' | 'percentage' | 'shares';
+    let placeholder: string;
+    let step: string;
+    
+    switch (splitMethod) {
+      case "amount":
+        value = userData.amount;
+        fieldType = 'amount';
+        placeholder = "0.00";
+        step = "0.01";
+        break;
+      case "percentage":
+        value = userData.percentage;
+        fieldType = 'percentage';
+        placeholder = "0";
+        step = "0.1";
+        break;
+      case "shares":
+        value = userData.shares;
+        fieldType = 'shares';
+        placeholder = "1";
+        step = "1";
+        break;
+      default:
+        return null;
+    }
+    
+    return (
+      <div className="flex items-center space-x-2">
+        {splitMethod === "shares" && (
+          <button 
+            type="button"
+            className="p-1 rounded-md text-xs bg-gray-200 hover:bg-gray-300"
+            onClick={() => adjustShares?.(userId, -1)}
+            disabled={value === 1}
+          >
+            -
+          </button>
+        )}
+        
+        <Input
+          type="number"
+          className="h-8 w-20"
+          placeholder={placeholder}
+          step={step}
+          value={value === 0 || value === undefined ? '' : value}
+          onChange={(e) => onInputChange?.(userId, e.target.value, fieldType)}
+        />
+        
+        {splitMethod === "shares" && (
+          <button 
+            type="button"
+            className="p-1 rounded-md text-xs bg-gray-200 hover:bg-gray-300"
+            onClick={() => adjustShares?.(userId, 1)}
+          >
+            +
+          </button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-12">Include</TableHead>
           <TableHead>Person</TableHead>
           {splitMethod !== "equal" && (
             <TableHead>
               {splitMethod === "percentage" ? "%" : 
-               splitMethod === "shares" ? "Shares" : ""}
+               splitMethod === "shares" ? "Shares" : "Amount"}
             </TableHead>
           )}
-          <TableHead className="text-right">Amount</TableHead>
+          <TableHead className="text-right">Final Amount</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -61,18 +139,15 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
           const amount = getCalculatedAmount(data);
           const initials = getInitials(userName);
           
-          let additionalInfo = "";
-          switch (splitMethod) {
-            case "percentage":
-              additionalInfo = `${data.percentage?.toFixed(1) || 0}%`;
-              break;
-            case "shares":
-              additionalInfo = `${data.shares || 1} ${data.shares === 1 ? 'share' : 'shares'}`;
-              break;
-          }
-          
           return (
-            <TableRow key={data.userId}>
+            <TableRow key={data.userId} className={!selectedUsers[data.userId] ? "opacity-50" : ""}>
+              <TableCell>
+                <Checkbox 
+                  checked={selectedUsers[data.userId] || false}
+                  onCheckedChange={() => toggleUser(data.userId)}
+                  id={`user-check-${data.userId}`}
+                />
+              </TableCell>
               <TableCell>
                 <div className="flex items-center">
                   <Avatar className="h-7 w-7 mr-2">
@@ -90,11 +165,11 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
                   </span>
                 </div>
               </TableCell>
-              {splitMethod !== "equal" && (
-                <TableCell>{additionalInfo}</TableCell>
-              )}
+              {splitMethod !== "equal" ? (
+                <TableCell>{getInputField(data)}</TableCell>
+              ) : null}
               <TableCell className="text-right font-medium">
-                {amount.toFixed(2)}
+                {selectedUsers[data.userId] ? amount.toFixed(2) : "—"}
               </TableCell>
             </TableRow>
           );
