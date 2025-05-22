@@ -9,20 +9,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/layouts/AppLayout";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const emojis = ["😀", "😎", "🐱", "🚀", "🌟", "🍕", "🏄‍♂️", "🎮", "📚", "🎸"];
 
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [displayName, setDisplayName] = useState(user?.name || '');
-  const [selectedEmoji, setSelectedEmoji] = useState('😀');
+  const [selectedEmoji, setSelectedEmoji] = useState(user?.avatar_emoji || '😀');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
       setDisplayName(user.name || '');
+      setSelectedEmoji(user.avatar_emoji || '😀');
     }
   }, [user]);
 
@@ -42,6 +45,8 @@ const Profile = () => {
 
       if (error) throw error;
       
+      // Refresh user data to get updated info
+      await refreshUser();
       toast.success('Profile updated successfully');
     } catch (error: any) {
       console.error('Error updating profile:', error);
@@ -64,6 +69,11 @@ const Profile = () => {
   return (
     <AppLayout>
       <div className="container max-w-md py-8">
+        <div className="mb-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Dashboard
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Your Profile</CardTitle>

@@ -190,6 +190,7 @@ export type Database = {
       }
       users: {
         Row: {
+          avatar_emoji: string | null
           created_at: string
           email: string
           group_name: string | null
@@ -200,6 +201,7 @@ export type Database = {
           wallet_visibility: string | null
         }
         Insert: {
+          avatar_emoji?: string | null
           created_at?: string
           email: string
           group_name?: string | null
@@ -210,6 +212,7 @@ export type Database = {
           wallet_visibility?: string | null
         }
         Update: {
+          avatar_emoji?: string | null
           created_at?: string
           email?: string
           group_name?: string | null
