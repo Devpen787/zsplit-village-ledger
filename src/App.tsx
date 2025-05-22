@@ -11,7 +11,7 @@ import ExpenseDetail from "./pages/ExpenseDetail";
 import ExpenseForm from "./pages/ExpenseForm";
 import Balances from "./pages/Balances";
 import NotFound from "./pages/NotFound";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider } from "./contexts";  // Updated import path
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Profile from "./pages/Profile";
 import GroupDashboard from "./pages/GroupDashboard";
