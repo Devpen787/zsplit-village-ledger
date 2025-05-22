@@ -71,7 +71,9 @@ export const MembersList = ({
                   {currentUserId && member.user?.id === currentUserId && " (You)"}
                 </p>
                 
-                {showWalletIndicator && member.user?.wallet_address && (
+                {showWalletIndicator && member.user && 
+                  'wallet_address' in member.user && 
+                  member.user.wallet_address && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>

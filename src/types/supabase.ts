@@ -18,6 +18,7 @@ export interface GroupMember {
     id: string;
     name: string | null;
     email: string;
+    wallet_address?: string | null;
   };
 }
 
