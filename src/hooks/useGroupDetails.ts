@@ -31,8 +31,8 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   // Get expenses data for metrics
   const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
   
-  // Calculate total expenses - properly handle the reduce operation with explicit type annotation
-  const totalExpenses = expenses.reduce((sum: number, expense) => {
+  // Calculate total expenses - properly handle the reduce operation with generic type
+  const totalExpenses = expenses.reduce<number>((sum, expense) => {
     return sum + (Number(expense.amount) || 0);
   }, 0);
   
