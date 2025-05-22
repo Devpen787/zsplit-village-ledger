@@ -9,39 +9,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts";
 import { toast } from "@/components/ui/sonner";
-import { ArrowLeft, PlusCircle, UserPlus, Settings, Trash, Receipt } from "lucide-react";
+import { ArrowLeft, PlusCircle, UserPlus, Settings } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ExpensesList } from "@/components/ExpensesList";
 import { Loader2 } from "lucide-react";
-
-type Group = {
-  id: string;
-  name: string;
-  icon: string;
-  created_by: string;
-  created_at: string;
-};
-
-type Member = {
-  id: string;
-  group_id: string;
-  user_id: string;
-  role: string;
-  user: {
-    id: string;
-    name: string | null;
-    email: string;
-  };
-};
+import { Group, GroupMember } from "@/types/supabase";
 
 const GroupView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [group, setGroup] = useState<Group | null>(null);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -82,14 +63,19 @@ const GroupView = () => {
     
     setLoading(true);
     try {
+      console.log("Fetching group details for:", id);
+      
       // Fetch group details
-      const { data: groupData, error: groupError } = await supabase
-        .from('groups')
+      const { data: groupData, error: groupError } = await (supabase
+        .from('groups') as any)
         .select('*')
         .eq('id', id)
         .single();
         
-      if (groupError) throw groupError;
+      if (groupError) {
+        console.error("Error fetching group:", groupError);
+        throw groupError;
+      }
       
       if (!groupData) {
         toast.error("Group not found");
@@ -97,11 +83,12 @@ const GroupView = () => {
         return;
       }
       
+      console.log("Group data:", groupData);
       setGroup(groupData);
       
       // Check if current user is an admin
-      const { data: memberData, error: memberError } = await supabase
-        .from('group_members')
+      const { data: memberData, error: memberError } = await (supabase
+        .from('group_members') as any)
         .select('role')
         .eq('group_id', id)
         .eq('user_id', user.id)
@@ -124,8 +111,10 @@ const GroupView = () => {
     if (!id) return;
     
     try {
-      const { data: membersData, error: membersError } = await supabase
-        .from('group_members')
+      console.log("Fetching members for group:", id);
+      
+      const { data: membersData, error: membersError } = await (supabase
+        .from('group_members') as any)
         .select(`
           id,
           group_id,
@@ -139,8 +128,12 @@ const GroupView = () => {
         `)
         .eq('group_id', id);
         
-      if (membersError) throw membersError;
+      if (membersError) {
+        console.error("Error fetching members:", membersError);
+        throw membersError;
+      }
       
+      console.log("Group members data:", membersData);
       setMembers(membersData || []);
     } catch (error: any) {
       console.error("Error fetching members:", error);
@@ -155,8 +148,8 @@ const GroupView = () => {
     setInviting(true);
     try {
       // First check if the user exists
-      const { data: userData, error: userError } = await supabase
-        .from('users')
+      const { data: userData, error: userError } = await (supabase
+        .from('users') as any)
         .select('id')
         .eq('email', inviteEmail.toLowerCase())
         .maybeSingle();
@@ -169,8 +162,8 @@ const GroupView = () => {
       }
       
       // Check if user is already a member
-      const { data: existingMember, error: memberCheckError } = await supabase
-        .from('group_members')
+      const { data: existingMember, error: memberCheckError } = await (supabase
+        .from('group_members') as any)
         .select('id')
         .eq('group_id', id)
         .eq('user_id', userData.id)
@@ -184,8 +177,8 @@ const GroupView = () => {
       }
       
       // Add the user as a member
-      const { error: addError } = await supabase
-        .from('group_members')
+      const { error: addError } = await (supabase
+        .from('group_members') as any)
         .insert({
           group_id: id,
           user_id: userData.id,
@@ -239,6 +232,9 @@ const GroupView = () => {
       <div className="container mx-auto py-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="mr-2">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Back
+            </Button>
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-2xl">
               {group.icon}
             </div>
@@ -291,15 +287,15 @@ const GroupView = () => {
                     >
                       <div className="flex items-center space-x-3">
                         <Avatar>
-                          <AvatarImage src={`https://avatar.vercel.sh/${member.user.email}`} />
+                          <AvatarImage src={`https://avatar.vercel.sh/${member.user?.email}`} />
                           <AvatarFallback>
-                            {member.user.name?.charAt(0) || member.user.email.charAt(0)}
+                            {member.user?.name?.charAt(0) || member.user?.email.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="font-medium">
-                            {member.user.name || member.user.email.split('@')[0]}
-                            {user && member.user.id === user.id && " (You)"}
+                            {member.user?.name || member.user?.email.split('@')[0]}
+                            {user && member.user?.id === user.id && " (You)"}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {member.role === 'admin' ? 'Admin' : 'Member'}

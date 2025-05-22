@@ -36,10 +36,11 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
   const fetchExpenses = async () => {
     try {
       setLoading(true);
+      console.log("Fetching expenses", { limit, groupId, userId: user?.id });
       
       // Build the query
-      let query = supabase
-        .from('expenses')
+      let query = (supabase
+        .from('expenses') as any)
         .select(`
           id,
           title,
@@ -65,7 +66,12 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching expenses:", error);
+        throw error;
+      }
+
+      console.log("Expenses data:", data);
 
       // Transform the data to match our Expense type
       const formattedExpenses = data.map((expense: any) => ({

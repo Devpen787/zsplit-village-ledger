@@ -12,13 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
 import { GroupCreationModal } from '@/components/groups/GroupCreationModal';
-
-type Group = {
-  id: string;
-  name: string;
-  icon: string;
-  created_at: string;
-};
+import { Group } from '@/types/supabase';
 
 const Index = () => {
   const { user } = useAuth();
@@ -50,25 +44,38 @@ const Index = () => {
 
     setLoading(true);
     try {
+      console.log("Fetching groups for user:", user.id);
+      
       // Fetch groups where the user is a member
-      const { data: groupMemberships, error: membershipError } = await supabase
-        .from('group_members')
+      const { data: groupMemberships, error: membershipError } = await (supabase
+        .from('group_members') as any)
         .select('group_id')
         .eq('user_id', user.id);
 
-      if (membershipError) throw membershipError;
+      if (membershipError) {
+        console.error("Error fetching group memberships:", membershipError);
+        throw membershipError;
+      }
+      
+      console.log("Group memberships:", groupMemberships);
 
       if (groupMemberships && groupMemberships.length > 0) {
-        const groupIds = groupMemberships.map(membership => membership.group_id);
+        const groupIds = groupMemberships.map((membership: any) => membership.group_id);
         
-        const { data: groupsData, error: groupsError } = await supabase
-          .from('groups')
+        const { data: groupsData, error: groupsError } = await (supabase
+          .from('groups') as any)
           .select('*')
           .in('id', groupIds);
 
-        if (groupsError) throw groupsError;
+        if (groupsError) {
+          console.error("Error fetching groups:", groupsError);
+          throw groupsError;
+        }
+        
+        console.log("Groups data:", groupsData);
         setGroups(groupsData || []);
       } else {
+        console.log("No group memberships found");
         setGroups([]);
       }
     } catch (error: any) {

@@ -15,6 +15,7 @@ export type Database = {
           expense_id: string | null
           id: string
           paid_status: boolean | null
+          share: number
           share_type: string | null
           share_value: number | null
           user_id: string | null
@@ -22,8 +23,9 @@ export type Database = {
         Insert: {
           created_at?: string | null
           expense_id?: string | null
-          id: string
+          id?: string
           paid_status?: boolean | null
+          share?: number
           share_type?: string | null
           share_value?: number | null
           user_id?: string | null
@@ -33,6 +35,7 @@ export type Database = {
           expense_id?: string | null
           id?: string
           paid_status?: boolean | null
+          share?: number
           share_type?: string | null
           share_value?: number | null
           user_id?: string | null
@@ -61,6 +64,7 @@ export type Database = {
           created_at: string | null
           currency: string | null
           date: string | null
+          group_id: string | null
           id: string
           leftover_notes: string | null
           leftover_photo: string | null
@@ -74,6 +78,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           date?: string | null
+          group_id?: string | null
           id?: string
           leftover_notes?: string | null
           leftover_photo?: string | null
@@ -87,6 +92,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           date?: string | null
+          group_id?: string | null
           id?: string
           leftover_notes?: string | null
           leftover_photo?: string | null
@@ -96,8 +102,86 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "expenses_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "expenses_paid_by_fkey"
             columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          created_at: string | null
+          group_id: string | null
+          id: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          icon: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          icon?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          icon?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -142,6 +226,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_balances: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          total_paid: number
+          total_owed: number
+          net_balance: number
+        }[]
+      }
       is_expense_member: {
         Args: { expense_id: string; user_id: string }
         Returns: boolean
