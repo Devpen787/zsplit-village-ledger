@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts';
@@ -20,17 +21,17 @@ export const useExpenseUsers = () => {
       setError(null);
 
       try {
-        const { data, error } = await supabase
+        const { data, error: supabaseError } = await supabase
           .from('users')
           .select('id, name, email');
 
-        if (error) {
-          setError(error.message);
+        if (supabaseError) {
+          setError(supabaseError.message);
         } else {
           setUsers(data || []);
         }
       } catch (err: any) {
-        setError(err.message);
+        setError(err.message || 'Failed to fetch users');
       } finally {
         setLoading(false);
       }
