@@ -230,9 +230,9 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           user_id: string
-          total_paid: number
-          total_owed: number
-          net_balance: number
+          user_name: string
+          user_email: string
+          amount: number
         }[]
       }
       is_expense_member: {

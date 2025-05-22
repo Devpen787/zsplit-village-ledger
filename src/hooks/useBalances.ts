@@ -28,7 +28,14 @@ export const useBalances = () => {
         console.error("Error fetching balances:", error);
         setError(error.message);
       } else if (Array.isArray(data)) {
-        setBalances(data);
+        // Map the response to the Balance type
+        const formattedBalances: Balance[] = data.map(item => ({
+          user_id: item.user_id,
+          user_name: item.user_name,
+          user_email: item.user_email,
+          amount: item.amount
+        }));
+        setBalances(formattedBalances);
       } else {
         console.error("Unexpected data format:", data);
         setError("Invalid data format received from server");
