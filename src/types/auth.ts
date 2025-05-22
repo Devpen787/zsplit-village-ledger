@@ -6,6 +6,7 @@ export type User = {
   role?: string | null;
   group_name?: string | null;
   wallet_address?: string | null;
+  avatar_url?: string | null;
 };
 
 export interface AuthContextType {

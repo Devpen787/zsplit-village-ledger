@@ -3,11 +3,20 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { useBalances } from '@/hooks/useBalances';
 import { BalancesHeader } from '@/components/balances/BalancesHeader';
-import { BalancesTable } from '@/components/balances/BalancesTable';
+import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable';
 import { BalancePaymentSuggestions } from '@/components/BalancePaymentSuggestions';
 
 const Balances = () => {
   const { balances, loading, error, refreshing, handleRefresh } = useBalances();
+
+  // Transform Balance[] to BalanceData[]
+  const balanceData: BalanceData[] = balances.map(balance => ({
+    userId: balance.user_id,
+    userName: balance.user_name || balance.user_email,
+    amountPaid: balance.amount > 0 ? balance.amount : 0,
+    amountOwed: balance.amount < 0 ? Math.abs(balance.amount) : 0,
+    netBalance: balance.amount
+  }));
 
   if (loading && !refreshing) {
     return (
@@ -29,8 +38,8 @@ const Balances = () => {
         </Alert>
       )}
 
-      <BalancesTable balances={balances} />
-      <BalancePaymentSuggestions balances={balances} />
+      <BalancesTable balances={balanceData} />
+      <BalancePaymentSuggestions balances={balanceData} />
     </div>
   );
 };

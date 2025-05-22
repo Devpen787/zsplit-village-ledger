@@ -145,7 +145,7 @@ const ExpenseForm = () => {
   if (usersError) {
     return (
       <div className="flex items-center justify-center min-h-screen text-red-500">
-        Error: {usersError.message}
+        Error: {typeof usersError === 'string' ? usersError : 'Failed to load users'}
       </div>
     );
   }

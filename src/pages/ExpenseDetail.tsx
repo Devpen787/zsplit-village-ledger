@@ -237,8 +237,8 @@ const ExpenseDetail = () => {
               <div>
                 <Label>Date</Label>
                 <DatePicker
-                  date={editedDate}
-                  onDateChange={setEditedDate}
+                  value={editedDate}
+                  onValueChange={setEditedDate}
                 />
               </div>
               <div>

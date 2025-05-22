@@ -40,5 +40,12 @@ export const useExpenseUsers = () => {
     fetchUsers();
   }, [user]);
 
-  return { users, loading, error };
+  // For backward compatibility with ExpenseDetail.tsx
+  return { 
+    users, 
+    loading, 
+    error,
+    expenseUsers: users,
+    isLoading: loading
+  };
 };
