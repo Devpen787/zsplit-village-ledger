@@ -15,6 +15,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Function to fetch or create a user in Supabase
   const fetchOrCreateUser = async (privyUserId: string, email: string | null): Promise<User | null> => {
     try {
+      console.log("Attempting to fetch or create user with ID:", privyUserId);
+      
       // First try to fetch the user
       const { data: existingUsers, error: fetchError } = await supabase
         .from('users')
@@ -28,9 +30,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // If user exists, return it
       if (existingUsers && existingUsers.length > 0) {
+        console.log("User found in database, returning existing user");
         return existingUsers[0] as User;
       }
 
+      console.log("User not found, will attempt to create new user");
+      
       // If no user exists, create one
       // First, prepare the user data
       const newUser: User = {
@@ -41,16 +46,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       // Insert the new user into the database
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert(newUser);
+      // Use RPC to bypass RLS instead of direct insert
+      const { data: insertedUser, error: insertError } = await supabase
+        .rpc('create_new_user', { 
+          user_id: newUser.id,
+          user_email: newUser.email,
+          user_name: newUser.name,
+          user_role: newUser.role
+        });
 
       if (insertError) {
         console.error("Error creating user:", insertError);
         toast.error("Failed to create user profile");
         return null;
       }
-
+      
+      console.log("New user created successfully:", insertedUser);
       return newUser;
     } catch (error) {
       console.error("Error in fetchOrCreateUser:", error);
@@ -97,8 +108,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (userData) {
           setUser(userData);
         } else {
-          // If we couldn't fetch or create a user, show an error
-          toast.error("There was an issue loading your profile. Please try again.");
+          // Show a more specific error message
+          toast.error("Could not create or retrieve your profile. Please try again later.");
         }
       } catch (error) {
         console.error("Authentication error:", error);
@@ -115,6 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await logout();
       setUser(null);
+      toast.success("Successfully signed out");
     } catch (error) {
       console.error("Error signing out:", error);
       toast.error("Failed to sign out");

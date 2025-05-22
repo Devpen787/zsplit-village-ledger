@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { usePrivy } from '@privy-io/react-auth';
 import { useAuth } from "@/contexts/AuthContext";
-import { LogIn, Loader2 } from 'lucide-react';
+import { LogIn, Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "@/components/ui/sonner";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -13,6 +15,7 @@ const Login = () => {
   const { login, authenticated, ready } = usePrivy();
   const { isAuthenticated, refreshUser, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   // Handle navigation if already authenticated
   useEffect(() => {
@@ -27,10 +30,12 @@ const Login = () => {
           navigate(from, { replace: true });
         } else {
           console.log('Failed to refresh user profile');
+          setAuthError("Failed to load your profile. Please try again.");
           setIsLoading(false);
         }
       }).catch(error => {
         console.error('Error refreshing user profile:', error);
+        setAuthError("Authentication error. Please try again later.");
         setIsLoading(false);
       });
     }
@@ -46,7 +51,17 @@ const Login = () => {
 
   const handleLogin = () => {
     setIsLoading(true);
-    login();
+    setAuthError(null);
+    
+    try {
+      login();
+      // The privy login will redirect, so we don't need to handle success here
+    } catch (error) {
+      console.error("Login error:", error);
+      setIsLoading(false);
+      setAuthError("Failed to initiate login. Please try again.");
+      toast.error("Login failed. Please try again.");
+    }
   };
 
   return (
@@ -59,6 +74,13 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {authError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          )}
+          
           <div className="flex flex-col items-center justify-center gap-4">
             <Button 
               onClick={handleLogin} 
