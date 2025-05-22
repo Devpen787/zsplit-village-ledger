@@ -12,6 +12,7 @@ interface WalletInfoProps {
   showCopy?: boolean;
   showLabel?: boolean;
   showMessage?: boolean;
+  showConnectingState?: boolean;
   labelPrefix?: string;
   labelSuffix?: string;
   className?: string;
@@ -22,6 +23,7 @@ const WalletInfo = ({
   showCopy = true,
   showLabel = true,
   showMessage = false,
+  showConnectingState = true,
   labelPrefix = "Connected Wallet: ",
   labelSuffix = "",
   className = ""
@@ -39,8 +41,8 @@ const WalletInfo = ({
     }
   };
   
-  // If wallet is connecting, show loading state
-  if (isConnecting) {
+  // If wallet is connecting and showConnectingState is true, show loading state
+  if (isConnecting && showConnectingState) {
     return (
       <div className={`flex flex-col space-y-2 ${className}`}>
         <div className="flex items-center space-x-2">

@@ -44,7 +44,7 @@ export const GroupPulse = ({ groupId }: { groupId: string }) => {
         <CardContent>
           <div className="space-y-4">
             <p className="text-muted-foreground">
-              Connect your wallet to see financial activity and statistics for this group.
+              View group financial activity and statistics. Connect a wallet for additional features like submitting or approving payouts.
             </p>
             
             <div className="p-4 border rounded-md bg-muted/30">
@@ -52,54 +52,52 @@ export const GroupPulse = ({ groupId }: { groupId: string }) => {
                 showLabel={true} 
                 showMessage={true} 
                 labelPrefix="Wallet: "
+                showConnectingState={false}
               />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Only show group pulse features when wallet is connected */}
-      {isConnected && (
-        <>
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pot Balance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">${groupStats.potBalance.toFixed(2)}</div>
-                <p className="text-sm text-muted-foreground">Available for group expenses</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Expenses Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Paid: ${groupStats.expensesPaid.toFixed(2)}</span>
-                  <span>Unpaid: ${groupStats.expensesUnpaid.toFixed(2)}</span>
-                </div>
-                <Progress value={groupStats.expensesPaid / groupStats.totalExpenses * 100} />
-                <p className="text-sm text-muted-foreground">
-                  {(groupStats.expensesPaid / groupStats.totalExpenses * 100).toFixed(0)}% of expenses settled
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="grid gap-6">
-            {pendingRequests && pendingRequests.length > 0 && (
-              <PendingPayoutRequestsList
-                pendingRequests={pendingRequests}
-                onApprove={handleApproveRequest}
-                onReject={handleRejectRequest}
-              />
-            )}
-          </div>
-        </>
-      )}
+      {/* Financial metrics shown to all users regardless of wallet connection */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Pot Balance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">${groupStats.potBalance.toFixed(2)}</div>
+            <p className="text-sm text-muted-foreground">Available for group expenses</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Expenses Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between">
+              <span>Paid: ${groupStats.expensesPaid.toFixed(2)}</span>
+              <span>Unpaid: ${groupStats.expensesUnpaid.toFixed(2)}</span>
+            </div>
+            <Progress value={groupStats.expensesPaid / groupStats.totalExpenses * 100} />
+            <p className="text-sm text-muted-foreground">
+              {(groupStats.expensesPaid / groupStats.totalExpenses * 100).toFixed(0)}% of expenses settled
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="grid gap-6">
+        {/* Pending requests are shown only if there are any and the user has wallet connected with admin privileges */}
+        {isConnected && isAdmin && pendingRequests && pendingRequests.length > 0 && (
+          <PendingPayoutRequestsList
+            pendingRequests={pendingRequests}
+            onApprove={handleApproveRequest}
+            onReject={handleRejectRequest}
+          />
+        )}
+      </div>
     </div>
   );
 };
