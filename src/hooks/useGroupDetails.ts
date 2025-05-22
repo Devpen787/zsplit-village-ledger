@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -31,9 +30,9 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   // Get expenses data for metrics
   const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
   
-  // Calculate total expenses - fix the type issue by explicitly specifying the generic type parameter
-  const totalExpenses = expenses.reduce<number>((sum, expense) => {
-    return sum + Number(expense.amount || 0);
+  // Calculate total expenses - properly handle the reduce operation
+  const totalExpenses = expenses.reduce((sum, expense) => {
+    return sum + (Number(expense.amount) || 0);
   }, 0);
   
   useEffect(() => {
