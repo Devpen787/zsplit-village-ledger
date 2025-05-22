@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { usePrivy } from '@privy-io/react-auth';
 import { useAuth } from "@/contexts/AuthContext";
+import { clearAuthState } from '@/integrations/supabase/client';
 import { LogIn, Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/components/ui/sonner";
@@ -50,6 +51,11 @@ const Login = () => {
           // Try to refresh user profile with retry logic
           const retryRefreshUser = async () => {
             try {
+              // Clean up any previous auth state
+              if (retryCount.current === 0) {
+                clearAuthState();
+              }
+              
               const user = await refreshUser();
               
               if (user && isActive) {
@@ -123,6 +129,9 @@ const Login = () => {
     clearAuthError();
     retryCount.current = 0;
     
+    // Clean up any existing auth state
+    clearAuthState();
+    
     try {
       login();
       
@@ -155,7 +164,7 @@ const Login = () => {
     if (!errorMsg) return null;
     
     if (errorMsg.includes('row-level security policy')) {
-      return "Authentication error: Unable to access your profile due to security policies. Please try signing out and in again.";
+      return "Authentication error: Unable to create your profile due to security policies. We need to adjust the RLS policies in Supabase to allow new user registration.";
     }
     
     if (errorMsg.includes('permission denied')) {
@@ -226,6 +235,14 @@ const Login = () => {
                 <li>Clear your browser cache</li>
                 <li>Try a different browser</li>
               </ul>
+              
+              <Alert variant="warning" className="mt-4">
+                <AlertCircle className="h-4 w-4 mr-2" />
+                <AlertDescription>
+                  For developers: This error may be due to Supabase RLS policies not allowing new user creation. 
+                  Update the policy to allow inserts for non-authenticated users or use a service role key.
+                </AlertDescription>
+              </Alert>
             </div>
           )}
         </CardContent>

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
-import { supabase, setSupabaseAuth } from '@/integrations/supabase/client';
+import { supabase, setSupabaseAuth, clearAuthState } from '@/integrations/supabase/client';
 import { User, AuthContextType } from '@/types/auth';
 import { toast } from '@/components/ui/sonner';
 
@@ -57,14 +57,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Create a user directly in the database, bypassing RLS using a direct insert
-  // To properly implement this, you would typically use a secure edge function
-  // For now we'll use a direct approach but add better error handling
+  // Create a user directly in the database
   const createUser = useCallback(async (privyUserId: string, email: string | null): Promise<User | null> => {
     try {
       console.log("Attempting to create new user with ID:", privyUserId);
       
-      // Attempt to set up custom auth for the Privy user
+      // First set up Supabase auth with the Privy user ID
       await setSupabaseAuth(privyUserId);
       
       // Create a new user
@@ -98,14 +96,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check if this is an RLS policy error
         if (insertError.message.includes('new row violates row-level security policy')) {
           setAuthError("Authentication error: Unable to create your profile due to security policies. " + 
-                      "This may be because you're not properly authenticated with Supabase yet.");
+                      "We need to adjust the RLS policies in Supabase to allow new user registration.");
           
-          // Try to fetch the user one more time in case it actually was created
-          const existingUser = await fetchUser(privyUserId);
-          if (existingUser) {
-            console.log("User already exists despite RLS error:", existingUser);
-            return existingUser;
-          }
+          console.log("RLS policy violation. Consider modifying your Supabase policies to allow new user creation.");
+          console.log("Suggested policy modification: Allow inserts for new users OR for authenticated users where auth.uid() = id");
+          return null;
         } else if (insertError.code === '23505') {
           // Duplicate key error - user might already exist, try to fetch again
           console.log("User might already exist, trying to fetch...");
@@ -239,6 +234,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       clearAuthError();
+      clearAuthState(); // Clean up Supabase auth state
       await logout();
       setUser(null);
       resetLoginAttempts();

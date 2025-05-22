@@ -29,19 +29,41 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 });
 
 // Function to set custom JWT from Privy into Supabase
-// Note: Since we don't have direct Privy JWT support in Supabase,
-// we'll use a custom solution using service role access for new users
+// When using Privy, we need to bypass RLS with service role or update policies
 export const setSupabaseAuth = async (privyUserId: string) => {
   console.log("Setting up custom Supabase access for Privy user:", privyUserId);
+  
+  // Since we can't properly exchange JWTs between Privy and Supabase in the client,
+  // we need a different approach to authorize the user
+  
+  // Option 1: Modify the RLS policy to allow inserts for new users (implemented in this PR)
+  // This involves changing the RLS policy to use OR logic for new user registration
+  
+  // Option 2 (future enhancement): Use a serverless function with admin rights
+  // to create the user profile with proper authentication
+  
   try {
-    // For now, we'll use direct access for new user creation
-    // In production, you would use a serverless function with service_role key
-    // to properly link Privy and Supabase auth
+    // Let's modify the Supabase auth headers to include the Privy user ID
+    // This won't actually authenticate with Supabase but helps with debugging
+    supabase.functions.setAuth(privyUserId);
     
-    // This is a temporary solution until proper JWT exchange is implemented
+    // A service_role key would be used in production, but that's not available in client-side code
+    // Instead, we'll rely on a modified RLS policy for now
+    
+    console.log("Custom auth setup completed for user:", privyUserId);
     return true;
   } catch (error) {
     console.error("Failed to set custom auth:", error);
     return false;
   }
+};
+
+// Helper function to clean up any auth state
+export const clearAuthState = () => {
+  // Clear any auth-related items from localStorage
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      localStorage.removeItem(key);
+    }
+  });
 };

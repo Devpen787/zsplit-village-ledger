@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { clearAuthState } from '@/integrations/supabase/client';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from '@/components/ui/button';
@@ -21,10 +22,12 @@ export const ProtectedRoute: React.FC = () => {
   const handleRetryAuth = async () => {
     if (authenticated) {
       // If Privy thinks we're authenticated but Supabase doesn't
-      // try to refresh the user profile
+      // try to refresh the user profile after clearing any stale state
+      clearAuthState();
       refreshUser();
     } else {
       // If we're not authenticated with Privy, try to login again
+      clearAuthState();
       login();
     }
   };
@@ -67,6 +70,14 @@ export const ProtectedRoute: React.FC = () => {
               >
                 Return to Login
               </Button>
+              
+              <Alert variant="warning" className="mt-4">
+                <AlertCircle className="h-4 w-4 mr-2" />
+                <AlertDescription>
+                  For developers: This error may be due to Supabase RLS policies not allowing new user creation. 
+                  Update the policy to allow inserts for non-authenticated users or use a service role key.
+                </AlertDescription>
+              </Alert>
             </div>
           )}
         </div>
