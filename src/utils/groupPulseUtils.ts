@@ -45,7 +45,7 @@ export const estimateRemainingPayouts = (balance: number, avgPayoutSize: number)
 export const countRecentExpenses = (expenses: Expense[], days: number = 7): number => {
   const cutoffDate = subDays(new Date(), days);
   return expenses.filter(expense => 
-    new Date(expense.created_at || expense.date) > cutoffDate
+    new Date(expense.date) > cutoffDate
   ).length;
 };
 
@@ -56,7 +56,7 @@ export const getLatestExpenseDate = (expenses: Expense[]): Date | null => {
   if (expenses.length === 0) return null;
   
   return expenses.reduce((latest, expense) => {
-    const expenseDate = new Date(expense.created_at || expense.date);
+    const expenseDate = new Date(expense.date);
     return expenseDate > latest ? expenseDate : latest;
   }, new Date(0));
 };
