@@ -6,6 +6,8 @@ import { ExpensesError } from "./expenses/ExpensesError";
 import { ExpensesEmpty } from "./expenses/ExpensesEmpty";
 import { ExpensesGroup } from "./expenses/ExpensesGroup";
 import { ExpensesListProps } from "@/types/expenses";
+import { Button } from "./ui/button";
+import { PlusCircle } from "lucide-react";
 
 export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
   const navigate = useNavigate();
@@ -52,6 +54,13 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
         .map(([date, dateExpenses]) => (
           <ExpensesGroup key={date} date={date} expenses={dateExpenses} />
         ))}
+        
+      <div className="flex justify-center md:hidden mt-6">
+        <Button onClick={handleCreateExpense} variant="outline" className="w-full">
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Add New Expense
+        </Button>
+      </div>
     </div>
   );
 };

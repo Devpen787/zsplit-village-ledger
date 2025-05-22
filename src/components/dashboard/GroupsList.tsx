@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Group } from '@/types/supabase';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { PlusCircle, Users, RefreshCw, ChevronRight, AlertCircle } from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type GroupsListProps = {
   groups: Group[];
@@ -26,11 +29,40 @@ export const GroupsList = ({
 }: GroupsListProps) => {
   const navigate = useNavigate();
 
+  // Function to get group stats
+  const useGroupStats = (groupId: string) => {
+    return useQuery({
+      queryKey: ['group-stats', groupId],
+      queryFn: async () => {
+        // Get total expenses for this group
+        const { data: expenses, error: expensesError } = await supabase
+          .from('expenses')
+          .select('amount')
+          .eq('group_id', groupId);
+          
+        if (expensesError) throw expensesError;
+        
+        const totalAmount = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+        
+        // Get member count for this group
+        const { count, error: countError } = await supabase
+          .from('group_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('group_id', groupId);
+          
+        if (countError) throw countError;
+        
+        return { totalAmount, memberCount: count || 0 };
+      },
+      staleTime: 60000, // 1 minute
+    });
+  };
+
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="flex overflow-x-auto gap-4 pb-4 -mx-2 px-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-x-visible">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="animate-pulse">
+          <Card key={i} className="animate-pulse min-w-[260px] md:min-w-0">
             <CardContent className="h-32 p-6" />
           </Card>
         ))}
@@ -85,31 +117,58 @@ export const GroupsList = ({
 
   if (groups.length > 0) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {groups.map((group) => (
-          <Card 
-            key={group.id} 
-            className="hover:border-primary/50 transition-all cursor-pointer"
-            onClick={() => navigate(`/group/${group.id}`)}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10 mr-3">
-                    {group.icon || '🏠'}
+      <div className="flex overflow-x-auto gap-4 pb-4 -mx-2 px-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-x-visible">
+        {groups.map((group) => {
+          // Use the hook to get stats for this group
+          const { data: stats, isLoading: statsLoading } = useGroupStats(group.id);
+          
+          return (
+            <Card 
+              key={group.id} 
+              className="hover:border-primary/50 transition-all cursor-pointer min-w-[260px] md:min-w-0"
+              onClick={() => navigate(`/group/${group.id}`)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10 mr-3">
+                      {group.icon || '🏠'}
+                    </div>
+                    <div>
+                      <h3 className="font-medium">{group.name}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Created {new Date(group.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-medium">{group.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Created {new Date(group.created_at).toLocaleDateString()}
-                    </p>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+                
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-border/50 text-sm">
+                  <div className="flex items-center">
+                    <Users className="h-3 w-3 mr-1 text-muted-foreground" />
+                    {statsLoading ? (
+                      <Skeleton className="h-4 w-6" />
+                    ) : (
+                      <span>{stats?.memberCount || 0} members</span>
+                    )}
+                  </div>
+                  <div className="font-medium">
+                    {statsLoading ? (
+                      <Skeleton className="h-4 w-16" />
+                    ) : (
+                      stats && stats.totalAmount > 0 ? (
+                        <span>{stats.totalAmount.toFixed(0)} CHF</span>
+                      ) : (
+                        <span className="text-muted-foreground">No expenses</span>
+                      )
+                    )}
                   </div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     );
   }
