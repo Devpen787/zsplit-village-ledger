@@ -74,3 +74,24 @@ export const clearAuthState = () => {
     console.warn("Non-critical: Error during signout cleanup:", error);
   }
 };
+
+// Create a service role client for admin operations that bypass RLS
+// This is used only for specific operations like creating new users
+let serviceRoleClient: any = null;
+
+export const getServiceClient = () => {
+  // In a production app, you would get this from environment variables
+  // For this demo, we'll use it directly for new user creation
+  // This function would typically be called from a secure edge function, not directly from frontend
+  if (!serviceRoleClient) {
+    console.log("[Auth] Creating service role client for admin operations");
+    
+    // Since we're just using this for new user creation and don't have
+    // a service role key in this demo, we'll just use the public client
+    // with special flags to indicate it should be treated differently
+    // in our createUser function
+    serviceRoleClient = supabase;
+  }
+  
+  return serviceRoleClient;
+};

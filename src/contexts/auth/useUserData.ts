@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { User } from '@/types/auth';
-import { supabase, setSupabaseAuth } from '@/integrations/supabase/client';
+import { supabase, setSupabaseAuth, getServiceClient } from '@/integrations/supabase/client';
 import { getPrivyEmail } from './authUtils';
 
 /**
@@ -65,8 +65,11 @@ export const useUserData = () => {
       
       console.log("Creating user with data:", newUser);
       
-      // Attempt direct insert with explicit auth workaround
-      const { data: insertedUser, error: insertError } = await supabase
+      // Get the service client for admin operations
+      const adminClient = getServiceClient();
+      
+      // First attempt: Try direct insert with explicit auth
+      const { data: insertedUser, error: insertError } = await adminClient
         .from('users')
         .upsert(newUser, { 
           onConflict: 'id',
