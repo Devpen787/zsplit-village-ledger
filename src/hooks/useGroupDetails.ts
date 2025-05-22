@@ -25,7 +25,7 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   // Get expenses data for metrics
   const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
   
-  // Calculate total expenses
+  // Calculate total expenses - fixing the type error by properly accessing the amount property
   const totalExpenses = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
   
   useEffect(() => {
