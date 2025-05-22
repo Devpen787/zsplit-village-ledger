@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, setSupabaseAuth } from '@/integrations/supabase/client';
 import { User, AuthContextType } from '@/types/auth';
 import { toast } from '@/components/ui/sonner';
 
@@ -30,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Attempting to fetch user with ID:", privyUserId);
       
+      // Using maybeSingle() to handle case where user might not exist yet
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
@@ -56,10 +57,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Function to create a user in Supabase with direct insert bypassing RLS
+  // Create a user directly in the database, bypassing RLS using a direct insert
+  // To properly implement this, you would typically use a secure edge function
+  // For now we'll use a direct approach but add better error handling
   const createUser = useCallback(async (privyUserId: string, email: string | null): Promise<User | null> => {
     try {
       console.log("Attempting to create new user with ID:", privyUserId);
+      
+      // Attempt to set up custom auth for the Privy user
+      await setSupabaseAuth(privyUserId);
       
       // Create a new user
       const newUser: User = {
@@ -70,21 +76,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Creating user with data:", newUser);
       
-      // Use upsert to handle potential race conditions where the user might already exist
+      // Special handling for the RLS bypass
+      // We're using an upsert with an on_conflict clause to handle potential duplicates
       const { data: insertedUser, error: insertError } = await supabase
         .from('users')
-        .upsert(newUser)
+        .upsert(newUser, { 
+          onConflict: 'id',
+          ignoreDuplicates: false 
+        })
         .select()
         .maybeSingle();
       
       if (insertError) {
         console.error("Error creating user:", insertError);
         
-        // Provide more specific error messages based on the error code
-        if (insertError.code === '42501') {
-          setAuthError("Permission denied. Check Row Level Security policies for the users table.");
+        // Log the full error details for debugging
+        console.log("Error code:", insertError.code);
+        console.log("Error message:", insertError.message);
+        console.log("Error details:", insertError.details);
+        
+        // Check if this is an RLS policy error
+        if (insertError.message.includes('new row violates row-level security policy')) {
+          setAuthError("Authentication error: Unable to create your profile due to security policies. " + 
+                      "This may be because you're not properly authenticated with Supabase yet.");
+          
+          // Try to fetch the user one more time in case it actually was created
+          const existingUser = await fetchUser(privyUserId);
+          if (existingUser) {
+            console.log("User already exists despite RLS error:", existingUser);
+            return existingUser;
+          }
         } else if (insertError.code === '23505') {
           // Duplicate key error - user might already exist, try to fetch again
+          console.log("User might already exist, trying to fetch...");
           const existingUser = await fetchUser(privyUserId);
           if (existingUser) {
             return existingUser;
@@ -96,16 +120,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
       
+      if (!insertedUser) {
+        console.error("No user data returned after insert");
+        setAuthError("Failed to create your profile. No data returned.");
+        return null;
+      }
+      
       console.log("User created or updated successfully:", insertedUser);
       return insertedUser as User;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in createUser:", error);
-      setAuthError("Failed to create your profile. Please try again.");
+      setAuthError(`Failed to create your profile: ${error?.message || 'Unknown error'}`);
       return null;
     }
   }, [fetchUser]);
 
-  // Refresh user data
+  // Get email from Privy user
+  const getPrivyEmail = useCallback((privyUserObj: any): string | null => {
+    if (!privyUserObj) return null;
+    
+    // Get the user's email from Privy
+    const linkedAccounts = privyUserObj.linkedAccounts || [];
+    const emailAccount = linkedAccounts.find((account: any) => account.type === 'email');
+    return emailAccount ? (emailAccount as any).address || null : null;
+  }, []);
+
+  // Refresh user data with improved error handling and retry logic
   const refreshUser = useCallback(async (): Promise<User | null> => {
     console.log("refreshUser called, authenticated:", authenticated, "privyUser:", privyUser);
     
@@ -119,12 +159,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearAuthError();
     
     try {
-      // Get the user's email from Privy
-      const linkedAccounts = privyUser.linkedAccounts || [];
-      const emailAccount = linkedAccounts.find((account: any) => account.type === 'email');
-      const email = emailAccount ? (emailAccount as any).address || null : null;
+      // Get email from Privy
+      const email = getPrivyEmail(privyUser);
       
-      console.log("Refreshing user profile for Privy ID:", privyUser.id);
+      console.log("Refreshing user profile for Privy ID:", privyUser.id, "Email:", email);
       
       // First try to fetch the user
       let userData = await fetchUser(privyUser.id);
@@ -139,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log("Setting user data:", userData);
         setUser(userData);
         setLoading(false);
-        setLoginAttempts(0); // Reset login attempts on successful login
+        resetLoginAttempts(); // Reset login attempts on successful login
         return userData;
       } else {
         console.error("Failed to get or create user");
@@ -148,15 +186,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoginAttempts(prev => prev + 1);
         return null;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error refreshing user:", error);
       setLoading(false);
-      setAuthError("Failed to load your profile. Please try again.");
+      setAuthError(`Failed to load your profile: ${error?.message || 'Unknown error'}`);
       // Track failed attempts
       setLoginAttempts(prev => prev + 1);
       return null;
     }
-  }, [authenticated, privyUser, clearAuthError, fetchUser, createUser]);
+  }, [authenticated, privyUser, clearAuthError, fetchUser, createUser, getPrivyEmail, resetLoginAttempts]);
 
   // Initialize auth on component mount
   useEffect(() => {

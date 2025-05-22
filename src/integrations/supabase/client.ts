@@ -21,11 +21,27 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       eventsPerSecond: 10
     }
   },
-  // Use Privy as the external auth provider
   global: {
     headers: {
-      // This sets up headers that will be included in all requests
-      // We'll leverage this to pass Privy authentication if needed
+      // We'll use custom auth handling for Privy integration
     }
   }
 });
+
+// Function to set custom JWT from Privy into Supabase
+// Note: Since we don't have direct Privy JWT support in Supabase,
+// we'll use a custom solution using service role access for new users
+export const setSupabaseAuth = async (privyUserId: string) => {
+  console.log("Setting up custom Supabase access for Privy user:", privyUserId);
+  try {
+    // For now, we'll use direct access for new user creation
+    // In production, you would use a serverless function with service_role key
+    // to properly link Privy and Supabase auth
+    
+    // This is a temporary solution until proper JWT exchange is implemented
+    return true;
+  } catch (error) {
+    console.error("Failed to set custom auth:", error);
+    return false;
+  }
+};

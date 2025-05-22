@@ -4,15 +4,30 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from '@/components/ui/button';
+import { usePrivy } from '@privy-io/react-auth';
 
 export const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, loading, authError, clearAuthError, loginAttempts } = useAuth();
+  const { isAuthenticated, loading, authError, clearAuthError, loginAttempts, refreshUser } = useAuth();
+  const { authenticated, login } = usePrivy();
   const location = useLocation();
 
   // Clear auth errors when leaving protected routes
   useEffect(() => {
     return () => clearAuthError();
   }, [clearAuthError]);
+
+  // Check for mismatched auth state
+  const handleRetryAuth = async () => {
+    if (authenticated) {
+      // If Privy thinks we're authenticated but Supabase doesn't
+      // try to refresh the user profile
+      refreshUser();
+    } else {
+      // If we're not authenticated with Privy, try to login again
+      login();
+    }
+  };
 
   if (loading) {
     return (
@@ -25,6 +40,14 @@ export const ProtectedRoute: React.FC = () => {
             <Alert variant="destructive" className="mt-2">
               <AlertCircle className="h-4 w-4 mr-2" />
               <AlertDescription>{authError}</AlertDescription>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRetryAuth} 
+                className="mt-2 w-full"
+              >
+                Retry Authentication
+              </Button>
             </Alert>
           )}
           
@@ -36,6 +59,14 @@ export const ProtectedRoute: React.FC = () => {
                 <li>Clear your browser cache</li>
                 <li>Try signing in again</li>
               </ul>
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.href = '/login'} 
+                className="mt-4 w-full"
+              >
+                Return to Login
+              </Button>
             </div>
           )}
         </div>

@@ -17,52 +17,83 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const loginTimeoutRef = useRef<number | null>(null);
+  const maxRetries = useRef(3);
+  const retryCount = useRef(0);
   
   // Clear errors when component mounts or unmounts
   useEffect(() => {
     clearAuthError();
     resetLoginAttempts();
+    
     return () => {
       clearAuthError();
       // Clear any pending timeouts
       if (loginTimeoutRef.current) {
-        clearTimeout(loginTimeoutRef.current);
+        window.clearTimeout(loginTimeoutRef.current);
       }
     };
   }, [clearAuthError, resetLoginAttempts]);
   
-  // Handle navigation if already authenticated
+  // Handle Privy authentication state changes
   useEffect(() => {
     let isActive = true;
     
     const checkAuthentication = async () => {
+      // Only proceed if Privy is ready and authenticated
       if (ready && authenticated) {
-        if (isActive) setIsLoading(true);
+        if (!isActive) return;
+        
         console.log('Privy authenticated, refreshing user profile');
+        setIsLoading(true);
         
         try {
-          const user = await refreshUser();
-          
-          if (user && isActive) {
-            console.log('User profile refreshed, navigating to dashboard or stored path');
-            const from = location.state?.from?.pathname || '/';
-            navigate(from, { replace: true });
-          } else if (isActive) {
-            console.log('Failed to refresh user profile');
-            setLocalError("Failed to load your profile. Please try again.");
-            setIsLoading(false);
-            
-            // If we've tried multiple times and still failing, show more helpful error
-            if (loginAttempts > 2) {
-              setLocalError("Persistent login issues. Please try refreshing the page or clearing your browser cache.");
+          // Try to refresh user profile with retry logic
+          const retryRefreshUser = async () => {
+            try {
+              const user = await refreshUser();
+              
+              if (user && isActive) {
+                console.log('User profile refreshed, navigating to dashboard or stored path');
+                const from = location.state?.from?.pathname || '/';
+                navigate(from, { replace: true });
+              } else if (isActive) {
+                // Only retry if we haven't exceeded the maximum number of retries
+                if (retryCount.current < maxRetries.current) {
+                  retryCount.current++;
+                  console.log(`Failed to refresh user profile, retrying (${retryCount.current}/${maxRetries.current})...`);
+                  
+                  // Add a delay before retrying
+                  loginTimeoutRef.current = window.setTimeout(() => {
+                    retryRefreshUser();
+                  }, 1000); // 1 second delay between retries
+                } else {
+                  console.error('Failed to refresh user profile after maximum retries');
+                  setLocalError("Failed to create your profile after multiple attempts. Please try signing out and in again.");
+                  setIsLoading(false);
+                }
+              }
+            } catch (error) {
+              if (!isActive) return;
+              
+              console.error('Error in retry refresh:', error);
+              if (retryCount.current < maxRetries.current) {
+                retryCount.current++;
+                loginTimeoutRef.current = window.setTimeout(retryRefreshUser, 1000);
+              } else {
+                setLocalError("Authentication error after multiple attempts. Please try again later.");
+                setIsLoading(false);
+              }
             }
-          }
+          };
+          
+          retryRefreshUser();
+          
         } catch (error) {
-          if (isActive) {
-            console.error('Error refreshing user profile:', error);
-            setLocalError("Authentication error. Please try again later.");
-            setIsLoading(false);
-          }
+          if (!isActive) return;
+          
+          console.error('Error refreshing user profile:', error);
+          setLocalError("Authentication error. Please try again later.");
+          setIsLoading(false);
         }
       } else if (ready && !authenticated && isActive) {
         // Reset loading state if not authenticated
@@ -75,7 +106,7 @@ const Login = () => {
     return () => {
       isActive = false;
     };
-  }, [ready, authenticated, navigate, refreshUser, location, loginAttempts]);
+  }, [ready, authenticated, navigate, refreshUser, location]);
 
   // Redirect if authenticated through our context
   useEffect(() => {
@@ -85,23 +116,25 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate, location]);
 
+  // Handle manual login click
   const handleLogin = () => {
     setIsLoading(true);
     setLocalError(null);
     clearAuthError();
+    retryCount.current = 0;
     
     try {
       login();
       
-      // Add a timeout to reset loading state if Privy doesn't redirect or fails silently
+      // Add a global timeout to reset loading state if Privy doesn't redirect or fails silently
       if (loginTimeoutRef.current) {
-        clearTimeout(loginTimeoutRef.current);
+        window.clearTimeout(loginTimeoutRef.current);
       }
       
       loginTimeoutRef.current = window.setTimeout(() => {
         setIsLoading(false);
         setLocalError("Login timed out. Please try again.");
-      }, 10000); // 10 seconds timeout
+      }, 15000); // 15 seconds timeout
       
     } catch (error) {
       console.error("Login error:", error);
@@ -114,8 +147,23 @@ const Login = () => {
   // Determine which error to display (local or from auth context)
   const displayError = localError || authError;
 
-  // Determine if button should be in loading state
-  const showLoadingButton = isLoading || authLoading;
+  // Determine if button should be in loading state - prevent blinking by checking all states
+  const showLoadingButton = isLoading || authLoading || (authenticated && !isAuthenticated);
+
+  // Get a more user-friendly error message
+  const getUserFriendlyErrorMessage = (errorMsg: string | null) => {
+    if (!errorMsg) return null;
+    
+    if (errorMsg.includes('row-level security policy')) {
+      return "Authentication error: Unable to access your profile due to security policies. Please try signing out and in again.";
+    }
+    
+    if (errorMsg.includes('permission denied')) {
+      return "Permission denied: You don't have access to create a profile. Please contact support.";
+    }
+    
+    return errorMsg;
+  };
 
   return (
     <div className="flex justify-center items-center min-h-screen px-4 py-10 bg-background">
@@ -130,7 +178,7 @@ const Login = () => {
           {displayError && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4 mr-2" />
-              <AlertDescription>{displayError}</AlertDescription>
+              <AlertDescription>{getUserFriendlyErrorMessage(displayError)}</AlertDescription>
             </Alert>
           )}
           
@@ -142,11 +190,16 @@ const Login = () => {
               disabled={showLoadingButton}
             >
               {showLoadingButton ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {loginAttempts > 0 ? `Trying to sign in (${loginAttempts})...` : 'Signing in...'}
+                </>
               ) : (
-                <LogIn className="mr-2 h-4 w-4" />
+                <>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign In
+                </>
               )}
-              Sign In
             </Button>
             
             <div className="flex items-center w-full">
@@ -164,6 +217,17 @@ const Login = () => {
               Need an account? Sign up
             </Button>
           </div>
+          
+          {loginAttempts > 2 && (
+            <div className="mt-4 text-sm text-muted-foreground">
+              <p>Having trouble signing in? Try these steps:</p>
+              <ul className="list-disc list-inside mt-2 text-left">
+                <li>Refresh this page</li>
+                <li>Clear your browser cache</li>
+                <li>Try a different browser</li>
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -12,24 +12,28 @@ import { LogIn, Wallet, Loader2, AlertCircle } from "lucide-react";
 const Signup = () => {
   const navigate = useNavigate();
   const { login, authenticated, ready } = usePrivy();
-  const { isAuthenticated, refreshUser, loading, authError, clearAuthError, loginAttempts } = useAuth();
+  const { isAuthenticated, refreshUser, loading: authLoading, authError, clearAuthError, loginAttempts, resetLoginAttempts } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const loginTimeoutRef = useRef<number | null>(null);
+  const maxRetries = useRef(3);
+  const retryCount = useRef(0);
   
   // Clear errors when component mounts or unmounts
   useEffect(() => {
     clearAuthError();
+    resetLoginAttempts();
+    
     return () => {
       clearAuthError();
       // Clear any pending timeouts
       if (loginTimeoutRef.current) {
-        clearTimeout(loginTimeoutRef.current);
+        window.clearTimeout(loginTimeoutRef.current);
       }
     };
-  }, [clearAuthError]);
+  }, [clearAuthError, resetLoginAttempts]);
   
-  // Handle navigation if already authenticated
+  // Handle Privy authentication state changes
   useEffect(() => {
     let isActive = true;
     
@@ -39,21 +43,46 @@ const Signup = () => {
         console.log('Privy authenticated, refreshing user profile');
         
         try {
-          const user = await refreshUser();
-          
-          if (user && isActive) {
-            console.log('User profile refreshed, navigating to dashboard');
-            navigate('/', { replace: true });
-          } else if (isActive) {
-            console.log('Failed to refresh user profile');
-            setLocalError("Failed to create your profile. Please try again.");
-            setIsLoading(false);
-            
-            // If we've tried multiple times and still failing, show more helpful error
-            if (loginAttempts > 2) {
-              setLocalError("Persistent signup issues. Please try refreshing the page or clearing your browser cache.");
+          // Try to refresh user profile with retry logic
+          const retryRefreshUser = async () => {
+            try {
+              const user = await refreshUser();
+              
+              if (user && isActive) {
+                console.log('User profile refreshed, navigating to dashboard');
+                navigate('/', { replace: true });
+              } else if (isActive) {
+                // Only retry if we haven't exceeded the maximum number of retries
+                if (retryCount.current < maxRetries.current) {
+                  retryCount.current++;
+                  console.log(`Failed to refresh user profile, retrying (${retryCount.current}/${maxRetries.current})...`);
+                  
+                  // Add a delay before retrying
+                  loginTimeoutRef.current = window.setTimeout(() => {
+                    retryRefreshUser();
+                  }, 1000); // 1 second delay between retries
+                } else {
+                  console.error('Failed to refresh user profile after maximum retries');
+                  setLocalError("Failed to create your profile after multiple attempts. Please try again.");
+                  setIsLoading(false);
+                }
+              }
+            } catch (error) {
+              if (!isActive) return;
+              
+              console.error('Error in retry refresh:', error);
+              if (retryCount.current < maxRetries.current) {
+                retryCount.current++;
+                loginTimeoutRef.current = window.setTimeout(retryRefreshUser, 1000);
+              } else {
+                setLocalError("Authentication error after multiple attempts. Please try again later.");
+                setIsLoading(false);
+              }
             }
-          }
+          };
+          
+          retryRefreshUser();
+          
         } catch (error) {
           if (isActive) {
             console.error('Error refreshing user profile:', error);
@@ -85,19 +114,20 @@ const Signup = () => {
     setIsLoading(true);
     setLocalError(null);
     clearAuthError();
+    retryCount.current = 0;
     
     try {
       login();
       
       // Add a timeout to reset loading state if Privy doesn't redirect or fails silently
       if (loginTimeoutRef.current) {
-        clearTimeout(loginTimeoutRef.current);
+        window.clearTimeout(loginTimeoutRef.current);
       }
       
       loginTimeoutRef.current = window.setTimeout(() => {
         setIsLoading(false);
         setLocalError("Signup timed out. Please try again.");
-      }, 10000); // 10 seconds timeout
+      }, 15000); // 15 seconds timeout
     } catch (error) {
       console.error("Signup error:", error);
       setIsLoading(false);
@@ -110,7 +140,22 @@ const Signup = () => {
   const displayError = localError || authError;
   
   // Determine if button should be in loading state
-  const showLoadingButton = isLoading || loading;
+  const showLoadingButton = isLoading || authLoading || (authenticated && !isAuthenticated);
+
+  // Get a more user-friendly error message
+  const getUserFriendlyErrorMessage = (errorMsg: string | null) => {
+    if (!errorMsg) return null;
+    
+    if (errorMsg.includes('row-level security policy')) {
+      return "Authentication error: Unable to create your profile due to security policies. Please try again.";
+    }
+    
+    if (errorMsg.includes('permission denied')) {
+      return "Permission denied: You don't have access to create a profile. Please contact support.";
+    }
+    
+    return errorMsg;
+  };
 
   return (
     <div className="flex justify-center items-center min-h-screen px-4 py-10 bg-background">
@@ -125,7 +170,7 @@ const Signup = () => {
           {displayError && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4 mr-2" />
-              <AlertDescription>{displayError}</AlertDescription>
+              <AlertDescription>{getUserFriendlyErrorMessage(displayError)}</AlertDescription>
             </Alert>
           )}
           
@@ -137,11 +182,16 @@ const Signup = () => {
               disabled={showLoadingButton}
             >
               {showLoadingButton ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {loginAttempts > 0 ? `Creating account (${loginAttempts})...` : 'Creating account...'}
+                </>
               ) : (
-                <LogIn className="mr-2 h-4 w-4" />
+                <>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign Up
+                </>
               )}
-              Sign Up
             </Button>
             
             <div className="flex items-center w-full">
@@ -166,6 +216,17 @@ const Signup = () => {
               Connect your wallet for Web3 features
             </p>
           </div>
+          
+          {loginAttempts > 2 && (
+            <div className="mt-4 text-sm text-muted-foreground">
+              <p>Having trouble signing up? Try these steps:</p>
+              <ul className="list-disc list-inside mt-2 text-left">
+                <li>Refresh this page</li>
+                <li>Clear your browser cache</li>
+                <li>Try a different browser</li>
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
