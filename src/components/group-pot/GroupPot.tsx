@@ -47,6 +47,8 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
           
         if (activitiesError) throw activitiesError;
         
+        console.log("Fetched activities:", activitiesData);
+        
         // Ensure data conforms to PotActivity type
         const typedActivities = activitiesData.map(activity => ({
           ...activity,
@@ -72,6 +74,9 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
           }
         });
         
+        console.log("Total contributions:", total);
+        console.log("Unique contributors:", Array.from(uniqueContributors.values()));
+        
         setActivities(typedActivities);
         setTotalContributions(total);
         setContributors(Array.from(uniqueContributors.values()));
@@ -83,7 +88,9 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
       }
     };
     
-    fetchGroupPotData();
+    if (groupId) {
+      fetchGroupPotData();
+    }
   }, [groupId]);
   
   const handlePayoutRequest = async (amount: number, note: string) => {

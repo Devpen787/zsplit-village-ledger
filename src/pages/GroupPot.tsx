@@ -9,16 +9,22 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts";
 import { useGroupsList } from "@/hooks/useGroupsList";
 
+const DEFAULT_GROUP_ID = '00000000-0000-0000-0000-000000000002';
+
 const GroupPotPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { groups, loading } = useGroupsList();
   const { id } = useParams<{ id?: string }>();
   
-  // If no specific group ID is provided, redirect to the first available group
+  // If no specific group ID is provided, redirect to the default group or first available group
   useEffect(() => {
-    if (!id && !loading && groups.length > 0) {
-      navigate(`/group-pot/${groups[0].id}`);
+    if (!id && !loading) {
+      if (groups.some(group => group.id === DEFAULT_GROUP_ID)) {
+        navigate(`/group-pot/${DEFAULT_GROUP_ID}`);
+      } else if (groups.length > 0) {
+        navigate(`/group-pot/${groups[0].id}`);
+      }
     }
   }, [id, groups, loading, navigate]);
   
