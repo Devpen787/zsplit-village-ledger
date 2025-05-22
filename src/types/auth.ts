@@ -8,6 +8,7 @@ export type User = {
   wallet_address?: string | null;
   avatar_url?: string | null;
   avatar_emoji?: string | null;
+  created_at?: string | null;
 };
 
 export interface AuthContextType {

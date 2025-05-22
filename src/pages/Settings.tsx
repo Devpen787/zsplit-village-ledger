@@ -88,7 +88,7 @@ const Settings = () => {
                     </div>
                     <div className="flex justify-between">
                       <span>Account created:</span> 
-                      <span className="font-medium">{formatDate(user.created_at || '')}</span>
+                      <span className="font-medium">{formatDate(user.created_at)}</span>
                     </div>
                   </div>
                 </div>
