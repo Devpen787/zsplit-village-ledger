@@ -20,15 +20,16 @@ export const BalanceSummaryCards = ({ balances, groupId }: BalanceSummaryCardsPr
   const currentUserBalance = user ? balances.find(balance => balance.userId === user.id) : null;
   const netBalance = currentUserBalance?.netBalance || 0;
   const isOwed = netBalance > 0;
+  const hasNegativeBalance = netBalance < 0;
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       {/* My Balance Card */}
-      <Card className={`overflow-hidden ${isOwed ? 'border-green-500/30' : netBalance < 0 ? 'border-red-500/30' : ''}`}>
+      <Card className={`overflow-hidden ${isOwed ? 'border-green-500/30' : hasNegativeBalance ? 'border-red-500/30' : ''}`}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <div className={`p-2 rounded-full mr-3 ${isOwed ? 'bg-green-100 text-green-600' : netBalance < 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
+              <div className={`p-2 rounded-full mr-3 ${isOwed ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400' : hasNegativeBalance ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'}`}>
                 {isOwed ? <ArrowDown className="h-5 w-5" /> : <ArrowUp className="h-5 w-5" />}
               </div>
               <h3 className="font-medium text-lg">My Balance</h3>
@@ -37,13 +38,13 @@ export const BalanceSummaryCards = ({ balances, groupId }: BalanceSummaryCardsPr
           
           {currentUserBalance ? (
             <div className="space-y-1">
-              <p className={`text-2xl font-bold ${isOwed ? 'text-green-600' : netBalance < 0 ? 'text-red-600' : ''}`}>
+              <p className={`text-2xl font-bold ${isOwed ? 'text-green-600 dark:text-green-400' : hasNegativeBalance ? 'text-red-600 dark:text-red-400' : ''}`}>
                 {Math.abs(netBalance).toFixed(2)} CHF
               </p>
               <p className="text-muted-foreground">
                 {isOwed 
                   ? "You are owed"
-                  : netBalance < 0 
+                  : hasNegativeBalance 
                     ? "You owe" 
                     : "You're all settled up!"
                 }

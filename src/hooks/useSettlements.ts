@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { BalanceData } from '@/components/balances/BalancesTable';
 import { toast } from '@/components/ui/sonner';
 
@@ -25,7 +25,7 @@ export const useSettlements = (balances: BalanceData[]) => {
   const allSettled = settlements.length > 0 && settlements.every(s => s.settled);
   
   // Calculate optimal settlements
-  const calculateSettlements = () => {
+  const calculateSettlements = useCallback(() => {
     // Filter users who owe money and users who are owed money
     const debtors = balances
       .filter(balance => balance.netBalance < -0.01) // Small threshold to handle floating point errors
@@ -81,13 +81,19 @@ export const useSettlements = (balances: BalanceData[]) => {
     
     setSettlements(payments);
     setShowSettlements(true);
-  };
+    
+    return payments;
+  }, [balances]);
   
-  const handleSettleUp = () => {
-    calculateSettlements();
-  };
+  const handleSettleUp = useCallback(() => {
+    const payments = calculateSettlements();
+    
+    if (payments.length === 0 && hasUnsettledBalances) {
+      toast.info("No settlement suggestions could be calculated.");
+    }
+  }, [calculateSettlements, hasUnsettledBalances]);
   
-  const markAsSettled = (index: number) => {
+  const markAsSettled = useCallback((index: number) => {
     setSettlements(prev => 
       prev.map((settlement, i) => 
         i === index ? { ...settlement, settled: true } : settlement
@@ -95,19 +101,21 @@ export const useSettlements = (balances: BalanceData[]) => {
     );
     
     toast.success("Payment marked as settled!");
-  };
+  }, []);
   
-  const hideSettlements = () => {
+  const hideSettlements = useCallback(() => {
     setShowSettlements(false);
-  };
+  }, []);
   
   return {
     settlements,
     showSettlements,
+    setShowSettlements,
     hasUnsettledBalances,
     allSettled,
     handleSettleUp,
     markAsSettled,
-    hideSettlements
+    hideSettlements,
+    calculateSettlements
   };
 };

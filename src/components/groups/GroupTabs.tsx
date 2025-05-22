@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ export const GroupTabs = ({
   currentUser 
 }: GroupTabsProps) => {
   // Get balance data
-  const { balances, loading, error } = useBalances();
+  const { balances, loading, error, refreshing, handleRefresh } = useBalances();
   
   // Transform Balance[] to BalanceData[]
   const balanceData: BalanceData[] = balances.map(balance => ({
@@ -41,6 +41,13 @@ export const GroupTabs = ({
     amountOwed: balance.amount < 0 ? Math.abs(balance.amount) : 0,
     netBalance: balance.amount
   }));
+
+  // Auto-refresh balances when component mounts
+  useEffect(() => {
+    if (!refreshing && !loading) {
+      handleRefresh();
+    }
+  }, [groupId]);
 
   return (
     <Tabs defaultValue="expenses" className="w-full">

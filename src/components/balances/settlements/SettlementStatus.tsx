@@ -16,7 +16,7 @@ export const SettlementStatus = ({ allSettled, hasUnsettledBalances }: Settlemen
           <span className="font-medium">All settled up!</span>
         </div>
         <p className="text-muted-foreground text-sm mt-2">
-          Everyone in the group is balanced. No payments needed.
+          No payments needed. Everyone in the group is balanced.
         </p>
       </div>
     );
@@ -26,7 +26,7 @@ export const SettlementStatus = ({ allSettled, hasUnsettledBalances }: Settlemen
     return (
       <div className="py-3 text-center bg-green-50 dark:bg-green-900/20 rounded-md mb-4">
         <Check className="h-5 w-5 text-green-600 dark:text-green-400 mx-auto mb-1" />
-        <p className="text-green-600 dark:text-green-400 font-medium">All payments settled!</p>
+        <p className="text-green-600 dark:text-green-400 font-medium">All payments have been settled!</p>
       </div>
     );
   }

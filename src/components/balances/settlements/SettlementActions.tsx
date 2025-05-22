@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CreditCard } from "lucide-react";
@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts';
 import { SettlementStatus } from './SettlementStatus';
 import { SettlementList } from './SettlementList';
 import { useSettlements } from '@/hooks/useSettlements';
+import { toast } from '@/components/ui/sonner';
 
 interface SettlementActionsProps {
   balances: BalanceData[];
@@ -22,8 +23,16 @@ export const SettlementActions = ({ balances }: SettlementActionsProps) => {
     allSettled,
     handleSettleUp,
     markAsSettled,
-    hideSettlements
+    hideSettlements,
+    setShowSettlements
   } = useSettlements(balances);
+  
+  // Automatically show settlements if there are unbalanced accounts
+  useEffect(() => {
+    if (hasUnsettledBalances && settlements.length === 0) {
+      handleSettleUp();
+    }
+  }, [hasUnsettledBalances, settlements.length, handleSettleUp]);
   
   return (
     <Card className="mb-6">
@@ -50,11 +59,11 @@ export const SettlementActions = ({ balances }: SettlementActionsProps) => {
         />
         
         {/* Show Settlements Display */}
-        {!showSettlements && !hasUnsettledBalances ? null : !showSettlements ? (
+        {!showSettlements && hasUnsettledBalances ? (
           <p className="text-center text-muted-foreground py-4">
-            Click "Settle Up" to see suggested payments.
+            Calculating suggested payments...
           </p>
-        ) : settlements.length === 0 ? (
+        ) : !showSettlements ? null : settlements.length === 0 ? (
           <p className="text-center text-muted-foreground py-4">
             No settlement suggestions available.
           </p>

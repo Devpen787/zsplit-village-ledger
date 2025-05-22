@@ -49,7 +49,7 @@ export const SettlementList = ({
         return (
           <div 
             key={`${showUserSettlementsOnly ? 'user-' : ''}${index}`} 
-            className={`flex items-center justify-between p-3 rounded-md mb-2 ${isUserInvolved && showUserSettlementsOnly ? 'bg-primary/5' : 'bg-secondary/10'}`}
+            className={`flex items-center justify-between p-3 rounded-md mb-2 ${settlement.settled ? 'bg-green-50/50 dark:bg-green-900/10' : isUserInvolved && showUserSettlementsOnly ? 'bg-primary/5' : 'bg-secondary/10'}`}
           >
             <div className="flex items-center gap-2">
               {isUserDebtor ? (
@@ -84,8 +84,8 @@ export const SettlementList = ({
                 </Button>
               )}
               {settlement.settled && (
-                <span className="text-green-600 font-medium flex items-center gap-1">
-                  <Check className="h-4 w-4" /> Paid
+                <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                  <Check className="h-4 w-4" /> Marked as settled
                 </span>
               )}
             </div>

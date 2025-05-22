@@ -34,9 +34,9 @@ export const BalancesTable = ({ balances }: BalancesTableProps) => {
       if (debtors.length === 0) return "";
       
       if (debtors.length === 1) {
-        return `Owed by ${debtors[0].userName}`;
+        return `Is owed by ${debtors[0].userName}`;
       } else {
-        return `Owed by ${debtors.length} people`;
+        return `Is owed by ${debtors.length} people`;
       }
     } else {
       // This user owes money
@@ -104,13 +104,10 @@ export const BalancesTable = ({ balances }: BalancesTableProps) => {
                     </TableCell>
                     <TableCell>
                       {Math.abs(balance.netBalance) > 0.01 && (
-                        <div className="flex items-center gap-1">
-                          {balance.netBalance < 0 ? (
-                            <ArrowUp className="h-3 w-3 text-red-500" />
-                          ) : (
-                            <ArrowDown className="h-3 w-3 text-green-500" />
-                          )}
-                          <span className="text-sm">{getDebtRelationship(balance)}</span>
+                        <div className="flex items-center">
+                          <span className="text-sm font-medium">
+                            {getDebtRelationship(balance)}
+                          </span>
                         </div>
                       )}
                     </TableCell>
