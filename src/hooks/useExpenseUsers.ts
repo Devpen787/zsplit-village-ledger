@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 type User = {
   id: string;
@@ -20,28 +21,35 @@ export const useExpenseUsers = () => {
       try {
         console.log("Fetching users...");
         
-        // For now, let's create a mock list of users including the current user
-        // This allows the app to function while backend issues are resolved
-        const mockUsers: User[] = [];
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        // Fetch real users from the database
+        const { data: dbUsers, error } = await supabase
+          .from('users')
+          .select('id, name, email')
+          .order('name');
+          
+        if (error) {
+          throw error;
+        }
         
-        if (user) {
-          mockUsers.push({
-            id: user.id,
-            name: user.name || `User (${user.email})` 
-          });
-          
-          // Add some sample users for testing
-          mockUsers.push({ id: 'user2', name: 'Sample User 1' });
-          mockUsers.push({ id: 'user3', name: 'Sample User 2' });
-          
-          setUsers(mockUsers);
-          
-          // Default to current user as the payer
-          if (!paidBy) {
-            setPaidBy(user.id);
-          }
-          
-          // Pre-select the current user as a participant
+        const formattedUsers: User[] = dbUsers.map(dbUser => ({
+          id: dbUser.id, // Store as string
+          name: dbUser.name || `User (${dbUser.email})`
+        }));
+        
+        setUsers(formattedUsers);
+        
+        // Default to current user as the payer
+        if (!paidBy && user?.id) {
+          setPaidBy(user.id);
+        }
+        
+        // Pre-select the current user as a participant
+        if (user?.id) {
           setSelectedUsers(prev => ({
             ...prev,
             [user.id]: true

@@ -64,7 +64,7 @@ export const ExpensesList = ({ limit }: ExpensesListProps) => {
         amount: expense.amount || 0,
         currency: expense.currency || 'CHF',
         date: expense.date || new Date().toISOString(),
-        paid_by: expense.paid_by,
+        paid_by: expense.paid_by, // Now stored as string
         paid_by_user: expense.users
       }));
 

@@ -34,20 +34,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // If no user exists, create one
       // First, prepare the user data
       const newUser: User = {
-        id: privyUserId,
+        id: privyUserId, // Ensure ID is stored as string
         email: email || '',
         name: null,
         role: 'participant' // Default role
       };
 
-      // Try to create the user with RLS bypassed
-      // Note: In a production app, this would typically be handled by a secure server function
-      // Using the admin API, or a Supabase Edge Function with proper authorization
-      
-      console.log('Creating new user:', newUser);
-      
-      // For now, we'll just return the new user object without creating it in the database
-      // This allows the app to continue functioning while the backend issues are resolved
+      // Insert the new user into the database
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert(newUser);
+
+      if (insertError) {
+        console.error("Error creating user:", insertError);
+        toast.error("Failed to create user profile");
+        return null;
+      }
+
       return newUser;
     } catch (error) {
       console.error("Error in fetchOrCreateUser:", error);

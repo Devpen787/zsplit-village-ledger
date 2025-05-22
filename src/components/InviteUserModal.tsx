@@ -66,23 +66,11 @@ export function InviteUserModal({ onUserAdded }: { onUserAdded: () => void }) {
       }
 
       // Generate a unique ID for the user
-      const { data: { user: authUser } } = await supabase.auth.admin.createUser({
-        email: email,
-        email_confirm: true,
-        user_metadata: {
-          name,
-          role,
-          group_name: group || null,
-          wallet_address: wallet || null,
-        }
-      });
+      const uniqueId = crypto.randomUUID();
 
-      if (!authUser) {
-        throw new Error("Failed to create user");
-      }
-
+      // Insert the user directly
       const { error } = await supabase.from("users").insert({
-        id: authUser.id,
+        id: uniqueId, // Using a string ID now
         name,
         email,
         group_name: group || null,
