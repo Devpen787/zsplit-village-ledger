@@ -17,8 +17,16 @@ import Profile from "./pages/Profile";
 import GroupDashboard from "./pages/GroupDashboard";
 import Settings from "./pages/Settings";
 import { PrivyProvider } from '@privy-io/react-auth';
+import { Loader2 } from "lucide-react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 10 * 1000, // 10 seconds
+    },
+  },
+});
 
 // Privy configuration
 const PRIVY_APP_ID = "cmayii9yh00fpl40mgq8kod1g";
@@ -31,6 +39,13 @@ const App = () => (
       <PrivyProvider
         appId={PRIVY_APP_ID}
         onSuccess={() => console.log("Privy authentication successful")}
+        config={{
+          loginMethods: ['email'],
+          appearance: {
+            theme: 'light',
+            accentColor: '#0ea5e9',
+          },
+        }}
       >
         <BrowserRouter>
           <AuthProvider>
