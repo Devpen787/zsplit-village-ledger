@@ -3,18 +3,23 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
-import { Group, GroupMember } from '@/types/supabase';
+import { Group } from '@/types/supabase';
 import { User } from '@/types/auth';
 import { useGroupPulse } from '@/hooks/useGroupPulse';
 import { useExpenses } from '@/hooks/useExpenses';
-import { Expense } from '@/types/expenses';
+import { useGroupMembers } from '@/hooks/useGroupMembers';
+import { useGroupInvites } from '@/hooks/useGroupInvites';
+import { useGroupAdminStatus } from '@/hooks/useGroupAdminStatus';
 
 export const useGroupDetails = (id: string | undefined, user: User | null) => {
   const navigate = useNavigate();
   const [group, setGroup] = useState<Group | null>(null);
-  const [members, setMembers] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Use the extracted hooks
+  const { members } = useGroupMembers(id);
+  const { inviteMember } = useGroupInvites(id);
+  const { isAdmin } = useGroupAdminStatus(id, user);
   
   // Get group pulse data for metrics
   const { 
@@ -26,8 +31,8 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   // Get expenses data for metrics
   const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
   
-  // Calculate total expenses - fixing the type error by providing the initial value type to reduce
-  const totalExpenses = expenses.reduce<number>((sum, expense) => sum + Number(expense.amount || 0), 0);
+  // Calculate total expenses
+  const totalExpenses = expenses.reduce((sum: number, expense) => sum + Number(expense.amount || 0), 0);
   
   useEffect(() => {
     if (!id) return;
@@ -43,18 +48,8 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
       )
       .subscribe();
       
-    const membersChannel = supabase
-      .channel(`group-${id}-members-changes`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'group_members', filter: `group_id=eq.${id}` },
-        () => fetchMembers()
-      )
-      .subscribe();
-      
     return () => {
       supabase.removeChannel(groupsChannel);
-      supabase.removeChannel(membersChannel);
     };
   }, [id, user]);
   
@@ -86,19 +81,6 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
       console.log("Group data:", groupData);
       setGroup(groupData);
       
-      // Check if current user is an admin
-      const { data: memberData, error: memberError } = await (supabase
-        .from('group_members') as any)
-        .select('role')
-        .eq('group_id', id)
-        .eq('user_id', user.id)
-        .single();
-        
-      if (!memberError && memberData) {
-        setIsAdmin(memberData.role === 'admin');
-      }
-      
-      await fetchMembers();
     } catch (error: any) {
       console.error("Error fetching group:", error);
       toast.error(`Error loading group: ${error.message}`);
@@ -106,86 +88,11 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
       setLoading(false);
     }
   };
-  
-  const fetchMembers = async () => {
-    if (!id) return;
-    
-    try {
-      console.log("Fetching members for group:", id);
-      
-      const { data: membersData, error: membersError } = await (supabase
-        .from('group_members') as any)
-        .select(`
-          id,
-          group_id,
-          user_id,
-          role,
-          users:user_id (
-            id,
-            name,
-            email,
-            wallet_address
-          )
-        `)
-        .eq('group_id', id);
-        
-      if (membersError) {
-        console.error("Error fetching members:", membersError);
-        throw membersError;
-      }
-      
-      console.log("Group members data:", membersData);
-      setMembers(membersData || []);
-    } catch (error: any) {
-      console.error("Error fetching members:", error);
-      toast.error(`Error loading group members: ${error.message}`);
-    }
-  };
 
-  const inviteMember = async (inviteEmail: string) => {
-    if (!id || !user) throw new Error("Missing group or user information");
-    
-    // First check if the user exists
-    const { data: userData, error: userError } = await (supabase
-      .from('users') as any)
-      .select('id')
-      .eq('email', inviteEmail.toLowerCase())
-      .maybeSingle();
-      
-    if (userError) throw userError;
-    
-    if (!userData) {
-      toast.error("User not found with that email");
-      throw new Error("User not found with that email");
-    }
-    
-    // Check if user is already a member
-    const { data: existingMember, error: memberCheckError } = await (supabase
-      .from('group_members') as any)
-      .select('id')
-      .eq('group_id', id)
-      .eq('user_id', userData.id)
-      .maybeSingle();
-      
-    if (memberCheckError) throw memberCheckError;
-    
-    if (existingMember) {
-      toast.info("This user is already a member of this group");
-      throw new Error("This user is already a member of this group");
-    }
-    
-    // Add the user as a member
-    const { error: addError } = await (supabase
-      .from('group_members') as any)
-      .insert({
-        group_id: id,
-        user_id: userData.id,
-        role: 'member'
-      });
-      
-    if (addError) throw addError;
-    
-    toast.success(`Successfully invited ${inviteEmail}`);
+  // Wrapper for inviteMember to provide user ID
+  const handleInviteMember = async (inviteEmail: string) => {
+    if (!user) throw new Error("User not authenticated");
+    return inviteMember(inviteEmail, user.id);
   };
 
   return {
@@ -193,7 +100,7 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
     members,
     loading,
     isAdmin,
-    inviteMember,
+    inviteMember: handleInviteMember,
     refreshData: fetchGroupDetails,
     // Add these properties to fix the errors
     potBalance,
