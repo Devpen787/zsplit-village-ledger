@@ -32,6 +32,13 @@ const Index = () => {
     setIsCreateGroupModalOpen(false);
     toast.success(`Group "${newGroup.name}" created successfully!`);
     fetchGroups();
+    
+    // Navigate to the new group's overview page
+    navigate(`/group/${newGroup.id}`);
+  };
+  
+  const handleGroupSelect = (groupId: string) => {
+    navigate(`/group/${groupId}`);
   };
   
   const handleNewExpense = () => {
@@ -58,6 +65,7 @@ const Index = () => {
             hasRecursionError={hasRecursionError}
             onCreateGroup={handleCreateGroup}
             onRefresh={fetchGroups}
+            onGroupSelect={handleGroupSelect} 
           />
         </DashboardSection>
 

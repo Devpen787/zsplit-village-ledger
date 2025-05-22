@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
 import { GroupHeader } from "@/components/groups/GroupHeader";
@@ -12,19 +12,25 @@ import { toast } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { GroupOverview } from "@/components/groups/GroupOverview";
 
 const GroupView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview"); // Set "overview" as the default tab
   
   const { 
     group, 
     members, 
     loading, 
     isAdmin, 
-    inviteMember 
+    inviteMember,
+    potBalance = 0,
+    totalExpenses = 0,
+    pendingPayoutsCount = 0,
+    connectedWalletsCount = 0
   } = useGroupDetails(id, user);
   
   const handleCreateExpense = () => {
@@ -40,6 +46,13 @@ const GroupView = () => {
     }
   };
   
+  // If no group ID is provided, redirect to the groups list
+  useEffect(() => {
+    if (!id) {
+      navigate('/group');
+    }
+  }, [id, navigate]);
+
   if (loading) {
     return (
       <AppLayout>
@@ -55,9 +68,9 @@ const GroupView = () => {
       <AppLayout>
         <div className="container mx-auto py-6">
           <h1 className="text-2xl font-semibold">Group not found</h1>
-          <Button onClick={() => navigate('/')} className="mt-4">
+          <Button onClick={() => navigate('/group')} className="mt-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            Back to Groups
           </Button>
         </div>
       </AppLayout>
@@ -73,15 +86,32 @@ const GroupView = () => {
           isAdmin={isAdmin}
           onCreateExpense={handleCreateExpense}
         />
-        
-        <GroupTabs
-          groupId={id!}
-          members={members}
-          isAdmin={isAdmin}
-          onInviteClick={() => setInviteDialogOpen(true)}
-          currentUser={user}
-          group={group}
-        />
+
+        {activeTab === "overview" ? (
+          <GroupOverview
+            groupId={id!}
+            group={group}
+            members={members}
+            isAdmin={isAdmin}
+            onInviteClick={() => setInviteDialogOpen(true)}
+            currentUserId={user?.id}
+            potBalance={potBalance}
+            totalExpenses={totalExpenses}
+            pendingPayoutsCount={pendingPayoutsCount}
+            connectedWalletsCount={connectedWalletsCount}
+          />
+        ) : (
+          <GroupTabs
+            groupId={id!}
+            members={members}
+            isAdmin={isAdmin}
+            onInviteClick={() => setInviteDialogOpen(true)}
+            currentUser={user}
+            group={group}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        )}
         
         <InviteMemberDialog
           open={inviteDialogOpen}

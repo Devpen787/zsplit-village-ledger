@@ -1,4 +1,3 @@
-
 import { ReactNode } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -77,12 +76,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </header>
   );
 
-  // Updated navItems to include the Group Pulse link
+  // Updated navItems with clearer group-related labels
   const navItems = [
     { icon: Home, label: "Dashboard", path: "/" },
     { icon: Receipt, label: "Add Expense", path: "/expenses/new" },
     { icon: Wallet, label: "Balances", path: "/balances" },
-    { icon: Users, label: "Group", path: "/group" },
+    { icon: Users, label: "My Groups", path: "/group" }, // Updated label for clarity
     { icon: PiggyBank, label: "Group Pot", path: "/group-pot" },
     { icon: Activity, label: "Group Pulse", path: "/group-pulse" },
     { icon: User, label: "Profile", path: "/profile" },

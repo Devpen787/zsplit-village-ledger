@@ -19,6 +19,11 @@ export const PotBalanceCard = ({ potBalance }: PotBalanceCardProps) => {
       <CardContent>
         <div className="text-3xl font-bold">${potBalance.toFixed(2)}</div>
         <p className="text-sm text-muted-foreground">Available for group expenses</p>
+        {potBalance <= 0 && (
+          <p className="text-sm text-destructive mt-2">
+            Low balance. Consider adding funds to the group pot.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
