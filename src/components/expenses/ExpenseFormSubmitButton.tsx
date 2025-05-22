@@ -5,19 +5,23 @@ import { Loader2 } from "lucide-react";
 
 interface ExpenseFormSubmitButtonProps {
   loading: boolean;
+  isEditing: boolean;
 }
 
-const ExpenseFormSubmitButton: React.FC<ExpenseFormSubmitButtonProps> = ({ loading }) => {
+const ExpenseFormSubmitButton: React.FC<ExpenseFormSubmitButtonProps> = ({ loading, isEditing }) => {
   return (
-    <Button type="submit" className="w-full" disabled={loading}>
-      {loading ? (
-        <>
-          Adding Expense <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-        </>
-      ) : (
-        "Add Expense"
-      )}
-    </Button>
+    <div>
+      <Button type="submit" disabled={loading}>
+        {loading ? (
+          <>
+            {isEditing ? "Updating..." : "Saving..."}
+            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+          </>
+        ) : (
+          isEditing ? "Update Expense" : "Save Expense"
+        )}
+      </Button>
+    </div>
   );
 };
 

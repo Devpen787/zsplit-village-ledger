@@ -2,13 +2,14 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { expenseFormSchema, useExpenseForm, ExpenseFormValues } from '@/hooks/useExpenseForm';
 import ExpenseFormFields from './ExpenseFormFields';
+import ExpenseFormHeader from './ExpenseFormHeader';
+import ExpenseFormSubmitButton from './ExpenseFormSubmitButton';
 
 interface ExpenseFormProps {
   groupId: string | null;
@@ -40,31 +41,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
 
   return (
     <div className="container mx-auto py-6">
-      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
+      <ExpenseFormHeader isEditing={isEditing} />
+      
       <Card>
-        <CardHeader>
-          <CardTitle>{isEditing ? "Edit Expense" : "New Expense"}</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <ExpenseFormFields form={form} users={users} />
-              
-              <div>
-                <Button type="submit" disabled={submitLoading}>
-                  {submitLoading ? (
-                    <>
-                      Saving...
-                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    </>
-                  ) : (
-                    "Save Expense"
-                  )}
-                </Button>
-              </div>
+              <ExpenseFormSubmitButton loading={submitLoading} isEditing={isEditing} />
             </form>
           </Form>
         </CardContent>

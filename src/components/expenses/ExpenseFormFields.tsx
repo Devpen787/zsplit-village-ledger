@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { ExpenseFormValues } from '@/hooks/useExpenseForm';
+import { Switch } from "@/components/ui/switch";
 
 interface ExpenseFormFieldsProps {
   form: UseFormReturn<ExpenseFormValues>;
@@ -31,52 +32,54 @@ const ExpenseFormFields: React.FC<ExpenseFormFieldsProps> = ({ form, users }) =>
         )}
       />
       
-      <FormField
-        control={form.control}
-        name="amount"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Amount</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="0.00"
-                type="number"
-                {...field}
-                value={field.value === 0 ? '' : field.value}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  field.onChange(isNaN(value) ? 0 : value);
-                }}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      
-      <FormField
-        control={form.control}
-        name="currency"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Currency</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="amount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Amount</FormLabel>
               <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a currency" />
-                </SelectTrigger>
+                <Input
+                  placeholder="0.00"
+                  type="number"
+                  {...field}
+                  value={field.value === 0 ? '' : field.value}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    field.onChange(isNaN(value) ? 0 : value);
+                  }}
+                />
               </FormControl>
-              <SelectContent>
-                <SelectItem value="USD">USD</SelectItem>
-                <SelectItem value="EUR">EUR</SelectItem>
-                <SelectItem value="GBP">GBP</SelectItem>
-                <SelectItem value="CHF">CHF</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="currency"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Currency</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a currency" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="GBP">GBP</SelectItem>
+                  <SelectItem value="CHF">CHF</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
       
       <FormField
         control={form.control}
@@ -93,27 +96,6 @@ const ExpenseFormFields: React.FC<ExpenseFormFieldsProps> = ({ form, users }) =>
                 defaultValue={field.value}
               />
             </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      
-      <FormField
-        control={form.control}
-        name="notes"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Notes</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Add any notes about this expense"
-                className="resize-none"
-                {...field}
-              />
-            </FormControl>
-            <FormDescription>
-              Add any additional notes or details about this expense.
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -139,6 +121,48 @@ const ExpenseFormFields: React.FC<ExpenseFormFieldsProps> = ({ form, users }) =>
                 ))}
               </SelectContent>
             </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="splitEqually"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+            <div className="space-y-0.5">
+              <FormLabel>Split Equally</FormLabel>
+              <FormDescription>
+                Split the expense equally among all participants
+              </FormDescription>
+            </div>
+            <FormControl>
+              <Switch
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+      
+      <FormField
+        control={form.control}
+        name="notes"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Notes</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Add any notes about this expense"
+                className="resize-none"
+                {...field}
+              />
+            </FormControl>
+            <FormDescription>
+              Add any additional notes or details about this expense.
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}

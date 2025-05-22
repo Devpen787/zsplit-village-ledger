@@ -2,20 +2,22 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 
-const ExpenseFormHeader: React.FC = () => {
+interface ExpenseFormHeaderProps {
+  isEditing: boolean;
+}
+
+const ExpenseFormHeader: React.FC<ExpenseFormHeaderProps> = ({ isEditing }) => {
+  const navigate = useNavigate();
+  
   return (
     <>
-      <div className="mb-6">
-        <Link to="/">
-          <Button variant="ghost" size="sm" className="pl-0">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
-        </Link>
-      </div>
-
-      <h1 className="text-2xl font-bold mb-6">Add Expense</h1>
+      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
+      <h2 className="text-2xl font-bold mb-4">{isEditing ? "Edit Expense" : "New Expense"}</h2>
     </>
   );
 };
