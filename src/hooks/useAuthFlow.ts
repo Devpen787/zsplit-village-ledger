@@ -16,6 +16,7 @@ export const useAuthFlow = (isSignup = false) => {
   const loginTimeoutRef = useRef<number | null>(null);
   const maxRetries = useRef(3);
   const retryCount = useRef(0);
+  const processingAuthRef = useRef(false); // Track if auth process is happening
 
   // Clear errors when component mounts or unmounts
   useEffect(() => {
@@ -36,7 +37,13 @@ export const useAuthFlow = (isSignup = false) => {
     let isActive = true;
     
     const checkAuthentication = async () => {
-      if (ready && authenticated) {
+      if (!ready || processingAuthRef.current) return;
+      
+      if (authenticated) {
+        // Skip if we're already processing auth or we're already authenticated
+        if (isAuthenticated) return;
+        
+        processingAuthRef.current = true;
         if (isActive) setIsLoading(true);
         console.log('Privy authenticated, refreshing user profile');
         
@@ -69,6 +76,7 @@ export const useAuthFlow = (isSignup = false) => {
                   console.error('Failed to refresh user profile after maximum retries');
                   setLocalError(`Failed to ${isSignup ? 'create your profile' : 'sign in'} after multiple attempts. Please try again.`);
                   setIsLoading(false);
+                  processingAuthRef.current = false;
                 }
               }
             } catch (error) {
@@ -81,6 +89,7 @@ export const useAuthFlow = (isSignup = false) => {
               } else {
                 setLocalError("Authentication error after multiple attempts. Please try again later.");
                 setIsLoading(false);
+                processingAuthRef.current = false;
               }
             }
           };
@@ -92,6 +101,7 @@ export const useAuthFlow = (isSignup = false) => {
             console.error('Error refreshing user profile:', error);
             setLocalError("Authentication error. Please try again later.");
             setIsLoading(false);
+            processingAuthRef.current = false;
           }
         }
       } else if (ready && !authenticated && isActive) {
@@ -105,7 +115,7 @@ export const useAuthFlow = (isSignup = false) => {
     return () => {
       isActive = false;
     };
-  }, [ready, authenticated, navigate, refreshUser, location, isSignup]);
+  }, [ready, authenticated, navigate, refreshUser, location, isSignup, isAuthenticated]);
 
   // Redirect if authenticated through our context
   useEffect(() => {
@@ -116,6 +126,11 @@ export const useAuthFlow = (isSignup = false) => {
   }, [isAuthenticated, navigate, location]);
 
   const handleAuth = () => {
+    if (processingAuthRef.current) {
+      console.log("Auth process already in progress, skipping");
+      return;
+    }
+    
     setIsLoading(true);
     setLocalError(null);
     clearAuthError();
@@ -134,11 +149,13 @@ export const useAuthFlow = (isSignup = false) => {
       
       loginTimeoutRef.current = window.setTimeout(() => {
         setIsLoading(false);
+        processingAuthRef.current = false;
         setLocalError(`${isSignup ? 'Signup' : 'Login'} timed out. Please try again.`);
       }, 15000); // 15 seconds timeout
     } catch (error) {
       console.error(`${isSignup ? 'Signup' : 'Login'} error:`, error);
       setIsLoading(false);
+      processingAuthRef.current = false;
       setLocalError(`Failed to initiate ${isSignup ? 'signup' : 'login'}. Please try again.`);
       toast.error(`${isSignup ? 'Signup' : 'Login'} failed. Please try again.`);
     }

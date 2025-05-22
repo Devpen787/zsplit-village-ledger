@@ -32,6 +32,12 @@ export const ProtectedRoute: React.FC = () => {
     }
   };
 
+  // If authenticated, render children
+  if (isAuthenticated) {
+    return <Outlet />;
+  }
+
+  // If not authenticated but still loading, show loading indicator
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -85,9 +91,6 @@ export const ProtectedRoute: React.FC = () => {
     );
   }
 
-  return isAuthenticated ? (
-    <Outlet />
-  ) : (
-    <Navigate to="/login" state={{ from: location }} replace />
-  );
+  // If not authenticated and not loading, redirect to login
+  return <Navigate to="/login" state={{ from: location }} replace />;
 };

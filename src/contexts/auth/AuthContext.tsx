@@ -15,6 +15,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loginAttempts, setLoginAttempts] = useState(0);
   const { ready, authenticated, user: privyUser, logout } = usePrivy();
   const isInitialized = useRef(false);
+  const refreshingRef = useRef(false); // Track if refresh is in progress
+  const lastPrivyIdRef = useRef<string | null>(null); // Track last Privy user ID
   
   const { fetchUser, createUser, authError, clearAuthError, setAuthError } = useUserData();
   
@@ -32,6 +34,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       return null;
     }
+
+    // Skip refresh if already in progress with same user
+    if (refreshingRef.current && lastPrivyIdRef.current === privyUser.id) {
+      console.log("Skipping duplicate refresh for same user");
+      return user;
+    }
+    
+    // Set refreshing state and track user
+    refreshingRef.current = true;
+    lastPrivyIdRef.current = privyUser.id;
     
     setLoading(true);
     clearAuthError();
@@ -69,8 +81,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Track failed attempts
       setLoginAttempts(prev => prev + 1);
       return null;
+    } finally {
+      refreshingRef.current = false;
     }
-  }, [authenticated, privyUser, clearAuthError, fetchUser, createUser, resetLoginAttempts, setAuthError]);
+  }, [authenticated, privyUser, clearAuthError, fetchUser, createUser, resetLoginAttempts, setAuthError, user]);
 
   // Initialize auth on component mount
   useEffect(() => {
@@ -96,12 +110,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isInitialized.current) return;
     
     if (authenticated && privyUser) {
-      // Use a timeout to prevent rapid consecutive calls
+      // Skip refresh if user ID hasn't changed
+      if (lastPrivyIdRef.current === privyUser.id && user) {
+        console.log("Skipping auth change handler - same user ID");
+        return;
+      }
+      
+      // Debounce refresh calls with a small delay
       const timeoutId = setTimeout(() => {
         refreshUser().catch(err => {
           console.error("Error during user refresh after auth change:", err);
         });
-      }, 100);
+      }, 300);
       
       return () => clearTimeout(timeoutId);
     } else if (!authenticated) {
@@ -109,8 +129,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearAuthState();
       setUser(null);
       setLoading(false);
+      lastPrivyIdRef.current = null;
     }
-  }, [authenticated, privyUser, refreshUser]);
+  }, [authenticated, privyUser, refreshUser, user]);
 
   const signOut = async () => {
     try {
@@ -119,6 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await performSignOut(logout);
       setUser(null);
       resetLoginAttempts();
+      lastPrivyIdRef.current = null; // Reset the stored Privy user ID
     } catch (error) {
       console.error("Error in signOut:", error);
     } finally {
