@@ -1,13 +1,17 @@
 
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Info } from 'lucide-react';
 import { useBalances } from '@/hooks/useBalances';
 import { BalancesHeader } from '@/components/balances/BalancesHeader';
 import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable';
 import { BalancePaymentSuggestions } from '@/components/BalancePaymentSuggestions';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import AppLayout from '@/layouts/AppLayout';
 
 const Balances = () => {
   const { balances, loading, error, refreshing, handleRefresh } = useBalances();
+  const navigate = useNavigate();
 
   // Transform Balance[] to BalanceData[]
   const balanceData: BalanceData[] = balances.map(balance => ({
@@ -18,39 +22,68 @@ const Balances = () => {
     netBalance: balance.amount
   }));
 
+  const isRecursionError = error?.toLowerCase().includes('recursion');
+
   if (loading && !refreshing) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AppLayout>
+        <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
-      <BalancesHeader refreshing={refreshing} onRefresh={handleRefresh} />
+    <AppLayout>
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <BalancesHeader refreshing={refreshing} onRefresh={handleRefresh} />
 
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+        {isRecursionError ? (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Database Configuration Error</AlertTitle>
+            <AlertDescription className="space-y-4">
+              <p>We're experiencing an issue with database policies that prevents loading balances.</p>
+              <p className="text-sm">
+                This is a temporary issue that administrators are aware of. The RLS policy for expenses and group_members may need to be updated.
+              </p>
+              <div className="flex flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0 mt-2">
+                <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+                  Return to Dashboard
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleRefresh}>
+                  Try Again
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        ) : error ? (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
 
-      {balances.length === 0 && !error ? (
-        <Alert className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No balances found</AlertTitle>
-          <AlertDescription>There are no expenses or balances to display yet.</AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          <BalancesTable balances={balanceData} />
-          <BalancePaymentSuggestions balances={balanceData} />
-        </>
-      )}
-    </div>
+        {balances.length === 0 && !error ? (
+          <Alert className="mb-6">
+            <Info className="h-4 w-4" />
+            <AlertTitle>No balances found</AlertTitle>
+            <AlertDescription>
+              {isRecursionError 
+                ? "Unable to load balances due to a system issue." 
+                : "There are no expenses or balances to display yet."}
+            </AlertDescription>
+          </Alert>
+        ) : !isRecursionError && (
+          <>
+            <BalancesTable balances={balanceData} />
+            <BalancePaymentSuggestions balances={balanceData} />
+          </>
+        )}
+      </div>
+    </AppLayout>
   );
 };
 

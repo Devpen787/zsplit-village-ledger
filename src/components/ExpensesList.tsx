@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,7 +35,7 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
   const navigate = useNavigate();
   const [groupedExpenses, setGroupedExpenses] = useState<Record<string, Expense[]>>({});
 
-  const fetchExpenses = async () => {
+  const fetchExpenses = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -77,7 +77,13 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
 
       if (supabaseError) {
         console.error("Error fetching expenses:", supabaseError);
-        setError(supabaseError.message);
+        
+        // Special handling for recursive RLS policy errors
+        if (supabaseError.message?.includes('infinite recursion')) {
+          setError("Unable to load expenses due to a database policy issue.");
+        } else {
+          setError(supabaseError.message);
+        }
         return;
       }
 
@@ -122,7 +128,7 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [limit, groupId, user]);
 
   useEffect(() => {
     if (user) {
@@ -142,7 +148,7 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
         supabase.removeChannel(expensesChannel);
       };
     }
-  }, [limit, groupId, user]);
+  }, [limit, groupId, user, fetchExpenses]);
 
   const formatDateForDisplay = (dateString: string) => {
     const date = new Date(dateString);
@@ -237,8 +243,17 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error loading expenses</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {error.includes('recursion') 
+                ? "We're experiencing a temporary database issue. Please try again later." 
+                : error}
+            </AlertDescription>
           </Alert>
+          <div className="mt-4 flex justify-center">
+            <Button variant="outline" size="sm" onClick={() => fetchExpenses()}>
+              Try Again
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );

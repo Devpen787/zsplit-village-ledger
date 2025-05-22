@@ -2,9 +2,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useBalances } from "@/hooks/useBalances";
 import { useAuth } from "@/contexts";
+import { AlertCircle } from "lucide-react";
 
 export const BalanceSummary = () => {
-  const { balances, loading } = useBalances();
+  const { balances, loading, error } = useBalances();
   const { user } = useAuth();
 
   // Calculate summary data for the current user
@@ -35,6 +36,23 @@ export const BalanceSummary = () => {
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Loading balances...</span>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-2 text-red-500">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm">
+              {error.includes('recursion') 
+                ? "Balance data unavailable" 
+                : "Error loading balances"}
+            </span>
           </div>
         </CardContent>
       </Card>
