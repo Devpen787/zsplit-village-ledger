@@ -22,11 +22,6 @@ export const queryClient = new QueryClient();
 // Create wagmi config
 export const wagmiConfig = createConfig({
   publicClient,
-  // Pass queryClient as part of options rather than a top-level property
-  // This fixes the type issue with QueryClient
-  queryClient: {
-    client: queryClient,
-  },
   connectors: [
     new InjectedConnector({ 
       chains: [mainnet, sepolia],
