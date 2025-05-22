@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { supabase, setSupabaseAuth, clearAuthState } from '@/integrations/supabase/client';
@@ -74,8 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Creating user with data:", newUser);
       
-      // Special handling for the RLS bypass
-      // We're using an upsert with an on_conflict clause to handle potential duplicates
+      // Attempt direct insert with explicit auth workaround
       const { data: insertedUser, error: insertError } = await supabase
         .from('users')
         .upsert(newUser, { 
@@ -93,26 +91,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log("Error message:", insertError.message);
         console.log("Error details:", insertError.details);
         
-        // Check if this is an RLS policy error
-        if (insertError.message.includes('new row violates row-level security policy')) {
-          setAuthError("Authentication error: Unable to create your profile due to security policies. " + 
-                      "We need to adjust the RLS policies in Supabase to allow new user registration.");
+        // Try a direct insert as a fallback 
+        // (relies on RLS policy allowing anon inserts)
+        if (insertError.message.includes('row-level security policy')) {
+          console.log("Attempting fallback insert method...");
           
-          console.log("RLS policy violation. Consider modifying your Supabase policies to allow new user creation.");
-          console.log("Suggested policy modification: Allow inserts for new users OR for authenticated users where auth.uid() = id");
-          return null;
-        } else if (insertError.code === '23505') {
-          // Duplicate key error - user might already exist, try to fetch again
-          console.log("User might already exist, trying to fetch...");
-          const existingUser = await fetchUser(privyUserId);
-          if (existingUser) {
-            return existingUser;
+          const { data: fallbackUser, error: fallbackError } = await supabase
+            .from('users')
+            .insert(newUser)
+            .select()
+            .maybeSingle();
+            
+          if (fallbackError) {
+            console.error("Fallback insert also failed:", fallbackError);
+            setAuthError(`Could not create your profile: ${fallbackError.message}`);
+            return null;
           }
-          setAuthError(`A user with this ID already exists but could not be retrieved.`);
+          
+          if (fallbackUser) {
+            console.log("Fallback insert succeeded:", fallbackUser);
+            return fallbackUser as User;
+          }
+          
+          setAuthError("Failed to create your profile. No data returned.");
+          return null;
         } else {
           setAuthError(`Could not create user profile: ${insertError.message}`);
+          return null;
         }
-        return null;
       }
       
       if (!insertedUser) {
@@ -128,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthError(`Failed to create your profile: ${error?.message || 'Unknown error'}`);
       return null;
     }
-  }, [fetchUser]);
+  }, []);
 
   // Get email from Privy user
   const getPrivyEmail = useCallback((privyUserObj: any): string | null => {
