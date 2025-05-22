@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -25,8 +26,8 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   // Get expenses data for metrics
   const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
   
-  // Calculate total expenses - fixed type error by ensuring we're adding numbers
-  const totalExpenses = expenses.reduce((sum: number, expense: Expense) => sum + Number(expense.amount || 0), 0);
+  // Calculate total expenses - fixing the type error by providing the initial value type to reduce
+  const totalExpenses = expenses.reduce<number>((sum, expense) => sum + Number(expense.amount || 0), 0);
   
   useEffect(() => {
     if (!id) return;
