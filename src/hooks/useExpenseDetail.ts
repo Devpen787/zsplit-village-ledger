@@ -11,6 +11,7 @@ type Expense = {
   currency: string;
   date: string;
   paid_by: string;
+  group_id?: string | null;
   group_name?: string | null;
 };
 
@@ -36,15 +37,26 @@ export const useExpenseDetail = (id: string | undefined) => {
     const fetchExpense = async () => {
       setLoading(true);
       try {
+        // Join with groups table to get group name
         const { data, error } = await supabase
           .from('expenses')
-          .select('*')
+          .select(`
+            *,
+            groups (
+              name
+            )
+          `)
           .eq('id', id)
           .single();
 
         if (error) throw error;
 
-        setExpense(data);
+        const expenseWithGroupName = {
+          ...data,
+          group_name: data.groups?.name
+        };
+        
+        setExpense(expenseWithGroupName);
         setEditedTitle(data.title);
         setEditedAmount(String(data.amount));
         setEditedCurrency(data.currency);
@@ -131,7 +143,13 @@ export const useExpenseDetail = (id: string | undefined) => {
       if (error) throw error;
 
       toast.success("Expense deleted successfully!");
-      navigate('/');
+      
+      // Navigate back to the group page if we have a group_id, otherwise to dashboard
+      if (expense?.group_id) {
+        navigate(`/group/${expense.group_id}`);
+      } else {
+        navigate('/');
+      }
     } catch (error: any) {
       console.error("Error deleting expense:", error.message);
       toast.error("Failed to delete expense.");
@@ -145,7 +163,8 @@ export const useExpenseDetail = (id: string | undefined) => {
 
     setIsCopying(true);
     try {
-      const expenseText = `Expense: ${expense.title}\nAmount: ${expense.amount} ${expense.currency}\nDate: ${new Date(expense.date).toLocaleDateString()}`;
+      const groupInfo = expense.group_name ? `Group: ${expense.group_name}\n` : '';
+      const expenseText = `Expense: ${expense.title}\nAmount: ${expense.amount} ${expense.currency}\nDate: ${new Date(expense.date).toLocaleDateString()}\n${groupInfo}`;
       await navigator.clipboard.writeText(expenseText);
       toast.success("Expense details copied to clipboard!");
     } catch (error) {

@@ -19,6 +19,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState(user?.name || '');
   const [selectedEmoji, setSelectedEmoji] = useState(user?.avatar_emoji || '😀');
+  const [walletAddress, setWalletAddress] = useState(user?.wallet_address || '');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -26,6 +27,7 @@ const Profile = () => {
     if (user) {
       setDisplayName(user.name || '');
       setSelectedEmoji(user.avatar_emoji || '😀');
+      setWalletAddress(user.wallet_address || '');
     }
   }, [user]);
 
@@ -39,7 +41,8 @@ const Profile = () => {
         .from('users')
         .update({ 
           name: displayName,
-          avatar_emoji: selectedEmoji 
+          avatar_emoji: selectedEmoji,
+          wallet_address: walletAddress
         })
         .eq('id', user.id);
 
@@ -116,6 +119,17 @@ const Profile = () => {
                     </button>
                   ))}
                 </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="walletAddress">Wallet Address (for Web3 features)</Label>
+                <Input 
+                  id="walletAddress" 
+                  value={walletAddress} 
+                  onChange={(e) => setWalletAddress(e.target.value)}
+                  placeholder="0x..."
+                />
+                <p className="text-xs text-muted-foreground">For future crypto payment features</p>
               </div>
               
               <div className="space-y-2">
