@@ -3,8 +3,9 @@ import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { PotActivity } from '@/types/group-pot';
 import { Button } from '@/components/ui/button';
-import { Check, X } from 'lucide-react';
+import { Check, X, Wallet } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PendingPayoutRequestsListProps {
   pendingRequests: PotActivity[];
@@ -20,6 +21,12 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
   if (pendingRequests.length === 0) {
     return <p className="text-muted-foreground text-sm">No pending requests</p>;
   }
+  
+  // Helper to shorten wallet addresses
+  const shortenAddress = (address: string | null | undefined) => {
+    if (!address) return null;
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  };
 
   return (
     <div className="mt-4">
@@ -36,7 +43,28 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
         <TableBody>
           {pendingRequests.map((request) => (
             <TableRow key={request.id}>
-              <TableCell>{request.users?.name || request.users?.email || 'Unknown user'}</TableCell>
+              <TableCell>
+                <div>
+                  <div>{request.users?.name || request.users?.email || 'Unknown user'}</div>
+                  {request.users?.wallet_address && (
+                    <div className="flex items-center text-xs text-muted-foreground mt-1">
+                      <Wallet className="h-3 w-3 mr-1" />
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger className="cursor-default">
+                            <span>
+                              {shortenAddress(request.users.wallet_address)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Request will be reimbursed to this wallet</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  )}
+                </div>
+              </TableCell>
               <TableCell>{request.amount.toFixed(2)}</TableCell>
               <TableCell>{request.note || '-'}</TableCell>
               <TableCell>

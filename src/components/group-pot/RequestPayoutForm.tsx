@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { useWallet } from '@/contexts/WalletContext';
+import { Wallet } from 'lucide-react';
 
 interface RequestPayoutFormProps {
   onSubmit: (amount: number, note: string) => Promise<void>;
@@ -13,6 +15,7 @@ export const RequestPayoutForm = ({ onSubmit }: RequestPayoutFormProps) => {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { address, isConnected, shortenAddress } = useWallet();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +62,14 @@ export const RequestPayoutForm = ({ onSubmit }: RequestPayoutFormProps) => {
           required
         />
       </div>
+      
+      {isConnected && address && (
+        <div className="bg-muted/30 p-3 rounded-lg flex items-center text-sm">
+          <Wallet className="h-4 w-4 mr-2 text-primary" />
+          <span className="text-muted-foreground">Connected Wallet: </span>
+          <span className="font-medium ml-1">{shortenAddress(address)}</span>
+        </div>
+      )}
       
       <div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting || !amount || parseFloat(amount) <= 0 || !note}>

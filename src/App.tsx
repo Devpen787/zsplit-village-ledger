@@ -12,6 +12,7 @@ import ExpenseForm from "./pages/ExpenseForm";
 import Balances from "./pages/Balances";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts";
+import { WalletProvider } from "./contexts/WalletContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Profile from "./pages/Profile";
 import GroupDashboard from "./pages/GroupDashboard";
@@ -51,30 +52,32 @@ const App = () => (
       >
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/login" element={<Login />} />
-              
-              {/* Protected routes (require authentication) */}
-              <Route element={<ProtectedRoute />}>
-                <Route path="/" element={<Index />} />
-                <Route path="/expenses/:id" element={<ExpenseDetail />} />
-                <Route path="/expenses/new" element={<ExpenseForm />} />
-                <Route path="/balances" element={<Balances />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/group" element={<GroupDashboard />} />
-                <Route path="/group/:id" element={<GroupView />} />
-                <Route path="/group-pot" element={<GroupPot />} />
-                <Route path="/group-pot/:id" element={<GroupPot />} />
-                <Route path="/group-pulse" element={<GroupPulse />} />
-                <Route path="/group-pulse/:id" element={<GroupPulse />} />
-                <Route path="/settings" element={<Settings />} />
-              </Route>
-              
-              {/* Redirect for authenticated users */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <WalletProvider>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/login" element={<Login />} />
+                
+                {/* Protected routes (require authentication) */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/expenses/:id" element={<ExpenseDetail />} />
+                  <Route path="/expenses/new" element={<ExpenseForm />} />
+                  <Route path="/balances" element={<Balances />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/group" element={<GroupDashboard />} />
+                  <Route path="/group/:id" element={<GroupView />} />
+                  <Route path="/group-pot" element={<GroupPot />} />
+                  <Route path="/group-pot/:id" element={<GroupPot />} />
+                  <Route path="/group-pulse" element={<GroupPulse />} />
+                  <Route path="/group-pulse/:id" element={<GroupPulse />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
+                
+                {/* Redirect for authenticated users */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </WalletProvider>
           </AuthProvider>
         </BrowserRouter>
       </PrivyProvider>

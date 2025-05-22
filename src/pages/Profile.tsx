@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { useAuth } from '@/contexts';
+import { useWallet } from '@/contexts/WalletContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,8 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/layouts/AppLayout";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import WalletInfo from "@/components/wallet/WalletInfo";
 
 const emojis = ["😀", "😎", "🐱", "🚀", "🌟", "🍕", "🏄‍♂️", "🎮", "📚", "🎸"];
 
@@ -121,15 +123,13 @@ const Profile = () => {
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="walletAddress">Wallet Address (for Web3 features)</Label>
-                <Input 
-                  id="walletAddress" 
-                  value={walletAddress} 
-                  onChange={(e) => setWalletAddress(e.target.value)}
-                  placeholder="0x..."
-                />
-                <p className="text-xs text-muted-foreground">For future crypto payment features</p>
+              <div className="space-y-2 bg-muted/30 p-4 rounded-lg">
+                <div className="flex items-center mb-2">
+                  <Wallet className="h-5 w-5 mr-2 text-primary" />
+                  <Label className="text-lg">Wallet Connection</Label>
+                </div>
+                
+                <WalletInfo showMessage={true} />
               </div>
               
               <div className="space-y-2">

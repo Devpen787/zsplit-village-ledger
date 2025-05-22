@@ -2,9 +2,10 @@
 import React from 'react';
 import { useGroupPulse } from '@/hooks/useGroupPulse';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, AlertCircle, TrendingUp } from 'lucide-react';
+import { Loader2, AlertCircle, TrendingUp, Wallet, Info } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { PendingPayoutRequestsList } from './PendingPayoutRequestsList';
+import { Badge } from '@/components/ui/badge';
 
 interface GroupPulseProps {
   groupId: string;
@@ -22,6 +23,8 @@ export const GroupPulse: React.FC<GroupPulseProps> = ({ groupId }) => {
     averageApprovalTime,
     pendingRequests,
     isAdmin,
+    connectedWalletsCount,
+    totalMembersCount,
     handleApproveRequest,
     handleRejectRequest
   } = useGroupPulse(groupId);
@@ -93,7 +96,15 @@ export const GroupPulse: React.FC<GroupPulseProps> = ({ groupId }) => {
 
       {/* Section 3: Pending Payout Requests */}
       <section>
-        <h2 className="text-lg font-medium mb-3">Pending Payout Requests</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-medium">Pending Payout Requests</h2>
+          {connectedWalletsCount > 0 && totalMembersCount > 0 && (
+            <Badge variant="outline" className="bg-primary/5">
+              <Wallet className="h-3 w-3 mr-1" />
+              {connectedWalletsCount} of {totalMembersCount} have wallets
+            </Badge>
+          )}
+        </div>
         <Card className="rounded-xl">
           <CardContent className="pt-6">
             <div className="space-y-4">

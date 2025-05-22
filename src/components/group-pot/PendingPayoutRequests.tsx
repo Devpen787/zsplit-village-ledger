@@ -4,7 +4,7 @@ import { PotActivity } from '@/types/group-pot';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Wallet } from 'lucide-react';
 
 interface PendingPayoutRequestsProps {
   activities: PotActivity[];
@@ -21,6 +21,12 @@ export const PendingPayoutRequests = ({
   const pendingRequests = activities.filter(
     activity => activity.type === 'payout' && activity.status === 'pending'
   );
+
+  // Helper to shorten wallet addresses
+  const shortenAddress = (address: string | null | undefined) => {
+    if (!address) return null;
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  };
 
   if (pendingRequests.length === 0) {
     return (
@@ -53,6 +59,12 @@ export const PendingPayoutRequests = ({
                 <p className="font-medium">
                   {request.users?.name || request.users?.email || 'Unknown user'}
                 </p>
+                {request.users?.wallet_address && (
+                  <p className="text-xs text-muted-foreground flex items-center">
+                    <Wallet className="h-3 w-3 mr-1" />
+                    Wallet: {shortenAddress(request.users.wallet_address)}
+                  </p>
+                )}
                 <p className="text-sm text-muted-foreground">
                   {request.created_at && formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
                 </p>

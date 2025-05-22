@@ -19,6 +19,7 @@ import {
 import { useAuth } from '@/contexts';
 import SignInButton from "@/components/auth/SignInButton";
 import UserProfileDropdown from "@/components/auth/UserProfileDropdown";
+import WalletButton from "@/components/wallet/WalletButton";
 import { usePrivy } from '@privy-io/react-auth';
 import { 
   Home, 
@@ -65,7 +66,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           Zsplit
         </h1>
       </div>
-      <div>
+      <div className="flex items-center gap-2">
+        {ready && authenticated && isAuthenticated && <WalletButton />}
         {ready && authenticated && isAuthenticated ? (
           <UserProfileDropdown />
         ) : (

@@ -16,6 +16,7 @@ import { toast } from '@/components/ui/sonner';
 import { Expense } from '@/types/expenses';
 import { PotActivity } from '@/types/group-pot';
 import { useAuth } from '@/contexts';
+import { supabase } from '@/integrations/supabase/client';
 
 interface GroupPulseData {
   loading: boolean;
@@ -28,6 +29,8 @@ interface GroupPulseData {
   averageApprovalTime: string;
   pendingRequests: PotActivity[];
   isAdmin: boolean;
+  connectedWalletsCount: number;
+  totalMembersCount: number;
   handleApproveRequest: (activityId: string) => Promise<void>;
   handleRejectRequest: (activityId: string) => Promise<void>;
 }
@@ -39,7 +42,9 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
   const [activities, setActivities] = useState<PotActivity[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PotActivity[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [pulseData, setPulseData] = useState<Omit<GroupPulseData, 'loading' | 'pendingRequests' | 'isAdmin' | 'handleApproveRequest' | 'handleRejectRequest'>>({
+  const [connectedWalletsCount, setConnectedWalletsCount] = useState(0);
+  const [totalMembersCount, setTotalMembersCount] = useState(0);
+  const [pulseData, setPulseData] = useState<Omit<GroupPulseData, 'loading' | 'pendingRequests' | 'isAdmin' | 'connectedWalletsCount' | 'totalMembersCount' | 'handleApproveRequest' | 'handleRejectRequest'>>({
     potBalance: 0,
     averagePayoutSize: 0,
     estimatedPayoutsRemaining: 0,
@@ -82,6 +87,21 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
           pendingPayoutsCount: countPendingPayouts(activitiesData),
           averageApprovalTime: calculateApprovalTime(activitiesData)
         });
+        
+        // Fetch group members with wallet info
+        const { data: members, error: membersError } = await supabase
+          .from('group_members')
+          .select('user_id, users:user_id(wallet_address)')
+          .eq('group_id', groupId);
+          
+        if (membersError) throw membersError;
+        
+        if (members) {
+          const totalMembers = members.length;
+          const withWallets = members.filter(m => m.users?.wallet_address).length;
+          setConnectedWalletsCount(withWallets);
+          setTotalMembersCount(totalMembers);
+        }
         
         // Check if user is admin
         if (user) {
@@ -158,6 +178,8 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
     ...pulseData,
     pendingRequests,
     isAdmin,
+    connectedWalletsCount,
+    totalMembersCount,
     handleApproveRequest,
     handleRejectRequest
   };

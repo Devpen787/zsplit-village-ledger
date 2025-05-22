@@ -2,7 +2,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowDown, ArrowUp, HelpCircle } from 'lucide-react';
+import { ArrowDown, ArrowUp, HelpCircle, Wallet } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts';
 
@@ -12,6 +12,7 @@ export interface BalanceData {
   amountPaid: number;
   amountOwed: number;
   netBalance: number;
+  walletAddress?: string | null;
 }
 
 interface BalancesTableProps {
@@ -49,6 +50,13 @@ export const BalancesTable = ({ balances }: BalancesTableProps) => {
         return `Owes ${creditors.length} people`;
       }
     }
+  };
+
+  // Check if two users both have wallet addresses
+  const canSettleWithWallet = (userId1: string, userId2: string) => {
+    const user1 = balances.find(b => b.userId === userId1);
+    const user2 = balances.find(b => b.userId === userId2);
+    return user1?.walletAddress && user2?.walletAddress;
   };
   
   return (
@@ -90,6 +98,21 @@ export const BalancesTable = ({ balances }: BalancesTableProps) => {
             <TableBody>
               {balances.map((balance) => {
                 const isCurrentUser = balance.userId === user?.id;
+                
+                // Find who this user has a debt relationship with
+                let debtRelationshipUserId = null;
+                if (balance.netBalance > 0) {
+                  const debtors = balances.filter(b => b.netBalance < 0);
+                  if (debtors.length === 1) debtRelationshipUserId = debtors[0].userId;
+                } else if (balance.netBalance < 0) {
+                  const creditors = balances.filter(b => b.netBalance > 0);
+                  if (creditors.length === 1) debtRelationshipUserId = creditors[0].userId;
+                }
+                
+                // Check if both users have wallets for settlement
+                const canSettle = debtRelationshipUserId && 
+                                  canSettleWithWallet(balance.userId, debtRelationshipUserId);
+                
                 return (
                   <TableRow key={balance.userId} className={isCurrentUser ? 'bg-primary/5' : ''}>
                     <TableCell className="font-medium">
@@ -103,13 +126,22 @@ export const BalancesTable = ({ balances }: BalancesTableProps) => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {Math.abs(balance.netBalance) > 0.01 && (
-                        <div className="flex items-center">
-                          <span className="text-sm font-medium">
-                            {getDebtRelationship(balance)}
-                          </span>
-                        </div>
-                      )}
+                      <div className="space-y-1">
+                        {Math.abs(balance.netBalance) > 0.01 && (
+                          <div className="flex items-center">
+                            <span className="text-sm font-medium">
+                              {getDebtRelationship(balance)}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {canSettle && (
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <Wallet className="h-3 w-3 mr-1" />
+                            <span>Settle with wallet → Coming soon (manual for now)</span>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
