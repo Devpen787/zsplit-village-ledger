@@ -10,6 +10,7 @@ export type Expense = {
     name: string | null;
     email: string;
   };
+  group_name?: string | null;
 };
 
 export type ExpensesListProps = {
