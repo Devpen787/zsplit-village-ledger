@@ -4,8 +4,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Wallet } from "lucide-react";
 import { GroupMember } from '@/types/supabase';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MembersListProps {
   members: GroupMember[];
@@ -13,6 +14,7 @@ interface MembersListProps {
   onInviteClick: () => void;
   currentUserId?: string;
   displayStyle?: 'compact' | 'grid';
+  showWalletIndicator?: boolean;
 }
 
 export const MembersList = ({ 
@@ -20,7 +22,8 @@ export const MembersList = ({
   isAdmin, 
   onInviteClick, 
   currentUserId,
-  displayStyle = 'compact'
+  displayStyle = 'compact',
+  showWalletIndicator = false
 }: MembersListProps) => {
   if (displayStyle === 'compact') {
     return (
@@ -62,12 +65,30 @@ export const MembersList = ({
               </AvatarFallback>
             </Avatar>
             <div className="space-y-1">
-              <p className="font-medium text-sm">
-                {member.user?.name || 'Unknown User'}
-                {currentUserId && member.user?.id === currentUserId && " (You)"}
-              </p>
+              <div className="flex items-center gap-1">
+                <p className="font-medium text-sm">
+                  {member.user?.name || 'Unknown User'}
+                  {currentUserId && member.user?.id === currentUserId && " (You)"}
+                </p>
+                
+                {showWalletIndicator && member.user?.wallet_address && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Wallet className="h-3 w-3 text-green-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Has connected wallet</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground truncate">{member.user?.email}</p>
-              <Badge variant={member.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
+              <Badge 
+                variant={member.role === 'admin' ? 'default' : 'secondary'} 
+                className={`text-xs ${member.role === 'admin' ? 'bg-primary' : 'bg-muted'}`}
+              >
                 {member.role === 'admin' ? 'organizer' : 'participant'}
               </Badge>
             </div>

@@ -5,7 +5,6 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import { ExpensesList } from "@/components/ExpensesList";
-import { MembersList } from "@/components/groups/MembersList";
 import { GroupMember } from '@/types/supabase';
 import { useBalances } from '@/hooks/useBalances';
 import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable';
@@ -14,6 +13,9 @@ import { BalanceSummaryCards } from '@/components/balances/BalanceSummaryCards';
 import { Loader2 } from 'lucide-react';
 import { GroupPot } from '@/components/group-pot/GroupPot';
 import { GroupPulse } from '@/components/group-pulse/GroupPulse';
+import { GroupOverview } from './GroupOverview';
+import { useGroupPulse } from '@/hooks/useGroupPulse';
+import { useExpenses } from '@/hooks/useExpenses';
 
 interface GroupTabsProps {
   groupId: string;
@@ -23,6 +25,11 @@ interface GroupTabsProps {
   currentUser?: {
     id: string;
   } | null;
+  group?: {
+    name: string;
+    icon: string;
+    created_at: string;
+  } | null;
 }
 
 export const GroupTabs = ({ 
@@ -30,10 +37,21 @@ export const GroupTabs = ({
   members, 
   isAdmin, 
   onInviteClick, 
-  currentUser 
+  currentUser,
+  group
 }: GroupTabsProps) => {
   // Get balance data
   const { balances, loading, error, refreshing, handleRefresh } = useBalances();
+  
+  // Get group pulse data for metrics
+  const { 
+    potBalance, 
+    pendingPayoutsCount, 
+    connectedWalletsCount 
+  } = useGroupPulse(groupId);
+  
+  // Get expenses data for metrics
+  const { expenses } = useExpenses(undefined, groupId);
   
   // Transform Balance[] to BalanceData[]
   const balanceData: BalanceData[] = balances.map(balance => ({
@@ -44,6 +62,9 @@ export const GroupTabs = ({
     netBalance: balance.amount
   }));
 
+  // Calculate total expenses
+  const totalExpenses = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+
   // Auto-refresh balances when component mounts
   useEffect(() => {
     if (!refreshing && !loading) {
@@ -52,14 +73,28 @@ export const GroupTabs = ({
   }, [groupId]);
 
   return (
-    <Tabs defaultValue="expenses" className="w-full">
+    <Tabs defaultValue="overview" className="w-full">
       <TabsList className="grid w-full grid-cols-5">
+        <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="expenses">Expenses</TabsTrigger>
         <TabsTrigger value="balances">Balances</TabsTrigger>
         <TabsTrigger value="group-pot">Group Pot</TabsTrigger>
         <TabsTrigger value="group-pulse">Group Pulse</TabsTrigger>
-        <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
       </TabsList>
+      <TabsContent value="overview" className="mt-4">
+        <GroupOverview 
+          groupId={groupId}
+          group={group}
+          members={members}
+          isAdmin={isAdmin}
+          onInviteClick={onInviteClick}
+          currentUserId={currentUser?.id}
+          potBalance={potBalance}
+          totalExpenses={totalExpenses}
+          pendingPayoutsCount={pendingPayoutsCount}
+          connectedWalletsCount={connectedWalletsCount}
+        />
+      </TabsContent>
       <TabsContent value="expenses" className="mt-4">
         <ExpensesList groupId={groupId} />
       </TabsContent>
@@ -103,22 +138,6 @@ export const GroupTabs = ({
       </TabsContent>
       <TabsContent value="group-pulse" className="mt-4">
         <GroupPulse groupId={groupId} />
-      </TabsContent>
-      <TabsContent value="members" className="mt-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Group Members</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <MembersList
-              members={members}
-              isAdmin={isAdmin}
-              onInviteClick={onInviteClick}
-              currentUserId={currentUser?.id}
-              displayStyle="grid"
-            />
-          </CardContent>
-        </Card>
       </TabsContent>
     </Tabs>
   );

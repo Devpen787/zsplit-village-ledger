@@ -74,19 +74,13 @@ const GroupView = () => {
           onCreateExpense={handleCreateExpense}
         />
         
-        <MembersCard
-          members={members}
-          isAdmin={isAdmin}
-          onInviteClick={() => setInviteDialogOpen(true)}
-          currentUserId={user?.id}
-        />
-        
         <GroupTabs
           groupId={id!}
           members={members}
           isAdmin={isAdmin}
           onInviteClick={() => setInviteDialogOpen(true)}
           currentUser={user}
+          group={group}
         />
         
         <InviteMemberDialog
