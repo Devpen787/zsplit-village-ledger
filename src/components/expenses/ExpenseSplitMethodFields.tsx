@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from "react";
-import { Alert } from "@/components/ui/alert";
 import SplitMethodSelector from "./split-methods/SplitMethodSelector";
 import EqualSplit from "./split-methods/EqualSplit";
 import AmountSplit from "./split-methods/AmountSplit";

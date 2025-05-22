@@ -51,20 +51,6 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
 
   const isLargeGroup = splitData.length > 5;
   
-  // Get additional info based on split method
-  const getAdditionalInfo = (userData: UserSplitData): string => {
-    switch (splitMethod) {
-      case "percentage":
-        return `${userData.percentage?.toFixed(1) || 0}%`;
-      case "shares":
-        return `${userData.shares || 1} ${userData.shares === 1 ? 'share' : 'shares'}`;
-      case "equal":
-      case "amount":
-      default:
-        return "";
-    }
-  };
-  
   return (
     <div className="mt-6 border rounded-md p-3 bg-card">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -79,8 +65,11 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
             <TableHeader>
               <TableRow>
                 <TableHead>Person</TableHead>
-                {splitMethod !== "equal" && splitMethod !== "amount" && (
-                  <TableHead>{splitMethod === "percentage" ? "%" : "Shares"}</TableHead>
+                {splitMethod !== "equal" && (
+                  <TableHead>
+                    {splitMethod === "percentage" ? "%" : 
+                     splitMethod === "shares" ? "Shares" : ""}
+                  </TableHead>
                 )}
                 <TableHead className="text-right">Amount</TableHead>
               </TableRow>
@@ -90,7 +79,16 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
                 const userName = getUserName(data.userId);
                 const amount = getCalculatedAmount(data);
                 const initials = getInitials(userName);
-                const additionalInfo = getAdditionalInfo(data);
+                
+                let additionalInfo = "";
+                switch (splitMethod) {
+                  case "percentage":
+                    additionalInfo = `${data.percentage?.toFixed(1) || 0}%`;
+                    break;
+                  case "shares":
+                    additionalInfo = `${data.shares || 1} ${data.shares === 1 ? 'share' : 'shares'}`;
+                    break;
+                }
                 
                 return (
                   <TableRow key={data.userId}>
@@ -111,7 +109,7 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
                         </span>
                       </div>
                     </TableCell>
-                    {splitMethod !== "equal" && splitMethod !== "amount" && (
+                    {splitMethod !== "equal" && (
                       <TableCell>{additionalInfo}</TableCell>
                     )}
                     <TableCell className="text-right font-medium">
