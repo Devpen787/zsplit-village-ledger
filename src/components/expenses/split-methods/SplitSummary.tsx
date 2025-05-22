@@ -9,6 +9,14 @@ import {
   CollapsibleTrigger 
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface SplitSummaryProps {
   splitData: UserSplitData[];
@@ -16,6 +24,7 @@ interface SplitSummaryProps {
   paidBy: string;
   getCalculatedAmount: (userData: UserSplitData) => number;
   getUserName: (userId: string) => string;
+  splitMethod: string;
 }
 
 const SplitSummary: React.FC<SplitSummaryProps> = ({
@@ -24,6 +33,7 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
   paidBy,
   getCalculatedAmount,
   getUserName,
+  splitMethod,
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   
@@ -41,6 +51,20 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
 
   const isLargeGroup = splitData.length > 5;
   
+  // Get additional info based on split method
+  const getAdditionalInfo = (userData: UserSplitData): string => {
+    switch (splitMethod) {
+      case "percentage":
+        return `${userData.percentage?.toFixed(1) || 0}%`;
+      case "shares":
+        return `${userData.shares || 1} ${userData.shares === 1 ? 'share' : 'shares'}`;
+      case "equal":
+      case "amount":
+      default:
+        return "";
+    }
+  };
+  
   return (
     <div className="mt-6 border rounded-md p-3 bg-card">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -51,36 +75,53 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-3">
-          <div className="space-y-2">
-            {splitData.map((data) => {
-              const userName = getUserName(data.userId);
-              const amount = getCalculatedAmount(data);
-              const initials = getInitials(userName);
-              
-              return (
-                <div key={data.userId} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Avatar className="h-7 w-7 mr-2">
-                      <AvatarFallback className={cn(
-                        "text-xs",
-                        data.userId === paidBy ? "bg-green-100 text-green-800" : ""
-                      )}>
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className={cn(
-                      data.userId === paidBy ? "font-medium text-green-600" : ""
-                    )}>
-                      {userName} {data.userId === paidBy ? "(paid)" : ""}
-                    </span>
-                  </div>
-                  <span className="font-medium">
-                    {amount.toFixed(2)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Person</TableHead>
+                {splitMethod !== "equal" && splitMethod !== "amount" && (
+                  <TableHead>{splitMethod === "percentage" ? "%" : "Shares"}</TableHead>
+                )}
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {splitData.map((data) => {
+                const userName = getUserName(data.userId);
+                const amount = getCalculatedAmount(data);
+                const initials = getInitials(userName);
+                const additionalInfo = getAdditionalInfo(data);
+                
+                return (
+                  <TableRow key={data.userId}>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Avatar className="h-7 w-7 mr-2">
+                          <AvatarFallback className={cn(
+                            "text-xs",
+                            data.userId === paidBy ? "bg-green-100 text-green-800" : ""
+                          )}>
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className={cn(
+                          data.userId === paidBy ? "font-medium text-green-600" : ""
+                        )}>
+                          {userName} {data.userId === paidBy ? "(paid)" : ""}
+                        </span>
+                      </div>
+                    </TableCell>
+                    {splitMethod !== "equal" && splitMethod !== "amount" && (
+                      <TableCell>{additionalInfo}</TableCell>
+                    )}
+                    <TableCell className="text-right font-medium">
+                      {amount.toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </CollapsibleContent>
       </Collapsible>
     </div>

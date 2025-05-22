@@ -8,19 +8,22 @@ interface ExpenseFormSubmitButtonProps {
   isEditing: boolean;
   disabled?: boolean;
   onClick?: () => void;
+  className?: string;
 }
 
 const ExpenseFormSubmitButton: React.FC<ExpenseFormSubmitButtonProps> = ({ 
   loading, 
   isEditing, 
   disabled = false,
-  onClick
+  onClick,
+  className
 }) => {
   return (
     <Button 
       type={onClick ? "button" : "submit"} 
       disabled={loading || disabled}
       onClick={onClick}
+      className={className}
     >
       {loading ? (
         <>

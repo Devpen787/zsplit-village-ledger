@@ -214,6 +214,7 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
         paidBy={paidBy}
         getCalculatedAmount={getCalculatedAmount}
         getUserName={getUserName}
+        splitMethod={splitMethod}
       />
     </div>
   );
