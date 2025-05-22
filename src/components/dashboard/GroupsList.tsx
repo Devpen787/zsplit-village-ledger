@@ -108,6 +108,8 @@ export const GroupsList = ({
           key={group.id} 
           className="cursor-pointer hover:bg-accent/20 transition-colors"
           onClick={() => onGroupSelect && onGroupSelect(group.id)}
+          role="button"
+          aria-label={`View details for group ${group.name}`}
         >
           <CardContent className="p-6">
             <div className="text-3xl mb-4">{group.icon}</div>

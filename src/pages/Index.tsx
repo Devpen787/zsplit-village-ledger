@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from "@/layouts/AppLayout";
@@ -37,6 +36,7 @@ const Index = () => {
     navigate(`/group/${newGroup.id}`);
   };
   
+  // This handler is correctly configured to navigate to the specific group view
   const handleGroupSelect = (groupId: string) => {
     navigate(`/group/${groupId}`);
   };

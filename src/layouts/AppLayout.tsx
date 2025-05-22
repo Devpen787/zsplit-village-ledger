@@ -76,12 +76,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </header>
   );
 
-  // Updated navItems with clearer group-related labels
+  // Updated navItems - correcting "My Groups" to go to the group dashboard
   const navItems = [
     { icon: Home, label: "Dashboard", path: "/" },
     { icon: Receipt, label: "Add Expense", path: "/expenses/new" },
     { icon: Wallet, label: "Balances", path: "/balances" },
-    { icon: Users, label: "My Groups", path: "/group" }, // Updated label for clarity
+    { icon: Users, label: "Groups", path: "/group" }, // Updated label for clarity
     { icon: PiggyBank, label: "Group Pot", path: "/group-pot" },
     { icon: Activity, label: "Group Pulse", path: "/group-pulse" },
     { icon: User, label: "Profile", path: "/profile" },
