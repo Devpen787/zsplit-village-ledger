@@ -16,7 +16,7 @@ import {
   SidebarGroupContent,
   SidebarProvider
 } from "@/components/ui/sidebar";
-import { useAuth } from "@/contexts"; // Updated import
+import { useAuth } from '@/contexts';
 import SignInButton from "@/components/auth/SignInButton";
 import UserProfileDropdown from "@/components/auth/UserProfileDropdown";
 import { usePrivy } from '@privy-io/react-auth';
@@ -26,7 +26,8 @@ import {
   Wallet, 
   Users, 
   Settings as SettingsIcon, 
-  User
+  User,
+  ArrowLeft
 } from "lucide-react";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -35,10 +36,26 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
   const { ready, authenticated } = usePrivy();
 
+  const handleBack = () => {
+    if (window.history.length <= 2) {
+      navigate('/'); // If no history or at start, go home
+    } else {
+      window.history.back();
+    }
+  };
+
   // Create a header with the logo on the left and auth actions on the right
   const renderHeader = (
     <header className="flex justify-between items-center p-4 border-b">
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-4">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={handleBack}
+          className="md:hidden"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
         <h1 
           className="text-xl font-bold cursor-pointer" 
           onClick={() => navigate("/")}
@@ -59,7 +76,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   // Sidebar navigation items
   const navItems = [
     { icon: Home, label: "Dashboard", path: "/" },
-    { icon: Receipt, label: "Expenses", path: "/expenses/new" },
+    { icon: Receipt, label: "Add Expense", path: "/expenses/new" },
     { icon: Wallet, label: "Balances", path: "/balances" },
     { icon: Users, label: "Group", path: "/group" },
     { icon: User, label: "Profile", path: "/profile" },
@@ -68,7 +85,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-background flex flex-col md:flex-row">
+      <div className="min-h-screen bg-background flex flex-col md:flex-row w-full">
         {/* Sidebar on desktop */}
         {!isMobile && (
           <Sidebar className="hidden md:block">
@@ -111,6 +128,24 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="flex-1 flex flex-col">
           {renderHeader}
           <main className="flex-1 p-4 md:p-6">{children}</main>
+          
+          {/* Mobile bottom navigation */}
+          {isMobile && (
+            <nav className="border-t bg-background p-2 sticky bottom-0 z-10">
+              <div className="flex justify-around">
+                {navItems.slice(0, 5).map((item) => (
+                  <Link 
+                    key={item.path} 
+                    to={item.path} 
+                    className="flex flex-col items-center py-1 px-3"
+                  >
+                    <item.icon className="h-5 w-5 mb-1" />
+                    <span className="text-xs">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          )}
         </div>
       </div>
     </SidebarProvider>

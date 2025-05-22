@@ -11,13 +11,13 @@ import ExpenseDetail from "./pages/ExpenseDetail";
 import ExpenseForm from "./pages/ExpenseForm";
 import Balances from "./pages/Balances";
 import NotFound from "./pages/NotFound";
-import { AuthProvider } from "./contexts";  // Updated import path
+import { AuthProvider } from "./contexts";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Profile from "./pages/Profile";
 import GroupDashboard from "./pages/GroupDashboard";
+import GroupView from "./pages/GroupView";
 import Settings from "./pages/Settings";
 import { PrivyProvider } from '@privy-io/react-auth';
-import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +62,7 @@ const App = () => (
                 <Route path="/balances" element={<Balances />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/group" element={<GroupDashboard />} />
+                <Route path="/group/:id" element={<GroupView />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
               
