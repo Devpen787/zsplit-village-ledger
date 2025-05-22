@@ -1,14 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight } from 'lucide-react';
-
-type BalanceData = {
-  userId: string;
-  userName: string | null;
-  amountPaid: number;
-  amountOwed: number;
-  netBalance: number;
-};
+import { BalanceData } from '@/components/balances/BalancesTable';
 
 type PaymentSuggestion = {
   fromUserId: string;
