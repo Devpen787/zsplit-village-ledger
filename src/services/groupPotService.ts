@@ -18,7 +18,7 @@ export const fetchGroupPotActivities = async (groupId: string) => {
       created_at,
       user_id,
       group_id,
-      users:user_id (name, email)
+      users:user_id (id, name, email, wallet_address)
     `)
     .eq('group_id', groupId)
     .order('created_at', { ascending: false });
@@ -34,7 +34,7 @@ export const fetchGroupPotActivities = async (groupId: string) => {
     status: activity.status as 'pending' | 'approved' | 'complete' | 'rejected' | null
   }));
 
-  return typedActivities;
+  return typedActivities as PotActivity[];
 };
 
 /**
@@ -76,6 +76,13 @@ export const submitPayoutRequest = async (
     
   if (error) throw error;
   
+  // Get user wallet address
+  const { data: userData } = await supabase
+    .from('users')
+    .select('wallet_address')
+    .eq('id', userId)
+    .single();
+
   // Return formatted activity
   if (data && data[0]) {
     return {
@@ -83,10 +90,12 @@ export const submitPayoutRequest = async (
       type: 'payout' as const,
       status: 'pending' as const,
       users: { 
+        id: userId,
         name: userName, 
-        email: userEmail 
+        email: userEmail,
+        wallet_address: userData?.wallet_address
       }
-    };
+    } as PotActivity;
   }
 
   return null;
@@ -117,6 +126,13 @@ export const addContribution = async (
     
   if (error) throw error;
   
+  // Get user wallet address
+  const { data: userData } = await supabase
+    .from('users')
+    .select('wallet_address')
+    .eq('id', userId)
+    .single();
+  
   // Return formatted activity
   if (data && data[0]) {
     return {
@@ -124,10 +140,12 @@ export const addContribution = async (
       type: 'contribution' as const,
       status: 'complete' as const,
       users: { 
+        id: userId,
         name: userName, 
-        email: userEmail 
+        email: userEmail,
+        wallet_address: userData?.wallet_address
       }
-    };
+    } as PotActivity;
   }
 
   return null;

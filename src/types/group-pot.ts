@@ -15,11 +15,11 @@ export interface PotActivity {
   user_id: string;
   type: 'contribution' | 'payout';
   amount: number;
-  status: 'pending' | 'approved' | 'rejected' | 'complete';
+  status: 'pending' | 'approved' | 'rejected' | 'complete' | null;
   note?: string;
   created_at: string;
   users?: {
-    id: string;
+    id?: string;
     name: string | null;
     email: string;
     wallet_address?: string | null;
