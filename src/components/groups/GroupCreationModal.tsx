@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -22,17 +23,20 @@ interface GroupCreationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onGroupCreated: (group: any) => void;
+  groups?: any[];
 }
 
 export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
   open,
   onOpenChange,
   onGroupCreated,
+  groups = [],
 }) => {
   const [name, setName] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("🏠");
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +76,13 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
       onGroupCreated(groupData);
       setName("");
       setSelectedEmoji("🏠");
+      
+      // If this is the user's first group (or only group), navigate directly to it
+      if (groups.length === 0) {
+        setTimeout(() => {
+          navigate(`/group/${groupData.id}`);
+        }, 300);
+      }
     } catch (error: any) {
       console.error("Error creating group:", error);
       toast.error(`Failed to create group: ${error.message}`);

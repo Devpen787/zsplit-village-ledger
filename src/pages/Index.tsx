@@ -56,6 +56,7 @@ const Index = () => {
         open={isCreateGroupModalOpen}
         onOpenChange={setIsCreateGroupModalOpen}
         onGroupCreated={handleGroupCreated}
+        groups={groups}
       />
     </AppLayout>
   );
