@@ -72,7 +72,6 @@ export const MembersList = ({
                 </p>
                 
                 {showWalletIndicator && member.user && 
-                  'wallet_address' in member.user && 
                   member.user.wallet_address && (
                   <TooltipProvider>
                     <Tooltip>
