@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MembersList } from "./MembersList";
 import { Badge } from "@/components/ui/badge";
 import { GroupMember } from '@/types/supabase';
-import { CreditCard, AlertCircle, Wallet, Users } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { CreditCard, AlertCircle, Wallet, Users, Calendar } from 'lucide-react';
+import { formatDistanceToNow, format } from 'date-fns';
 
 interface GroupOverviewProps {
   groupId: string;
@@ -25,6 +25,7 @@ interface GroupOverviewProps {
 }
 
 export const GroupOverview: React.FC<GroupOverviewProps> = ({
+  groupId,
   group,
   members,
   isAdmin,
@@ -39,17 +40,23 @@ export const GroupOverview: React.FC<GroupOverviewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Group Overview Header */}
+      {/* Group Overview Header with detailed information */}
       <Card>
         <CardHeader>
           <div className="flex flex-col space-y-2">
             <div className="flex items-center">
-              <div className="text-3xl mr-2">{group.icon}</div>
-              <CardTitle className="text-2xl">{group.name}</CardTitle>
+              <div className="text-3xl mr-3">{group.icon}</div>
+              <div>
+                <CardTitle className="text-2xl">{group.name}</CardTitle>
+                <div className="flex items-center mt-1 text-sm text-muted-foreground space-x-2">
+                  <Calendar className="h-3 w-3" />
+                  <span>Created {formatDistanceToNow(new Date(group.created_at), { addSuffix: true })}</span>
+                  <span>•</span>
+                  <Users className="h-3 w-3" />
+                  <span>{members.length} {members.length === 1 ? 'member' : 'members'}</span>
+                </div>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Created {formatDistanceToNow(new Date(group.created_at), { addSuffix: true })} – {members.length} {members.length === 1 ? 'member' : 'members'}
-            </p>
           </div>
         </CardHeader>
       </Card>
@@ -107,7 +114,7 @@ export const GroupOverview: React.FC<GroupOverviewProps> = ({
         </Card>
       </div>
 
-      {/* Members Section */}
+      {/* Members Section with roles and wallet indicators */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Members</CardTitle>

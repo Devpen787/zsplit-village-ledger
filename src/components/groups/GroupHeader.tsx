@@ -18,7 +18,7 @@ export const GroupHeader = ({ groupName, groupIcon, isAdmin, onCreateExpense }: 
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-4">
         <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="mr-2">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Dashboard
         </Button>
         <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-2xl">
           {groupIcon}
