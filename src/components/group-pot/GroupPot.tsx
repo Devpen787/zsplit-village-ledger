@@ -13,6 +13,7 @@ export const GroupPot = ({ groupId }: { groupId: string }) => {
   const { isConnected } = useWallet();
   const {
     totalContributions,
+    targetAmount, // Add the targetAmount from the hook
     activities,
     contributors,
     handleContribute,
@@ -52,6 +53,7 @@ export const GroupPot = ({ groupId }: { groupId: string }) => {
           <div className="grid gap-6 md:grid-cols-2">
             <PotContributionsCard 
               totalContributions={totalContributions}
+              targetAmount={targetAmount} // Pass the targetAmount
               onContribute={handleContribute}
               contributors={contributors}
             />

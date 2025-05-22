@@ -19,6 +19,7 @@ import {
 interface GroupPotData {
   activities: PotActivity[];
   totalContributions: number;
+  targetAmount: number; // Add this property
   contributors: {id: string; name?: string | null}[];
   loading: boolean;
   handlePayoutRequest: (amount: number, note: string) => Promise<void>;
@@ -32,6 +33,7 @@ export const useGroupPot = (groupId: string): GroupPotData => {
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<PotActivity[]>([]);
   const [totalContributions, setTotalContributions] = useState(0);
+  const [targetAmount, setTargetAmount] = useState(1000); // Default target amount
   const [contributors, setContributors] = useState<{id: string; name?: string | null}[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const { user } = useAuth();
@@ -179,6 +181,7 @@ export const useGroupPot = (groupId: string): GroupPotData => {
   return {
     activities,
     totalContributions,
+    targetAmount, // Add the targetAmount to the return object
     contributors,
     loading,
     handlePayoutRequest,

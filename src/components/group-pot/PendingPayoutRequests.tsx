@@ -10,12 +10,14 @@ interface PendingPayoutRequestsProps {
   activities: PotActivity[];
   onApprove: (activityId: string) => Promise<void>;
   onReject: (activityId: string) => Promise<void>;
+  isAdmin: boolean; // Add the isAdmin property to the props interface
 }
 
 export const PendingPayoutRequests = ({ 
   activities, 
   onApprove, 
-  onReject 
+  onReject,
+  isAdmin
 }: PendingPayoutRequestsProps) => {
   // Filter only pending payout requests
   const pendingRequests = activities.filter(
@@ -72,30 +74,32 @@ export const PendingPayoutRequests = ({
                 {request.note && <p className="text-sm mt-1">{request.note}</p>}
               </div>
               
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => onReject(request.id)}
-                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                >
-                  <XCircle className="mr-1 h-4 w-4" />
-                  Reject
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => onApprove(request.id)}
-                  className="border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700"
-                >
-                  <CheckCircle className="mr-1 h-4 w-4" />
-                  Approve
-                </Button>
-              </div>
+              {/* Only show approve/reject buttons for admins */}
+              {isAdmin && (
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => onReject(request.id)}
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <XCircle className="mr-1 h-4 w-4" />
+                    Reject
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => onApprove(request.id)}
+                    className="border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700"
+                  >
+                    <CheckCircle className="mr-1 h-4 w-4" />
+                    Approve
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>
       </CardContent>
     </Card>
   );
-};
