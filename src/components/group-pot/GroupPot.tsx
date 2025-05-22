@@ -39,6 +39,7 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
             status,
             created_at,
             user_id,
+            group_id,
             users:user_id (name, email)
           `)
           .eq('group_id', groupId)
@@ -46,11 +47,18 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
           
         if (activitiesError) throw activitiesError;
         
+        // Ensure data conforms to PotActivity type
+        const typedActivities = activitiesData.map(activity => ({
+          ...activity,
+          type: activity.type as 'contribution' | 'payout',
+          status: activity.status as 'pending' | 'approved' | 'complete' | 'rejected' | null
+        }));
+        
         // Calculate total contributions
         let total = 0;
         const uniqueContributors = new Map();
         
-        activitiesData.forEach((activity: any) => {
+        typedActivities.forEach((activity: PotActivity) => {
           if (activity.type === 'contribution' && activity.status === 'complete') {
             total += activity.amount;
             
@@ -64,7 +72,7 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
           }
         });
         
-        setActivities(activitiesData);
+        setActivities(typedActivities);
         setTotalContributions(total);
         setContributors(Array.from(uniqueContributors.values()));
       } catch (error) {
@@ -100,10 +108,15 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
       
       // Update activities with the new request
       if (data && data[0]) {
-        setActivities([{
+        const newActivity: PotActivity = {
           ...data[0],
-          users: { name: user.displayName, email: user.email }
-        }, ...activities]);
+          type: 'payout',
+          users: { 
+            name: user.name || null, 
+            email: user.email 
+          }
+        };
+        setActivities([newActivity, ...activities]);
       }
     } catch (error) {
       console.error('Error submitting payout request:', error);
@@ -134,10 +147,15 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
       // Update state
       if (data && data[0]) {
         // Add to activities
-        setActivities([{
+        const newActivity: PotActivity = {
           ...data[0],
-          users: { name: user.displayName, email: user.email }
-        }, ...activities]);
+          type: 'contribution',
+          users: { 
+            name: user.name || null, 
+            email: user.email 
+          }
+        };
+        setActivities([newActivity, ...activities]);
         
         // Update total contributions
         setTotalContributions(prevTotal => prevTotal + amount);
@@ -146,7 +164,7 @@ export const GroupPot = ({ groupId }: GroupPotProps) => {
         if (!contributors.some(c => c.id === user.id)) {
           setContributors([...contributors, { 
             id: user.id, 
-            name: user.displayName 
+            name: user.name 
           }]);
         }
       }
