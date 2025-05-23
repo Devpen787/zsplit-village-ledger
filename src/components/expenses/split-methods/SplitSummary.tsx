@@ -20,7 +20,7 @@ interface SplitSummaryProps {
   totalAmount: number;
   paidBy: string;
   getCalculatedAmount: (userData: UserSplitData) => number;
-  getUserName: (userData: UserSplitData) => string;
+  getUserName: (userData: any) => string;
   splitMethod: string;
   selectedUsers: Record<string, boolean>;
   toggleUser: (userId: string) => void;

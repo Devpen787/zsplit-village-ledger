@@ -1,16 +1,16 @@
 
 import React from "react";
-import { Card } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronUp, ChevronDown } from "lucide-react";
 import { UserSplitData } from "@/types/expenses";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface SplitSummaryCollapsibleProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   splitData: UserSplitData[];
   selectedUsers: Record<string, boolean>;
-  getUserName: (userData: UserSplitData) => string;
+  getUserName: (userData: any) => string;
   getCalculatedAmount: (userData: UserSplitData) => number;
 }
 
@@ -22,34 +22,45 @@ const SplitSummaryCollapsible: React.FC<SplitSummaryCollapsibleProps> = ({
   getUserName,
   getCalculatedAmount
 }) => {
+  // Only show active users
+  const activeUsers = splitData.filter(item => selectedUsers[item.userId] !== false);
+  
   return (
-    <Card className="overflow-hidden">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-          <h4 className="text-base font-medium">Show payment breakdown</h4>
-          <div className="flex items-center text-muted-foreground">
-            {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          </div>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="px-4 pb-4">
-            <div className="text-sm space-y-2">
-              {splitData
-                .filter(data => selectedUsers[data.userId] !== false)
-                .map((userData) => {
-                  const amount = getCalculatedAmount(userData);
-                  return (
-                    <div key={userData.userId} className="flex justify-between">
-                      <span>{getUserName(userData)}</span>
-                      <span className="font-medium">{amount.toFixed(2)}</span>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
+    <div className="mt-4">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="w-full flex justify-between items-center text-sm font-medium text-muted-foreground"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span>Summary</span>
+        {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </Button>
+      
+      {isOpen && (
+        <div className="mt-2 p-4 bg-muted/50 rounded-md">
+          <ul className="space-y-1">
+            {activeUsers.map(userData => {
+              const name = getUserName(userData);
+              const amount = getCalculatedAmount(userData);
+              
+              return (
+                <li key={userData.userId} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{name}</span>
+                  <span className={cn(
+                    "font-medium", 
+                    amount > 0 ? "text-green-600" : ""
+                  )}>
+                    {amount.toFixed(2)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 };
 

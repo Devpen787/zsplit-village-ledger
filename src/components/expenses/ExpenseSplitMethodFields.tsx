@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import SplitMethodSelector from "./split-methods/SplitMethodSelector";
 import ValidationAlert from "./split-methods/ValidationAlert";
@@ -7,6 +8,7 @@ import GroupContext from "./split-methods/GroupContext";
 import EmptyParticipantsState from "./split-methods/EmptyParticipantsState";
 import ParticipantSection from "./split-methods/ParticipantSection";
 import SplitSummarySection from "./split-methods/SplitSummarySection";
+import { formatSplitDataUserName } from "@/utils/userFormatUtils";
 
 interface ExpenseSplitMethodFieldsProps {
   users: ExpenseUser[];
@@ -196,7 +198,7 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
         splitMethod={splitMethod}
         isSummaryOpen={isSummaryOpen}
         setIsSummaryOpen={setIsSummaryOpen}
-        getUserName={getUserName}
+        getUserName={formatSplitDataUserName}
         getCalculatedAmount={getCalculatedAmount}
         toggleUser={toggleUser}
         handleInputChange={handleInputChange}

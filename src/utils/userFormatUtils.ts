@@ -32,6 +32,20 @@ export const getUserDisplayName = (user: ExpenseUser | null | undefined): string
 };
 
 /**
+ * Format UserSplitData to display name
+ * This adapts UserSplitData to work with components expecting a user display name
+ */
+export const formatSplitDataUserName = (userData: any): string => {
+  // Check if userData has user properties directly
+  if (userData.display_name || userData.email || userData.name || userData.id) {
+    return formatUserName(userData);
+  }
+  
+  // If it's something else, return a fallback
+  return "Unknown User";
+};
+
+/**
  * Get user initials from their name
  */
 export const getUserInitials = (name: string): string => {

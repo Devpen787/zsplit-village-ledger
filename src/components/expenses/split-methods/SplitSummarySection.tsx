@@ -15,7 +15,7 @@ interface SplitSummarySectionProps {
   splitMethod: string;
   isSummaryOpen: boolean;
   setIsSummaryOpen: (isOpen: boolean) => void;
-  getUserName: (userData: UserSplitData) => string;
+  getUserName: (userData: any) => string;
   getCalculatedAmount: (userData: UserSplitData) => number;
   toggleUser: (userId: string) => void;
   handleInputChange: (userId: string, value: string, field: 'amount' | 'percentage' | 'shares') => void;
