@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Bitcoin, DollarSign, Euro, PoundSterling, SwissFranc } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 
 interface ExpenseDetailEditProps {
@@ -67,48 +67,9 @@ export const ExpenseDetailEdit = ({
             <SelectValue placeholder="Select a currency" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="USD">
-              <div className="flex items-center">
-                <DollarSign className="mr-2 h-4 w-4" />
-                <span>USD</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="EUR">
-              <div className="flex items-center">
-                <Euro className="mr-2 h-4 w-4" />
-                <span>EUR</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="GBP">
-              <div className="flex items-center">
-                <PoundSterling className="mr-2 h-4 w-4" />
-                <span>GBP</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="CHF">
-              <div className="flex items-center">
-                <SwissFranc className="mr-2 h-4 w-4" />
-                <span>CHF</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="BTC">
-              <div className="flex items-center">
-                <Bitcoin className="mr-2 h-4 w-4" />
-                <span>BTC</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="ETH">
-              <div className="flex items-center">
-                <span className="mr-2 text-sm font-mono">Ξ</span>
-                <span>ETH</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="USDC">
-              <div className="flex items-center">
-                <span className="mr-2 text-sm font-mono">$</span>
-                <span>USDC</span>
-              </div>
-            </SelectItem>
+            <SelectItem value="CHF">CHF</SelectItem>
+            <SelectItem value="USD">USD</SelectItem>
+            <SelectItem value="EUR">EUR</SelectItem>
           </SelectContent>
         </Select>
       </div>
