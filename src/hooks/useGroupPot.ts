@@ -14,12 +14,14 @@ import {
 } from '@/services/groupPotService';
 import {
   calculateTotalContributions,
+  calculateRemainingBalance,
   extractContributors
 } from '@/utils/groupPotUtils';
 
 interface GroupPotData {
   activities: PotActivity[];
   totalContributions: number;
+  remainingBalance: number;
   targetAmount: number;
   setTargetAmount: (amount: number) => void;
   contributors: {id: string; name?: string | null}[];
@@ -35,6 +37,7 @@ export const useGroupPot = (groupId: string): GroupPotData => {
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<PotActivity[]>([]);
   const [totalContributions, setTotalContributions] = useState(0);
+  const [remainingBalance, setRemainingBalance] = useState(0);
   const [targetAmount, setTargetAmount] = useState(1000); // Default target amount
   const [contributors, setContributors] = useState<{id: string; name?: string | null}[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -49,15 +52,18 @@ export const useGroupPot = (groupId: string): GroupPotData => {
         // Fetch group pot activities
         const typedActivities = await fetchGroupPotActivities(groupId);
         
-        // Calculate total contributions and extract contributors
+        // Calculate total contributions, remaining balance, and extract contributors
         const total = calculateTotalContributions(typedActivities);
+        const remaining = calculateRemainingBalance(typedActivities);
         const uniqueContributors = extractContributors(typedActivities);
         
         console.log("Total contributions:", total);
+        console.log("Remaining balance:", remaining);
         console.log("Unique contributors:", uniqueContributors);
         
         setActivities(typedActivities);
         setTotalContributions(total);
+        setRemainingBalance(remaining);
         setContributors(uniqueContributors);
 
         // Check if current user is an admin
@@ -200,6 +206,7 @@ export const useGroupPot = (groupId: string): GroupPotData => {
   return {
     activities,
     totalContributions,
+    remainingBalance,
     targetAmount,
     setTargetAmount: handleTargetAmountChange,
     contributors,

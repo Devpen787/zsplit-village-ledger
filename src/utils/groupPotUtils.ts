@@ -15,6 +15,20 @@ export const calculateTotalContributions = (activities: PotActivity[]): number =
 };
 
 /**
+ * Calculates the remaining balance after accounting for approved and completed payouts
+ */
+export const calculateRemainingBalance = (activities: PotActivity[]): number => {
+  return activities.reduce((balance, activity) => {
+    if (activity.type === 'contribution' && activity.status === 'complete') {
+      return balance + activity.amount;
+    } else if (activity.type === 'payout' && (activity.status === 'approved' || activity.status === 'complete')) {
+      return balance - activity.amount;
+    }
+    return balance;
+  }, 0);
+};
+
+/**
  * Extract unique contributors from activities
  */
 export const extractContributors = (activities: PotActivity[]): {id: string; name?: string | null}[] => {

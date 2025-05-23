@@ -9,15 +9,18 @@ import { PendingPayoutRequests } from './PendingPayoutRequests';
 import { PotActivityFeed } from './PotActivityFeed';
 import { useGroupPot } from '@/hooks/useGroupPot';
 import { Button } from '@/components/ui/button';
-import { PiggyBank, Crown } from 'lucide-react';
+import { PiggyBank, Crown, CircleDollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
+import { useGroupDetails } from '@/hooks/useGroupDetails';
 
 export const GroupPot = ({ groupId }: { groupId: string }) => {
   const { isConnected } = useWallet();
+  const { group, loading: loadingGroup } = useGroupDetails(groupId);
   const {
     totalContributions,
     targetAmount,
+    remainingBalance,
     setTargetAmount,
     activities,
     contributors,
@@ -59,7 +62,11 @@ export const GroupPot = ({ groupId }: { groupId: string }) => {
               <PiggyBank className="h-6 w-6 text-primary" />
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <CardTitle>Group Pot</CardTitle>
+                  <div>
+                    <CardTitle>Group Pot{group?.name ? ` - ${group.name}` : ''}</CardTitle>
+                    <CardDescription>Manage and view funds for group expenses</CardDescription>
+                  </div>
+                  
                   {isAdmin && (
                     <Badge variant="outline" className="flex items-center gap-1 bg-amber-50 text-amber-700 border-amber-200">
                       <Crown className="h-3 w-3" />
@@ -67,16 +74,28 @@ export const GroupPot = ({ groupId }: { groupId: string }) => {
                     </Badge>
                   )}
                 </div>
-                <CardDescription>Manage and view funds for group expenses</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <p className="text-muted-foreground">
-                View and interact with the group pot. You can contribute funds or request payouts for group expenses.
-                {isAdmin && " As an admin, you can approve or reject payout requests and set contribution targets."}
-              </p>
+              <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="border rounded-md p-3 flex-1 min-w-[200px] bg-muted/30">
+                  <p className="text-sm font-medium text-muted-foreground">Total Contributions</p>
+                  <p className="text-2xl font-bold">CHF {totalContributions.toFixed(2)}</p>
+                </div>
+                
+                <div className="border rounded-md p-3 flex-1 min-w-[200px] bg-muted/30">
+                  <p className="text-sm font-medium text-muted-foreground">Remaining Balance</p>
+                  <p className="text-2xl font-bold">CHF {remainingBalance.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">After approved payouts</p>
+                </div>
+                
+                <div className="border rounded-md p-3 flex-1 min-w-[200px] bg-muted/30">
+                  <p className="text-sm font-medium text-muted-foreground">Target Amount</p>
+                  <p className="text-2xl font-bold">CHF {targetAmount.toFixed(2)}</p>
+                </div>
+              </div>
               
               <div className="p-4 border rounded-md bg-muted/30">
                 <WalletInfo 

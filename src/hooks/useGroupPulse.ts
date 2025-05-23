@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { fetchGroupExpenses } from '@/services/groupPulseService';
 import { fetchGroupPotActivities, approvePayoutRequest, rejectPayoutRequest } from '@/services/groupPotService';
@@ -17,6 +16,22 @@ import { Expense } from '@/types/expenses';
 import { PotActivity } from '@/types/group-pot';
 import { useAuth } from '@/contexts';
 import { supabase } from '@/integrations/supabase/client';
+import { useGroupsList } from '@/hooks/useGroupsList';
+
+interface GroupComparison {
+  id: string;
+  name: string;
+  membersCount: number;
+  potBalance: number;
+  pendingPayouts: number;
+}
+
+interface AllGroupsStats {
+  totalGroups: number;
+  totalPotBalance: number;
+  totalPendingPayouts: number;
+  groupComparisons: GroupComparison[];
+}
 
 interface GroupPulseData {
   loading: boolean;
@@ -31,12 +46,14 @@ interface GroupPulseData {
   isAdmin: boolean;
   connectedWalletsCount: number;
   totalMembersCount: number;
+  allGroupsStats: AllGroupsStats | null;
   handleApproveRequest: (activityId: string) => Promise<void>;
   handleRejectRequest: (activityId: string) => Promise<void>;
 }
 
 export const useGroupPulse = (groupId: string): GroupPulseData => {
   const { user } = useAuth();
+  const { groups } = useGroupsList();
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [activities, setActivities] = useState<PotActivity[]>([]);
@@ -44,7 +61,8 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [connectedWalletsCount, setConnectedWalletsCount] = useState(0);
   const [totalMembersCount, setTotalMembersCount] = useState(0);
-  const [pulseData, setPulseData] = useState<Omit<GroupPulseData, 'loading' | 'pendingRequests' | 'isAdmin' | 'connectedWalletsCount' | 'totalMembersCount' | 'handleApproveRequest' | 'handleRejectRequest'>>({
+  const [allGroupsStats, setAllGroupsStats] = useState<AllGroupsStats | null>(null);
+  const [pulseData, setPulseData] = useState<Omit<GroupPulseData, 'loading' | 'pendingRequests' | 'isAdmin' | 'connectedWalletsCount' | 'totalMembersCount' | 'allGroupsStats' | 'handleApproveRequest' | 'handleRejectRequest'>>({
     potBalance: 0,
     averagePayoutSize: 0,
     estimatedPayoutsRemaining: 0,
@@ -108,6 +126,11 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
           const admin = await checkUserIsAdmin(groupId, user.id);
           setIsAdmin(admin);
         }
+
+        // Fetch cross-group statistics
+        if (groups.length > 0) {
+          fetchCrossGroupStats();
+        }
       } catch (error) {
         console.error('Error fetching group pulse data:', error);
         toast.error('Failed to load group pulse data');
@@ -119,7 +142,56 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
     if (groupId) {
       fetchData();
     }
-  }, [groupId, user]);
+  }, [groupId, user, groups]);
+
+  // Fetch cross-group statistics
+  const fetchCrossGroupStats = async () => {
+    try {
+      const groupComparisons: GroupComparison[] = [];
+      let totalPotBalance = 0;
+      let totalPendingPayouts = 0;
+      
+      // For each group, fetch members count and pot activities
+      for (const group of groups) {
+        // Get members count
+        const { data: members } = await supabase
+          .from('group_members')
+          .select('user_id')
+          .eq('group_id', group.id);
+          
+        // Get pot activities for the group
+        const activities = await fetchGroupPotActivities(group.id);
+        
+        // Calculate pot balance and pending payouts
+        const potBalance = calculatePotBalance(activities);
+        const pendingPayouts = countPendingPayouts(activities);
+        
+        // Add to totals
+        totalPotBalance += potBalance;
+        totalPendingPayouts += pendingPayouts;
+        
+        // Add to group comparisons
+        groupComparisons.push({
+          id: group.id,
+          name: group.name,
+          membersCount: members?.length || 0,
+          potBalance,
+          pendingPayouts
+        });
+      }
+      
+      // Set all groups stats
+      setAllGroupsStats({
+        totalGroups: groups.length,
+        totalPotBalance,
+        totalPendingPayouts,
+        groupComparisons
+      });
+      
+    } catch (error) {
+      console.error('Error fetching cross-group statistics:', error);
+    }
+  };
 
   const handleApproveRequest = async (activityId: string) => {
     try {
@@ -180,6 +252,7 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
     isAdmin,
     connectedWalletsCount,
     totalMembersCount,
+    allGroupsStats,
     handleApproveRequest,
     handleRejectRequest
   };
