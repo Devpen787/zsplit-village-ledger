@@ -169,3 +169,39 @@ export const calculateTotalShares = (splitData: UserSplitData[]): number => {
     .filter(item => item.isActive !== false)
     .reduce((sum, item) => sum + (item.shares || 0), 0);
 };
+
+/**
+ * Process split data for API submission
+ * This function formats the split data for the expense service
+ */
+export const processSplitData = (
+  splitData: UserSplitData[],
+  splitMethod: string
+) => {
+  return splitData
+    .filter(item => item.isActive !== false)
+    .map(item => {
+      let shareValue = 0;
+      
+      switch (splitMethod) {
+        case 'equal':
+          shareValue = 1;
+          break;
+        case 'amount':
+          shareValue = item.amount || 0;
+          break;
+        case 'percentage':
+          shareValue = item.percentage || 0;
+          break;
+        case 'shares':
+          shareValue = item.shares || 0;
+          break;
+      }
+      
+      return {
+        userId: item.userId,
+        shareType: splitMethod,
+        shareValue
+      };
+    });
+};

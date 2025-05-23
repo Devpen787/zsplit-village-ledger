@@ -5,10 +5,11 @@ import ValidationAlert from "./split-methods/ValidationAlert";
 import { UserSplitData, ExpenseUser } from "@/types/expenses";
 import { useExpenseSplit } from "@/hooks/useExpenseSplit";
 import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import ExpenseParticipantsSelector from "./ExpenseParticipantsSelector";
+import GroupContext from "./split-methods/GroupContext";
+import EqualSplitInfo from "./split-methods/EqualSplitInfo";
+import SplitSummaryCollapsible from "./split-methods/SplitSummaryCollapsible";
 
 interface ExpenseSplitMethodFieldsProps {
   users: ExpenseUser[];
@@ -183,11 +184,7 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
   return (
     <div className="space-y-4">
       {/* Group Context if provided */}
-      {groupName && (
-        <div className="text-sm text-muted-foreground">
-          You're adding an expense to: <span className="font-medium">{groupName}</span>
-        </div>
-      )}
+      <GroupContext groupName={groupName} />
       
       {/* Split Method Selector */}
       <SplitMethodSelector splitMethod={splitMethod} setSplitMethod={setSplitMethod} />
@@ -236,42 +233,21 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
       </Card>
       
       {/* Equal split info displayed directly */}
-      {splitMethod === "equal" && activeUserCount > 0 && totalAmount > 0 && (
-        <div className="text-sm text-green-600 flex items-center mt-2">
-          <Check className="h-4 w-4 mr-2" />
-          Each person will pay {(totalAmount / activeUserCount).toFixed(2)}
-        </div>
-      )}
+      <EqualSplitInfo 
+        totalAmount={totalAmount} 
+        activeUserCount={activeUserCount} 
+      />
       
       {/* Collapsible Summary - only show if we have a valid amount */}
       {totalAmount > 0 && activeUserCount > 0 && splitMethod !== "equal" && (
-        <Card className="overflow-hidden">
-          <Collapsible open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
-            <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-              <h4 className="text-base font-medium">Show payment breakdown</h4>
-              <div className="flex items-center text-muted-foreground">
-                {isSummaryOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="px-4 pb-4">
-                <div className="text-sm space-y-2">
-                  {splitData
-                    .filter(data => selectedUsers[data.userId] !== false)
-                    .map((userData) => {
-                      const amount = getCalculatedAmount(userData);
-                      return (
-                        <div key={userData.userId} className="flex justify-between">
-                          <span>{getUserName(userData)}</span>
-                          <span className="font-medium">{amount.toFixed(2)}</span>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
+        <SplitSummaryCollapsible
+          isOpen={isSummaryOpen}
+          setIsOpen={setIsSummaryOpen}
+          splitData={splitData}
+          selectedUsers={selectedUsers}
+          getUserName={getUserName}
+          getCalculatedAmount={getCalculatedAmount}
+        />
       )}
     </div>
   );
