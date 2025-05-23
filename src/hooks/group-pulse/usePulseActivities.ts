@@ -1,82 +1,52 @@
 
 import { useState, useEffect } from 'react';
 import { PotActivity } from '@/types/group-pot';
-import { Expense } from '@/types/expenses';
-import { fetchGroupPotActivities } from '@/services/groupPotService';
-import { fetchGroupExpenses } from '@/services/groupPulseService';
 import { toast } from '@/components/ui/sonner';
-import { 
-  calculatePotBalance, 
-  calculateAveragePayoutSize,
-  estimateRemainingPayouts,
-  countRecentExpenses,
-  getLatestExpenseDate,
-  countPendingPayouts,
-  calculateApprovalTime
-} from '@/utils/groupPulseUtils';
+import { fetchGroupPotActivities } from '@/services/groupPotService';
+import { calculateRemainingBalance } from '@/utils/groupPotUtils';
 
-interface PulseActivitiesData {
-  loading: boolean;
+export interface PulseActivitiesData {
   activities: PotActivity[];
-  expenses: Expense[];
-  potBalance: number;
-  averagePayoutSize: number;
-  estimatedPayoutsRemaining: number;
-  recentExpensesCount: number;
-  latestExpenseDate: Date | null;
-  pendingPayoutsCount: number;
-  averageApprovalTime: string;
   pendingRequests: PotActivity[];
+  recentActivities: PotActivity[];
+  potBalance: number;
+  loading: boolean;
+  setActivities: React.Dispatch<React.SetStateAction<PotActivity[]>>;
+  setPendingRequests: React.Dispatch<React.SetStateAction<PotActivity[]>>;
 }
 
 export const usePulseActivities = (groupId: string): PulseActivitiesData => {
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<PotActivity[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PotActivity[]>([]);
-  const [pulseData, setPulseData] = useState({
-    potBalance: 0,
-    averagePayoutSize: 0,
-    estimatedPayoutsRemaining: 0,
-    recentExpensesCount: 0,
-    latestExpenseDate: null as Date | null,
-    pendingPayoutsCount: 0,
-    averageApprovalTime: 'No data yet'
-  });
+  const [recentActivities, setRecentActivities] = useState<PotActivity[]>([]);
+  const [potBalance, setPotBalance] = useState(0);
   
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchActivities = async () => {
       try {
         setLoading(true);
         
-        // Fetch data in parallel
-        const [expensesData, activitiesData] = await Promise.all([
-          fetchGroupExpenses(groupId),
-          fetchGroupPotActivities(groupId)
-        ]);
+        // Fetch group pot activities
+        const typedActivities = await fetchGroupPotActivities(groupId);
         
-        setExpenses(expensesData);
-        setActivities(activitiesData);
+        // Calculate pot balance
+        const balance = calculateRemainingBalance(typedActivities);
         
-        // Extract pending requests
-        const pending = activitiesData.filter(
+        // Get pending requests - payout activities with "pending" status
+        const pending = typedActivities.filter(
           activity => activity.type === 'payout' && activity.status === 'pending'
         );
+        
+        // Get recent activities - most recent 5 activities
+        const recent = [...typedActivities].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ).slice(0, 5);
+        
+        setActivities(typedActivities);
+        setPotBalance(balance);
         setPendingRequests(pending);
-        
-        // Calculate all metrics
-        const potBalance = calculatePotBalance(activitiesData);
-        const avgPayoutSize = calculateAveragePayoutSize(activitiesData);
-        
-        setPulseData({
-          potBalance,
-          averagePayoutSize: avgPayoutSize,
-          estimatedPayoutsRemaining: estimateRemainingPayouts(potBalance, avgPayoutSize),
-          recentExpensesCount: countRecentExpenses(expensesData),
-          latestExpenseDate: getLatestExpenseDate(expensesData),
-          pendingPayoutsCount: countPendingPayouts(activitiesData),
-          averageApprovalTime: calculateApprovalTime(activitiesData)
-        });
+        setRecentActivities(recent);
       } catch (error) {
         console.error('Error fetching group pulse data:', error);
         toast.error('Failed to load group pulse data');
@@ -86,15 +56,17 @@ export const usePulseActivities = (groupId: string): PulseActivitiesData => {
     };
     
     if (groupId) {
-      fetchData();
+      fetchActivities();
     }
   }, [groupId]);
   
   return {
-    loading,
     activities,
-    expenses,
-    ...pulseData,
-    pendingRequests
+    pendingRequests,
+    recentActivities,
+    potBalance,
+    loading,
+    setActivities,
+    setPendingRequests
   };
 };

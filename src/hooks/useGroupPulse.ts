@@ -1,82 +1,66 @@
 
 import { useState } from 'react';
 import { usePulseActivities } from './group-pulse/usePulseActivities';
-import { useGroupConnectivity } from './group-pulse/useGroupConnectivity';
 import { usePulseAdmin } from './group-pulse/usePulseAdmin';
 import { usePulsePayouts } from './group-pulse/usePulsePayouts';
-import { useCrossGroupStats, AllGroupsStats } from './group-pulse/useCrossGroupStats';
-import { useGroupsList } from '@/hooks/useGroupsList';
+import { useGroupConnectivity } from './group-pulse/useGroupConnectivity';
 import { PotActivity } from '@/types/group-pot';
+import { useExpenses } from './useExpenses';
 
 interface GroupPulseData {
-  loading: boolean;
   potBalance: number;
-  averagePayoutSize: number;
-  estimatedPayoutsRemaining: number;
-  recentExpensesCount: number;
-  latestExpenseDate: Date | null;
   pendingPayoutsCount: number;
-  averageApprovalTime: string;
-  pendingRequests: PotActivity[];
-  isAdmin: boolean;
   connectedWalletsCount: number;
   totalMembersCount: number;
-  allGroupsStats: AllGroupsStats | null;
+  pendingRequests: PotActivity[];
+  recentActivities: PotActivity[];
+  totalExpenses: number;
+  isAdmin: boolean;
   handleApproveRequest: (activityId: string) => Promise<void>;
   handleRejectRequest: (activityId: string) => Promise<void>;
+  loading: boolean;
 }
 
 export const useGroupPulse = (groupId: string): GroupPulseData => {
-  // Get group list for cross-group statistics
-  const { groups } = useGroupsList();
-  
-  // Get activities data
   const { 
-    loading,
-    activities,
-    setActivities = useState<PotActivity[]>([])[1],
-    potBalance,
-    averagePayoutSize,
-    estimatedPayoutsRemaining,
-    recentExpensesCount,
-    latestExpenseDate,
-    pendingPayoutsCount,
-    averageApprovalTime,
+    potBalance, 
     pendingRequests,
-    setPendingRequests = useState<PotActivity[]>([])[1]
+    recentActivities,
+    loading,
+    setActivities,
+    setPendingRequests
   } = usePulseActivities(groupId);
   
-  // Get group connectivity data
-  const { connectedWalletsCount, totalMembersCount } = useGroupConnectivity(groupId);
-  
-  // Get admin status
   const { isAdmin } = usePulseAdmin(groupId);
   
-  // Get cross-group statistics
-  const { allGroupsStats } = useCrossGroupStats(groups);
+  const { handleApproveRequest, handleRejectRequest } = 
+    usePulsePayouts(groupId, setActivities, pendingRequests, setPendingRequests);
   
-  // Get payout controls
-  const { handleApproveRequest, handleRejectRequest } = usePulsePayouts(
-    activities, 
-    setActivities, 
-    setPendingRequests
+  const { connectedWalletsCount, totalMembersCount } = useGroupConnectivity(groupId);
+  
+  // Get expenses data for statistics
+  const { expenses } = useExpenses(undefined, groupId);
+  
+  // Calculate total expenses
+  const totalExpenses = (expenses || []).reduce(
+    (sum, expense) => sum + Number(expense.amount || 0),
+    0
   );
   
+  // Pending payouts count
+  const pendingPayoutsCount = pendingRequests.length;
+  
   return {
-    loading,
     potBalance,
-    averagePayoutSize,
-    estimatedPayoutsRemaining,
-    recentExpensesCount,
-    latestExpenseDate,
     pendingPayoutsCount,
-    averageApprovalTime,
-    pendingRequests,
-    isAdmin,
     connectedWalletsCount,
     totalMembersCount,
-    allGroupsStats,
+    pendingRequests,
+    recentActivities,
+    totalExpenses,
+    isAdmin,
     handleApproveRequest,
-    handleRejectRequest
+    handleRejectRequest,
+    loading
   };
 };

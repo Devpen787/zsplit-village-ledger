@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { PotActivity } from '@/types/group-pot';
-import { usePotActivities } from './group-pot/usePotActivities';
+import { usePotActivities } from './usePotActivities';
 import { usePotAdmin } from './group-pot/usePotAdmin';
 import { usePotContributions } from './group-pot/usePotContributions';
 import { usePotPayouts } from './group-pot/usePotPayouts';
@@ -26,12 +26,12 @@ export const useGroupPot = (groupId: string): GroupPotData => {
   // Get activities, contributions, and balances
   const { 
     activities, 
-    setActivities = useState<PotActivity[]>([])[1],
+    setActivities,
     totalContributions, 
-    setTotalContributions = useState(0)[1],
+    setTotalContributions,
     remainingBalance, 
     contributors, 
-    setContributors = useState<{id: string; name?: string | null}[]>([])[1],
+    setContributors,
     loading 
   } = usePotActivities(groupId);
   

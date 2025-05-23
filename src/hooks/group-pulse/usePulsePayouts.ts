@@ -1,6 +1,7 @@
 
-import { PotActivity } from '@/types/group-pot';
+import { useState } from 'react';
 import { toast } from '@/components/ui/sonner';
+import { PotActivity } from '@/types/group-pot';
 import { 
   approvePayoutRequest, 
   rejectPayoutRequest 
@@ -12,30 +13,31 @@ interface PulsePayoutsData {
 }
 
 export const usePulsePayouts = (
-  activities: PotActivity[],
+  groupId: string,
   setActivities: React.Dispatch<React.SetStateAction<PotActivity[]>>,
+  pendingRequests: PotActivity[],
   setPendingRequests: React.Dispatch<React.SetStateAction<PotActivity[]>>
 ): PulsePayoutsData => {
+  
   const handleApproveRequest = async (activityId: string) => {
     try {
       await approvePayoutRequest(activityId);
       
       toast.success('Payout request approved');
       
-      // Update the activities in state
-      setActivities(prevActivities => 
-        prevActivities.map(activity => 
+      // Update the activity in the activities state
+      setActivities(prev => 
+        prev.map(activity => 
           activity.id === activityId 
             ? { ...activity, status: 'approved' } 
             : activity
         )
       );
       
-      // Update pending requests
-      setPendingRequests(prevRequests => 
-        prevRequests.filter(request => request.id !== activityId)
+      // Remove the approved request from the pending requests
+      setPendingRequests(prev => 
+        prev.filter(request => request.id !== activityId)
       );
-      
     } catch (error) {
       console.error('Error approving payout request:', error);
       toast.error('Failed to approve payout request');
@@ -48,20 +50,19 @@ export const usePulsePayouts = (
       
       toast.success('Payout request rejected');
       
-      // Update the activities in state
-      setActivities(prevActivities => 
-        prevActivities.map(activity => 
+      // Update the activity in the activities state
+      setActivities(prev => 
+        prev.map(activity => 
           activity.id === activityId 
             ? { ...activity, status: 'rejected' } 
             : activity
         )
       );
       
-      // Update pending requests
-      setPendingRequests(prevRequests => 
-        prevRequests.filter(request => request.id !== activityId)
+      // Remove the rejected request from the pending requests
+      setPendingRequests(prev => 
+        prev.filter(request => request.id !== activityId)
       );
-      
     } catch (error) {
       console.error('Error rejecting payout request:', error);
       toast.error('Failed to reject payout request');
