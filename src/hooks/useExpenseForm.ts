@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts';
 import { ExpenseFormValues } from '@/schemas/expenseFormSchema';
 import { fetchExpenseById, fetchUsers, saveExpense, fetchGroupDetails } from '@/services/expenseService';
 import { Expense } from '@/types/expenses';
+import { expenseToFormValues } from '@/utils/expenseFormUtils';
 
 // Re-export the schema for convenience
 export { expenseFormSchema, splitDataSchema } from '@/schemas/expenseFormSchema';
@@ -24,56 +25,48 @@ export const useExpenseForm = (groupId: string | null) => {
     const loadData = async () => {
       setLoading(true);
       
-      // Load expense if editing
-      if (id) {
-        const expenseData = await fetchExpenseById(id);
-        setExpense(expenseData);
-      }
-      
-      // Load users
-      const usersData = await fetchUsers(groupId);
-      setUsers(usersData);
-      
-      // Load group name if groupId is provided
-      if (groupId) {
-        try {
-          const groupDetails = await fetchGroupDetails(groupId);
-          if (groupDetails) {
-            setGroupName(groupDetails.name);
-          }
-        } catch (error) {
-          console.error("Error fetching group details:", error);
+      try {
+        // Load data in parallel for better performance
+        const promises = [];
+        
+        // Load expense if editing
+        if (id) {
+          promises.push(
+            fetchExpenseById(id).then(expenseData => setExpense(expenseData))
+          );
         }
+        
+        // Load users
+        promises.push(
+          fetchUsers(groupId).then(usersData => setUsers(usersData))
+        );
+        
+        // Load group name if groupId is provided
+        if (groupId) {
+          promises.push(
+            fetchGroupDetails(groupId).then(groupDetails => {
+              if (groupDetails) {
+                setGroupName(groupDetails.name);
+              }
+            }).catch(error => {
+              console.error("Error fetching group details:", error);
+            })
+          );
+        }
+        
+        await Promise.all(promises);
+      } catch (error) {
+        console.error("Error loading form data:", error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
     
     loadData();
   }, [id, user, groupId]);
 
   const getDefaultValues = (): ExpenseFormValues => {
-    if (expense) {
-      return {
-        title: expense.title || '',
-        amount: expense.amount || 0,
-        currency: expense.currency || 'USD',
-        date: expense.date ? new Date(expense.date) : new Date(),
-        notes: expense.leftover_notes || '',
-        paidBy: expense.paid_by || user?.id || '',
-        splitEqually: true,
-      };
-    }
-    
-    return {
-      title: '',
-      amount: 0,
-      currency: 'USD',
-      date: new Date(),
-      notes: '',
-      paidBy: user?.id || '',
-      splitEqually: true,
-    };
+    return expenseToFormValues(expense, user?.id);
   };
 
   const onSubmit = async (values: ExpenseFormValues) => {

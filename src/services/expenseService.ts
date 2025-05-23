@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Expense } from '@/types/expenses';
 import { ExpenseFormValues } from '@/schemas/expenseFormSchema';
-import { processSplitData } from '@/utils/expenseSplitUtils';
+import { processSplitData } from '@/utils/expenseFormUtils';
 
 export const fetchExpenseById = async (id: string): Promise<Expense | null> => {
   try {
