@@ -21,8 +21,12 @@ export const GroupPulseHeader = ({
         <div className="flex items-center gap-3">
           <ChartPie className="h-6 w-6 text-primary" />
           <div>
-            <CardTitle>Group Pulse{groupName ? ` - ${groupName}` : ''}</CardTitle>
-            <CardDescription>Analytics and financial insights</CardDescription>
+            <CardTitle>
+              {activeTab === "all" ? "All Groups Overview" : (groupName ? `Group: ${groupName}` : "Group Overview")}
+            </CardTitle>
+            <CardDescription>
+              View analytics and insights for your group or compare financial activity across all your groups.
+            </CardDescription>
           </div>
         </div>
       </CardHeader>

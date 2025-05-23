@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 export interface GroupStatistics {
   potBalance: number;
+  totalPayouts: number;
   pendingPayoutsCount: number;
   averagePayoutSize: number;
   estimatedPayoutsRemaining: number;
@@ -20,6 +21,14 @@ export const useGroupStatistics = (
 ): GroupStatistics => {
   // Calculate pot balance from activities
   const potBalance = calculateRemainingBalance(activities);
+  
+  // Calculate total contributions
+  const totalContributions = activities
+    .filter(activity => activity.type === 'contribution')
+    .reduce((sum, activity) => sum + activity.amount, 0);
+  
+  // Calculate total payouts (contributions minus remaining balance)
+  const totalPayouts = totalContributions - potBalance;
   
   // Pending payouts count
   const pendingPayoutsCount = activities.filter(
@@ -73,6 +82,7 @@ export const useGroupStatistics = (
   
   return {
     potBalance,
+    totalPayouts,
     pendingPayoutsCount,
     averagePayoutSize,
     estimatedPayoutsRemaining,

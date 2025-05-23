@@ -12,6 +12,7 @@ import { useGroupStatistics } from './group-pulse/useGroupStatistics';
 
 interface GroupPulseData {
   potBalance: number;
+  totalPayouts: number;
   pendingPayoutsCount: number;
   connectedWalletsCount: number;
   totalMembersCount: number;
@@ -63,6 +64,7 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
   // Get group statistics using our new hook
   const {
     potBalance,
+    totalPayouts,
     pendingPayoutsCount,
     averagePayoutSize,
     estimatedPayoutsRemaining,
@@ -73,6 +75,7 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
   
   return {
     potBalance,
+    totalPayouts,
     pendingPayoutsCount,
     connectedWalletsCount,
     totalMembersCount,

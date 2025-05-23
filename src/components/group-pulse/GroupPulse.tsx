@@ -1,8 +1,7 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useWallet } from '@/contexts/WalletContext';
 import { useGroupPulse } from '@/hooks/useGroupPulse';
-import { motion } from 'framer-motion';
 import { useGroupDetails } from '@/hooks/useGroupDetails';
 import { useAuth } from '@/contexts';
 import { useAnimations } from '@/hooks/useAnimations';
@@ -12,11 +11,20 @@ import { GroupConnectivityMetrics } from './GroupConnectivityMetrics';
 import { PendingRequestsSection } from './PendingRequestsSection';
 import { CrossGroupOverview } from './CrossGroupOverview';
 
-export const GroupPulse = ({ groupId }: { groupId: string }) => {
+interface GroupPulseProps {
+  groupId: string;
+  activeTab?: "group" | "all";
+  onTabChange?: (value: "group" | "all") => void;
+}
+
+export const GroupPulse = ({ 
+  groupId, 
+  activeTab = "group", 
+  onTabChange 
+}: GroupPulseProps) => {
   const { isConnected } = useWallet();
   const { user } = useAuth();
   const { group } = useGroupDetails(groupId, user);
-  const [activeTab, setActiveTab] = useState<"group" | "all">("group");
   const { containerVariants, itemVariants } = useAnimations();
   
   const {
@@ -37,21 +45,28 @@ export const GroupPulse = ({ groupId }: { groupId: string }) => {
     allGroupsStats
   } = useGroupPulse(groupId);
 
+  const handleTabChange = (value: "group" | "all") => {
+    if (onTabChange) {
+      onTabChange(value);
+    }
+  };
+
   return (
-    <motion.div 
+    <div 
       className="grid gap-6"
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
+      style={{
+        opacity: 1,
+        transform: 'none'
+      }}
     >
       {/* Group Info Header */}
-      <motion.div variants={itemVariants}>
+      <div>
         <GroupPulseHeader 
-          groupName={group?.name} 
+          groupName={activeTab === "all" ? undefined : group?.name} 
           activeTab={activeTab} 
-          onTabChange={(value) => setActiveTab(value)} 
+          onTabChange={handleTabChange} 
         />
-      </motion.div>
+      </div>
 
       {activeTab === "group" ? (
         <>
@@ -74,19 +89,19 @@ export const GroupPulse = ({ groupId }: { groupId: string }) => {
           />
 
           {/* Pending payout requests list - shown to all but actions only for admins */}
-          <motion.div variants={itemVariants} className="grid gap-6">
+          <div className="grid gap-6">
             <PendingRequestsSection 
               pendingRequests={pendingRequests} 
               onApprove={handleApproveRequest}
               onReject={handleRejectRequest}
               isAdmin={isAdmin && isConnected}
             />
-          </motion.div>
+          </div>
         </>
       ) : (
         // Cross-group statistics view
         <CrossGroupOverview allGroupsStats={allGroupsStats} />
       )}
-    </motion.div>
+    </div>
   );
 };

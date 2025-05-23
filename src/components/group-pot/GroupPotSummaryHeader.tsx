@@ -1,10 +1,15 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from '@/components/ui/badge';
-import { PiggyBank, Crown } from 'lucide-react';
-import { useGroupDetails } from '@/hooks/useGroupDetails';
-import { useAuth } from '@/contexts';
+import { TargetAmountInput } from './TargetAmountInput';
+import { PiggyBank, CreditCard, ArrowDownCircle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface GroupPotSummaryHeaderProps {
   groupId: string;
@@ -15,54 +20,98 @@ interface GroupPotSummaryHeaderProps {
 }
 
 export const GroupPotSummaryHeader = ({ 
-  groupId, 
-  totalContributions, 
-  remainingBalance, 
+  groupId,
+  totalContributions,
+  remainingBalance,
   targetAmount,
-  isAdmin 
+  isAdmin
 }: GroupPotSummaryHeaderProps) => {
-  const { user } = useAuth();
-  const { group } = useGroupDetails(groupId, user);
-
+  const totalPayouts = totalContributions - remainingBalance;
+  const progressPercentage = targetAmount > 0 
+    ? Math.min(100, (totalContributions / targetAmount) * 100)
+    : 0;
+    
   return (
     <Card className="shadow-sm hover:shadow transition-shadow duration-300">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <PiggyBank className="h-6 w-6 text-primary" />
-          <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Group Pot{group?.name ? ` - ${group.name}` : ''}</CardTitle>
-                <CardDescription>Manage and view funds for group expenses</CardDescription>
-              </div>
-              
-              {isAdmin && (
-                <Badge variant="outline" className="flex items-center gap-1 bg-amber-50 text-amber-700 border-amber-200">
-                  <Crown className="h-3 w-3" />
-                  Admin
-                </Badge>
-              )}
-            </div>
+          <div>
+            <CardTitle>Group Pot Summary</CardTitle>
+            <CardDescription>Manage and track your group's shared funds</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-4 items-center justify-between">
-            <div className="border rounded-md p-3 flex-1 min-w-[200px] bg-muted/30">
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Total Contributions */}
+          <div className="flex items-center gap-3 border rounded-lg p-3">
+            <div className="bg-primary/10 p-2 rounded-full">
+              <CreditCard className="h-5 w-5 text-primary" />
+            </div>
+            <div>
               <p className="text-sm font-medium text-muted-foreground">Total Contributions</p>
-              <p className="text-2xl font-bold">CHF {totalContributions.toFixed(2)}</p>
+              <p className="text-xl font-bold">CHF {totalContributions.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">Sum of all deposits</p>
             </div>
-            
-            <div className="border rounded-md p-3 flex-1 min-w-[200px] bg-muted/30">
-              <p className="text-sm font-medium text-muted-foreground">Remaining Balance</p>
-              <p className="text-2xl font-bold">CHF {remainingBalance.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">After approved payouts</p>
+          </div>
+          
+          {/* Total Payouts */}
+          <div className="flex items-center gap-3 border rounded-lg p-3">
+            <div className="bg-primary/10 p-2 rounded-full">
+              <ArrowDownCircle className="h-5 w-5 text-primary" />
             </div>
-            
-            <div className="border rounded-md p-3 flex-1 min-w-[200px] bg-muted/30">
-              <p className="text-sm font-medium text-muted-foreground">Target Amount</p>
-              <p className="text-2xl font-bold">CHF {targetAmount.toFixed(2)}</p>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Payouts</p>
+              <p className="text-xl font-bold">CHF {totalPayouts.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">Amount paid out to members</p>
+            </div>
+          </div>
+          
+          {/* Remaining Balance */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-3 border rounded-lg p-3">
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <PiggyBank className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Remaining Balance</p>
+                    <p className="text-xl font-bold text-primary">CHF {remainingBalance.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">Available after approved payouts</p>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>This is your available group pot after approved payouts.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        
+        {/* Target amount and progress section */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Target amount:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold">
+                CHF {targetAmount.toFixed(2)}
+              </span>
+              {isAdmin && <TargetAmountInput currentTarget={targetAmount} />}
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Progress value={progressPercentage} className="h-2" />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>
+                {progressPercentage.toFixed(0)}% funded
+                (CHF {totalContributions.toFixed(2)} of CHF {targetAmount.toFixed(2)})
+              </span>
+              <span>
+                Remaining: CHF {Math.max(0, targetAmount - totalContributions).toFixed(2)}
+              </span>
             </div>
           </div>
         </div>
