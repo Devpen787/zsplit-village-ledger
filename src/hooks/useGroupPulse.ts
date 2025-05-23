@@ -73,7 +73,7 @@ export const useGroupPulse = (groupId: string | undefined): GroupPulseData => {
   
   const { connectedWalletsCount, totalMembersCount } = useGroupConnectivity(groupId);
   
-  // Get expenses data for statistics
+  // Get expenses data for statistics - make sure this is only called when groupId is defined
   const { expenses } = useExpenses(undefined, groupId);
   
   // Get cross-group statistics
@@ -86,7 +86,7 @@ export const useGroupPulse = (groupId: string | undefined): GroupPulseData => {
     0
   );
   
-  // Get group statistics using our new hook
+  // Get group statistics using our statistics hook
   const {
     potBalance,
     totalPayouts,

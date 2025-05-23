@@ -9,7 +9,6 @@ import { Expense } from '@/types/expenses';
 import { useGroupMembers } from '@/hooks/useGroupMembers';
 import { useGroupInvites } from '@/hooks/useGroupInvites';
 import { useGroupAdminStatus } from '@/hooks/useGroupAdminStatus';
-import { useExpenses } from '@/hooks/useExpenses';
 
 export const useGroupDetails = (id: string | undefined, user: User | null) => {
   const navigate = useNavigate();
@@ -18,20 +17,13 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   const [potBalance, setPotBalance] = useState(0);
   const [pendingPayoutsCount, setPendingPayoutsCount] = useState(0);
   const [connectedWalletsCount, setConnectedWalletsCount] = useState(0);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [totalExpenses, setTotalExpenses] = useState(0);
   
   // Use the extracted hooks
   const { members } = useGroupMembers(id);
   const { inviteMember } = useGroupInvites(id);
   const { isAdmin } = useGroupAdminStatus(id, user);
-  
-  // Get expenses data for metrics
-  const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
-  
-  // Calculate total expenses
-  const totalExpenses = (expenses || []).reduce(
-    (sum: number, expense: Expense) => sum + Number(expense.amount || 0),
-    0
-  );
   
   useEffect(() => {
     if (!id) return;
@@ -50,6 +42,79 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
     return () => {
       supabase.removeChannel(groupsChannel);
     };
+  }, [id, user]);
+  
+  // Fetch expenses directly instead of using useExpenses hook to avoid circular dependency
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      try {
+        if (!id || !user) return;
+        
+        // Build the query
+        const { data, error: supabaseError } = await supabase
+          .from('expenses')
+          .select(`
+            id,
+            title,
+            amount,
+            currency,
+            date,
+            paid_by,
+            users:paid_by (
+              name,
+              email
+            )
+          `)
+          .eq('group_id', id)
+          .order('date', { ascending: false });
+
+        if (supabaseError) {
+          console.error("Error fetching expenses:", supabaseError);
+          return;
+        }
+
+        // Transform the data
+        const formattedExpenses = data?.map((expense: any) => ({
+          id: expense.id,
+          title: expense.title || 'Unnamed Expense',
+          amount: expense.amount || 0,
+          currency: expense.currency || 'CHF',
+          date: expense.date || new Date().toISOString(),
+          paid_by: expense.paid_by,
+          paid_by_user: expense.users
+        })) || [];
+
+        setExpenses(formattedExpenses);
+        
+        // Calculate total expenses
+        const total = formattedExpenses.reduce(
+          (sum: number, expense: Expense) => sum + Number(expense.amount || 0),
+          0
+        );
+        
+        setTotalExpenses(total);
+      } catch (err: any) {
+        console.error('Error fetching expenses:', err);
+      }
+    };
+    
+    fetchExpenses();
+    
+    // Set up real-time subscription for expenses
+    if (id) {
+      const expensesChannel = supabase
+        .channel('expenses-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'expenses', filter: id ? `group_id=eq.${id}` : undefined },
+          () => fetchExpenses()
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(expensesChannel);
+      };
+    }
   }, [id, user]);
   
   // Load pot metrics in a separate effect to avoid circular dependencies
@@ -172,10 +237,11 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
     isAdmin,
     inviteMember: handleInviteMember,
     refreshData: fetchGroupDetails,
-    // Use the state values instead of calling useGroupPulse
+    // Return state values instead of using hooks
     potBalance,
     totalExpenses,
     pendingPayoutsCount,
-    connectedWalletsCount
+    connectedWalletsCount,
+    expenses
   };
 };
