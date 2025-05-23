@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserSplitData, ExpenseUser } from "@/types/expenses";
 import { formatSplitDataUserName } from "@/utils/userFormatUtils";
+import { useGroupMembers } from "@/hooks/useGroupMembers";
+import { toast } from "@/components/ui/sonner";
 
 interface UseExpenseSplitMethodsProps {
   users: ExpenseUser[];
@@ -27,6 +29,16 @@ export const useExpenseSplitMethods = ({
     return initialSelectedUsers;
   });
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const { members, fetchMembers } = useGroupMembers(selectedGroup || groupId || undefined);
+  
+  // Track all available groups for selection
+  const availableGroups = users.reduce((groups: Record<string, string>, user) => {
+    if (user.group_id) {
+      groups[user.group_id] = user.group_id;
+    }
+    return groups;
+  }, {});
   
   // Mark users with their active status for split calculations
   const usersWithActiveStatus = users.map(user => ({
@@ -68,19 +80,22 @@ export const useExpenseSplitMethods = ({
     setSelectedUsers(newSelectedUsers);
   };
   
-  const handleSelectGroup = () => {
+  const handleSelectGroup = (groupId: string) => {
     if (!groupId) return;
+    
+    setSelectedGroup(groupId);
     
     const newSelectedUsers = { ...selectedUsers };
     
     // Always keep the payer selected
     users.forEach(user => {
-      // Select only users in the current group or the payer
+      // Select only users in the specified group or the payer
       const isInGroup = user.group_id === groupId;
       newSelectedUsers[user.id] = isInGroup || user.id === paidBy;
     });
     
     setSelectedUsers(newSelectedUsers);
+    toast.success(`Selected members of the group`);
   };
 
   // Sort users - group members first, then alphabetically
@@ -114,6 +129,9 @@ export const useExpenseSplitMethods = ({
     handleDeselectAll,
     handleSelectGroup,
     sortedUsers,
-    formatUserName: formatSplitDataUserName
+    formatUserName: formatSplitDataUserName,
+    availableGroups,
+    selectedGroup,
+    setSelectedGroup
   };
 };

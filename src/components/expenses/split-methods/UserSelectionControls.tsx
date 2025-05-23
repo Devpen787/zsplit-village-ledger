@@ -2,20 +2,32 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { UserCheck, UserX, Users } from "lucide-react";
+import { 
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from "@/components/ui/select";
 
 interface UserSelectionControlsProps {
   onSelectAll: () => void;
   onDeselectAll: () => void;
-  onSelectGroup: () => void;
+  onSelectGroup: (groupId: string) => void;
   groupId?: string | null;
+  availableGroups?: Record<string, string>;
 }
 
 const UserSelectionControls: React.FC<UserSelectionControlsProps> = ({
   onSelectAll,
   onDeselectAll,
   onSelectGroup,
-  groupId
+  groupId,
+  availableGroups = {}
 }) => {
+  const hasGroups = Object.keys(availableGroups).length > 0;
+  
   return (
     <div className="flex flex-wrap gap-2 mb-2">
       <Button 
@@ -40,17 +52,29 @@ const UserSelectionControls: React.FC<UserSelectionControlsProps> = ({
         Deselect All
       </Button>
       
-      {groupId && (
-        <Button 
-          type="button"
-          variant="outline" 
-          size="sm"
-          onClick={onSelectGroup}
-          className="flex items-center"
-        >
-          <Users className="h-4 w-4 mr-1" />
-          Select Group Only
-        </Button>
+      {(hasGroups || groupId) && (
+        <Select onValueChange={onSelectGroup}>
+          <SelectTrigger className="h-9 w-auto">
+            <div className="flex items-center">
+              <Users className="h-4 w-4 mr-1" />
+              <SelectValue placeholder="Select Group" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {Object.keys(availableGroups).map(groupId => (
+                <SelectItem key={groupId} value={groupId}>
+                  Group: {groupId.substring(0, 8)}...
+                </SelectItem>
+              ))}
+              {groupId && !availableGroups[groupId] && (
+                <SelectItem value={groupId}>
+                  Current Group
+                </SelectItem>
+              )}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       )}
     </div>
   );

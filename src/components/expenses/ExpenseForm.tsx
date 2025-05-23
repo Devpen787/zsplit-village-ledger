@@ -58,7 +58,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
               {/* Form fields */}
               <ExpenseFormFields form={form} users={users} />
               
-              {/* Split method fields */}
+              {/* Split method fields - Unified interface */}
               <ExpenseSplitMethodFields 
                 users={users}
                 splitMethod={splitMethod}

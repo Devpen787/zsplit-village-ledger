@@ -42,7 +42,8 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
     handleDeselectAll,
     handleSelectGroup,
     sortedUsers,
-    formatUserName
+    formatUserName,
+    availableGroups
   } = useExpenseSplitMethods({
     users,
     totalAmount,
@@ -107,6 +108,7 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
         handleInputChange={handleInputChange}
         adjustShares={adjustShares}
         getCalculatedAmount={getCalculatedAmount}
+        availableGroups={availableGroups}
       />
       
       {/* Split Summary Section */}

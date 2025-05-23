@@ -14,11 +14,12 @@ interface ParticipantSectionProps {
   toggleUser: (userId: string) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
-  onSelectGroup: () => void;
+  onSelectGroup: (groupId: string) => void;
   splitMethod: string;
   handleInputChange: (userId: string, value: string, field: 'amount' | 'percentage' | 'shares') => void;
   adjustShares: (userId: string, adjustment: number) => void;
   getCalculatedAmount: (userData: UserSplitData) => number;
+  availableGroups?: Record<string, string>;
 }
 
 const ParticipantSection: React.FC<ParticipantSectionProps> = ({
@@ -34,18 +35,20 @@ const ParticipantSection: React.FC<ParticipantSectionProps> = ({
   splitMethod,
   handleInputChange,
   adjustShares,
-  getCalculatedAmount
+  getCalculatedAmount,
+  availableGroups = {}
 }) => {
   return (
     <div className="space-y-2">
       <Label>Split with</Label>
       
-      {/* Bulk selection controls */}
+      {/* Bulk selection controls with group dropdown */}
       <UserSelectionControls
         onSelectAll={onSelectAll}
         onDeselectAll={onDeselectAll}
         onSelectGroup={onSelectGroup}
         groupId={groupId}
+        availableGroups={availableGroups}
       />
       
       <ParticipantSelectionTable
@@ -55,9 +58,6 @@ const ParticipantSection: React.FC<ParticipantSectionProps> = ({
         groupId={groupId}
         selectedUsers={selectedUsers}
         toggleUser={toggleUser}
-        onSelectAll={onSelectAll}
-        onDeselectAll={onDeselectAll}
-        onSelectGroup={onSelectGroup}
         splitMethod={splitMethod}
         handleInputChange={handleInputChange}
         adjustShares={adjustShares}
