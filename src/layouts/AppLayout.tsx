@@ -1,3 +1,4 @@
+
 import { ReactNode } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -29,7 +30,7 @@ import {
   User,
   ArrowLeft,
   PiggyBank,
-  Activity
+  Activity,
 } from "lucide-react";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -76,12 +77,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </header>
   );
 
-  // Updated navItems - correcting "My Groups" to go to the group dashboard
-  const navItems = [
+  // Mobile navigation items - simplified for better mobile experience
+  const mobileNavItems = [
+    { icon: Home, label: "Home", path: "/" },
+    { icon: Receipt, label: "Expense", path: "/expenses/new" },
+    { icon: Wallet, label: "Balances", path: "/balances" },
+    { icon: Users, label: "Groups", path: "/group" },
+    { icon: PiggyBank, label: "Pot", path: "/group-pot" },
+  ];
+
+  // Desktop navigation items - more complete
+  const desktopNavItems = [
     { icon: Home, label: "Dashboard", path: "/" },
     { icon: Receipt, label: "Add Expense", path: "/expenses/new" },
     { icon: Wallet, label: "Balances", path: "/balances" },
-    { icon: Users, label: "Groups", path: "/group" }, // Updated label for clarity
+    { icon: Users, label: "Groups", path: "/group" },
     { icon: PiggyBank, label: "Group Pot", path: "/group-pot" },
     { icon: Activity, label: "Group Pulse", path: "/group-pulse" },
     { icon: User, label: "Profile", path: "/profile" },
@@ -105,7 +115,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <SidebarGroupLabel>Navigation</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {navItems.map((item) => (
+                    {desktopNavItems.map((item) => (
                       <SidebarMenuItem key={item.path}>
                         <SidebarMenuButton asChild>
                           <Link to={item.path}>
@@ -132,20 +142,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {/* Main content */}
         <div className="flex-1 flex flex-col">
           {renderHeader}
-          <main className="flex-1 p-4 md:p-6">{children}</main>
+          <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">{children}</main>
           
-          {/* Mobile bottom navigation */}
+          {/* Improved mobile bottom navigation */}
           {isMobile && (
-            <nav className="border-t bg-background p-2 sticky bottom-0 z-10">
-              <div className="flex justify-around">
-                {navItems.slice(0, 6).map((item) => (
+            <nav className="border-t bg-background p-2 fixed bottom-0 left-0 right-0 z-10 shadow-lg">
+              <div className="flex justify-around items-center">
+                {mobileNavItems.map((item) => (
                   <Link 
                     key={item.path} 
                     to={item.path} 
-                    className="flex flex-col items-center py-1 px-3"
+                    className="flex flex-col items-center py-2 px-3 rounded-lg transition-colors hover:bg-accent"
                   >
                     <item.icon className="h-5 w-5 mb-1" />
-                    <span className="text-xs">{item.label}</span>
+                    <span className="text-xs font-medium">{item.label}</span>
                   </Link>
                 ))}
               </div>
