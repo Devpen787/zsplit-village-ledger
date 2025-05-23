@@ -74,7 +74,8 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
   // Recent expenses statistics
   const recentExpensesCount = 5; // Placeholder value
   const latestExpenseDate = expenses && expenses.length > 0 
-    ? new Date(expenses[0].date || expenses[0].created_at) 
+    // Fix here - use date instead of created_at if created_at doesn't exist
+    ? new Date(expenses[0].date) 
     : null;
   
   // Average approval time
