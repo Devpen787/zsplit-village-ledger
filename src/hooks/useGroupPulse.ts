@@ -8,6 +8,7 @@ import { PotActivity } from '@/types/group-pot';
 import { useExpenses } from './useExpenses';
 import { useCrossGroupStats, AllGroupsStats } from './group-pulse/useCrossGroupStats';
 import { useGroupsList } from './useGroupsList';
+import { useGroupStatistics } from './group-pulse/useGroupStatistics';
 
 interface GroupPulseData {
   potBalance: number;
@@ -21,7 +22,6 @@ interface GroupPulseData {
   handleApproveRequest: (activityId: string) => Promise<void>;
   handleRejectRequest: (activityId: string) => Promise<void>;
   loading: boolean;
-  // Add the missing properties
   averagePayoutSize: number;
   estimatedPayoutsRemaining: number;
   recentExpensesCount: number;
@@ -32,7 +32,7 @@ interface GroupPulseData {
 
 export const useGroupPulse = (groupId: string): GroupPulseData => {
   const { 
-    potBalance, 
+    activities,
     pendingRequests,
     recentActivities,
     loading,
@@ -60,26 +60,16 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
     0
   );
   
-  // Pending payouts count
-  const pendingPayoutsCount = pendingRequests.length;
-  
-  // Calculate average payout size based on recent payouts
-  const averagePayoutSize = 150; // Placeholder value, in a real implementation we would calculate from history
-  
-  // Calculate estimated payouts remaining
-  const estimatedPayoutsRemaining = potBalance > 0 && averagePayoutSize > 0 
-    ? potBalance / averagePayoutSize 
-    : 0;
-  
-  // Recent expenses statistics
-  const recentExpensesCount = 5; // Placeholder value
-  const latestExpenseDate = expenses && expenses.length > 0 
-    // Fix here - use date instead of created_at if created_at doesn't exist
-    ? new Date(expenses[0].date) 
-    : null;
-  
-  // Average approval time
-  const averageApprovalTime = "24 hours"; // Placeholder value
+  // Get group statistics using our new hook
+  const {
+    potBalance,
+    pendingPayoutsCount,
+    averagePayoutSize,
+    estimatedPayoutsRemaining,
+    recentExpensesCount,
+    latestExpenseDate,
+    averageApprovalTime
+  } = useGroupStatistics(activities, expenses);
   
   return {
     potBalance,
@@ -93,7 +83,6 @@ export const useGroupPulse = (groupId: string): GroupPulseData => {
     handleApproveRequest,
     handleRejectRequest,
     loading,
-    // Add the missing properties to the return value
     averagePayoutSize,
     estimatedPayoutsRemaining,
     recentExpensesCount,
