@@ -1,13 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { UserSplitData } from "@/types/expenses";
 import { 
   calculateUserAmount, 
   validateSplitData, 
   generateInitialSplitData,
-  getUserDisplayName,
   calculateTotalShares
 } from "@/utils/expenseSplitUtils";
+import { getUserDisplayName } from "@/utils/userFormatUtils";
 
 type User = {
   id: string;
