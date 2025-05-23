@@ -6,9 +6,6 @@ import { ExpenseFormValues } from '@/schemas/expenseFormSchema';
 import { fetchExpenseById, fetchUsers, saveExpense, fetchGroupDetails } from '@/services/expenseService';
 import { Expense } from '@/types/expenses';
 import { expenseToFormValues } from '@/utils/expenseFormUtils';
-import { UserSplitData } from '@/types/expenses';
-import { processSplitData } from '@/utils/expenseSplitUtils';
-import { supabase } from '@/integrations/supabase/client';
 
 // Re-export the schema for convenience
 export { expenseFormSchema, splitDataSchema } from '@/schemas/expenseFormSchema';
@@ -74,37 +71,11 @@ export const useExpenseForm = (groupId: string | null) => {
 
   const onSubmit = async (values: ExpenseFormValues) => {
     setSubmitLoading(true);
-    
     try {
-      // Process participants into split data
-      const splitMethodMap: Record<string, string> = {
-        'equal': 'equal',
-        'custom': 'amount',
-        'percentage': 'percentage'
-      };
-      
-      const actualSplitMethod = values.splitMethod ? splitMethodMap[values.splitMethod] : 'equal';
-      
-      // If we have participant IDs, convert them to split data
-      if (values.participants && values.participants.length > 0) {
-        const splitData: UserSplitData[] = values.participants.map(userId => ({
-          userId,
-          isActive: true
-        }));
-        
-        values.splitData = splitData;
-      }
-      
-      // Save with correct split method
-      values.splitEqually = actualSplitMethod === 'equal';
-      
       const expenseId = await saveExpense(values, id, groupId);
       if (expenseId) {
         navigate(groupId ? `/group/${groupId}` : '/');
       }
-    } catch (error) {
-      console.error("Error saving expense:", error);
-      throw error;
     } finally {
       setSubmitLoading(false);
     }
