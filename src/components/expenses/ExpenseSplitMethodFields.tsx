@@ -8,6 +8,7 @@ import SplitSummaryCollapsible from "./split-methods/SplitSummaryCollapsible";
 import GroupContext from "./split-methods/GroupContext";
 import { Card, CardContent } from "@/components/ui/card";
 import SplitSummary from "./split-methods/SplitSummary";
+import ParticipantSelectionTable from "./split-methods/ParticipantSelectionTable";
 
 interface ExpenseSplitMethodFieldsProps {
   users: ExpenseUser[];
