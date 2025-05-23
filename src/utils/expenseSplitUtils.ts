@@ -1,4 +1,3 @@
-
 import { UserSplitData } from "@/types/expenses";
 
 /**
@@ -145,20 +144,40 @@ export const generateInitialSplitData = (
 };
 
 /**
+ * Format user display name with consistent fallback logic
+ */
+export const formatUserName = (user: {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  display_name?: string | null;
+}): string => {
+  // First priority: display_name if available
+  if (user.display_name) return user.display_name;
+  
+  // Second priority: use email prefix (before @)
+  if (user.email) {
+    const emailPrefix = user.email.split('@')[0];
+    return emailPrefix;
+  }
+  
+  // Third priority: use name if available
+  if (user.name) return user.name;
+  
+  // Last resort: truncated user ID
+  return user.id.substring(0, 8) + '...';
+};
+
+/**
  * Get user display name with proper fallback logic
  */
 export const getUserDisplayName = (userData: UserSplitData): string => {
-  // First priority: display_name
-  if (userData.display_name) return userData.display_name;
-  
-  // Second priority: email prefix
-  if (userData.email) return userData.email.split('@')[0];
-  
-  // Third priority: name
-  if (userData.name) return userData.name;
-  
-  // Last resort: truncated user ID
-  return userData.userId.substring(0, 8) + '...';
+  return formatUserName({
+    id: userData.userId,
+    name: userData.name,
+    email: userData.email,
+    display_name: userData.display_name
+  });
 };
 
 /**
