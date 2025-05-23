@@ -9,7 +9,7 @@ import { PendingPayoutRequests } from './PendingPayoutRequests';
 import { PotActivityFeed } from './PotActivityFeed';
 import { useGroupPot } from '@/hooks/useGroupPot';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Wallet, PiggyBank, ArrowDownUp } from 'lucide-react';
+import { PiggyBank } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const GroupPot = ({ groupId }: { groupId: string }) => {
@@ -64,7 +64,7 @@ export const GroupPot = ({ groupId }: { groupId: string }) => {
           <CardContent>
             <div className="space-y-4">
               <p className="text-muted-foreground">
-                View and interact with the group pot. Connect a wallet to contribute funds or request payouts.
+                View and interact with the group pot. You can contribute funds or request payouts for group expenses.
               </p>
               
               <div className="p-4 border rounded-md bg-muted/30">
@@ -73,7 +73,7 @@ export const GroupPot = ({ groupId }: { groupId: string }) => {
                   showMessage={true} 
                   labelPrefix="Wallet: "
                   showConnectingState={false}
-                  connectMessage="Connect your wallet to contribute to or request funds from the group pot."
+                  connectMessage="Optionally connect your wallet to automatically receive funds to your wallet address."
                 />
               </div>
             </div>
@@ -93,34 +93,12 @@ export const GroupPot = ({ groupId }: { groupId: string }) => {
           />
         </motion.div>
         
-        {/* Show request payout form only if wallet is connected */}
+        {/* Show request payout form for all users, regardless of wallet connection */}
         <motion.div variants={item}>
-          {isConnected ? (
-            <RequestPayoutForm 
-              onSubmit={handlePayoutRequest}
-            />
-          ) : (
-            <Card className="shadow-sm h-full hover:shadow transition-shadow duration-300">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <ArrowDownUp className="h-5 w-5 text-primary" />
-                  <CardTitle>Request Payout</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4 flex flex-col justify-center h-[calc(100%-80px)]">
-                <div className="text-center py-8">
-                  <Wallet className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-70" />
-                  <p className="text-muted-foreground mb-4">
-                    Connect your wallet to request payouts from the group pot.
-                  </p>
-                  <Button className="w-full sm:w-auto" variant="outline">
-                    <Wallet className="mr-2 h-4 w-4" />
-                    Connect Wallet to Request Payouts
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <RequestPayoutForm 
+            onSubmit={handlePayoutRequest}
+            isWalletConnected={isConnected}
+          />
         </motion.div>
       </div>
       

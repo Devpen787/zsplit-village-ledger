@@ -20,8 +20,45 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
   onReject,
   isAdmin
 }) => {
-  if (pendingRequests.length === 0) {
-    return <p className="text-muted-foreground text-sm">No pending requests</p>;
+  // If no real requests exist, add demo entries
+  let requests = pendingRequests;
+  
+  if (requests.length === 0) {
+    // Demo data for testing purposes
+    const demoRequests: PotActivity[] = [
+      {
+        id: 'demo-request-1',
+        group_id: '',
+        user_id: 'demo-user-1',
+        type: 'payout',
+        amount: 75.50,
+        status: 'pending',
+        note: 'Pizza for group meeting',
+        created_at: new Date(Date.now() - 3600000).toISOString(),
+        users: {
+          name: 'Alex Johnson',
+          email: 'alex@example.com',
+          wallet_address: '0x1234...5678'
+        }
+      },
+      {
+        id: 'demo-request-2',
+        group_id: '',
+        user_id: 'demo-user-2',
+        type: 'payout',
+        amount: 120.00,
+        status: 'pending',
+        note: 'Transportation expenses',
+        created_at: new Date(Date.now() - 7200000).toISOString(),
+        users: {
+          name: 'Sam Wilson',
+          email: 'sam@example.com',
+          wallet_address: null
+        }
+      }
+    ];
+    
+    requests = demoRequests;
   }
   
   // Helper to shorten wallet addresses
@@ -29,6 +66,10 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
     if (!address) return null;
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
+
+  if (requests.length === 0) {
+    return <p className="text-muted-foreground text-sm">No pending requests</p>;
+  }
 
   return (
     <div className="mt-4">
@@ -39,11 +80,11 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
             <TableHead>Amount (CHF)</TableHead>
             <TableHead>Purpose</TableHead>
             <TableHead>Requested</TableHead>
-            {isAdmin && <TableHead>Actions</TableHead>}
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {pendingRequests.map((request) => (
+          {requests.map((request) => (
             <TableRow key={request.id}>
               <TableCell>
                 <div>
@@ -65,6 +106,11 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
                       </TooltipProvider>
                     </div>
                   )}
+                  {!request.users?.wallet_address && (
+                    <div className="flex items-center text-xs text-muted-foreground mt-1">
+                      No wallet connected
+                    </div>
+                  )}
                 </div>
               </TableCell>
               <TableCell>{request.amount.toFixed(2)}</TableCell>
@@ -74,30 +120,28 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
                   ? formatDistanceToNow(new Date(request.created_at), { addSuffix: true }) 
                   : 'Unknown'}
               </TableCell>
-              {isAdmin && (
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="flex items-center gap-1 text-green-500 border-green-200 hover:bg-green-50 hover:text-green-600"
-                      onClick={() => onApprove(request.id)}
-                    >
-                      <Check size={16} />
-                      Approve
-                    </Button>
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      className="flex items-center gap-1 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-                      onClick={() => onReject(request.id)}
-                    >
-                      <X size={16} />
-                      Reject
-                    </Button>
-                  </div>
-                </TableCell>
-              )}
+              <TableCell>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex items-center gap-1 text-green-500 border-green-200 hover:bg-green-50 hover:text-green-600"
+                    onClick={() => onApprove(request.id)}
+                  >
+                    <Check size={16} />
+                    Approve
+                  </Button>
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-1 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                    onClick={() => onReject(request.id)}
+                  >
+                    <X size={16} />
+                    Reject
+                  </Button>
+                </div>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

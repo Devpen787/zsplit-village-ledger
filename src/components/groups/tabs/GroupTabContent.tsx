@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { TabsContent } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { GroupOverview } from '@/components/groups/GroupOverview';
