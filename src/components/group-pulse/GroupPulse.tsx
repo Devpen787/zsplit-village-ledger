@@ -15,10 +15,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ChartPie, AlertTriangle } from 'lucide-react';
 import { useGroupDetails } from '@/hooks/useGroupDetails';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from '@/contexts';
 
 export const GroupPulse = ({ groupId }: { groupId: string }) => {
   const { isConnected } = useWallet();
-  const { group, loading: loadingGroup } = useGroupDetails(groupId);
+  const { user } = useAuth();
+  const { group, loading: loadingGroup } = useGroupDetails(groupId, user);
   const [activeTab, setActiveTab] = useState<"group" | "all">("group");
   const {
     loading,

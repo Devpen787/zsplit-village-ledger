@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useWallet } from '@/contexts/WalletContext';
@@ -13,10 +12,12 @@ import { PiggyBank, Crown, CircleDollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { useGroupDetails } from '@/hooks/useGroupDetails';
+import { useAuth } from '@/contexts';
 
 export const GroupPot = ({ groupId }: { groupId: string }) => {
   const { isConnected } = useWallet();
-  const { group, loading: loadingGroup } = useGroupDetails(groupId);
+  const { user } = useAuth();
+  const { group, loading: loadingGroup } = useGroupDetails(groupId, user);
   const {
     totalContributions,
     targetAmount,
