@@ -24,6 +24,14 @@ export const formatUserName = (user: ExpenseUser | null | undefined): string => 
 };
 
 /**
+ * Get user display name - convenience function that calls formatUserName
+ * This function is used in useExpenseSplit and other components
+ */
+export const getUserDisplayName = (user: ExpenseUser | null | undefined): string => {
+  return formatUserName(user);
+};
+
+/**
  * Get user initials from their name
  */
 export const getUserInitials = (name: string): string => {

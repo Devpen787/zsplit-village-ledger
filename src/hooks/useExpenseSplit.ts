@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { UserSplitData } from "@/types/expenses";
+import { UserSplitData, ExpenseUser } from "@/types/expenses";
 import { 
   calculateUserAmount, 
   validateSplitData, 
