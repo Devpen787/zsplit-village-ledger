@@ -2,56 +2,71 @@
 import { UserSplitData } from "@/types/expenses";
 
 /**
- * Validate if the current split data is valid based on the method
+ * Validate split data based on the split method
  */
 export const validateSplitData = (
-  data: UserSplitData[], 
-  method: string, 
+  splitData: UserSplitData[],
+  splitMethod: string,
   totalAmount: number
 ): { isValid: boolean; errorMessage: string | null } => {
-  if (!totalAmount || totalAmount <= 0) {
-    return { 
-      isValid: false, 
-      errorMessage: "Please enter a valid total amount" 
-    };
-  }
-
-  if (data.length === 0) {
+  // Only consider active users for validation
+  const activeUsers = splitData.filter(item => item.isActive !== false);
+  
+  if (activeUsers.length === 0) {
     return { 
       isValid: false, 
       errorMessage: "No participants selected" 
     };
   }
-
-  // Only consider active users for validation
-  const activeData = data.filter(item => item.isActive !== false);
   
-  if (activeData.length === 0) {
-    return { 
-      isValid: false, 
-      errorMessage: "No active participants selected" 
-    };
-  }
-
-  if (method === "amount") {
-    const total = activeData.reduce((sum, item) => sum + (item.amount || 0), 0);
-    
-    if (Math.abs(total - totalAmount) > 0.01) {
+  switch (splitMethod) {
+    case "equal":
+      // Equal split is always valid as long as there are active users
       return { 
-        isValid: false,
-        errorMessage: `Total must equal ${totalAmount.toFixed(2)}. Current total: ${total.toFixed(2)}` 
+        isValid: true, 
+        errorMessage: null 
+      };
+      
+    case "amount": {
+      const totalAssigned = activeUsers.reduce((sum, item) => sum + (item.amount || 0), 0);
+      const diff = Math.abs(totalAmount - totalAssigned);
+      
+      if (diff > 0.01) {
+        return {
+          isValid: false,
+          errorMessage: totalAssigned > totalAmount 
+            ? `Amounts exceed total by ${diff.toFixed(2)}`
+            : `${diff.toFixed(2)} remains to be assigned`
+        };
+      }
+      return { 
+        isValid: true, 
+        errorMessage: null 
       };
     }
-  } else if (method === "percentage") {
-    const total = activeData.reduce((sum, item) => sum + (item.percentage || 0), 0);
     
-    if (Math.abs(total - 100) > 0.01) {
+    case "percentage": {
+      const totalPercentage = activeUsers.reduce((sum, item) => sum + (item.percentage || 0), 0);
+      const diff = Math.abs(100 - totalPercentage);
+      
+      if (diff > 0.1) {
+        return {
+          isValid: false,
+          errorMessage: totalPercentage > 100 
+            ? `Percentages exceed 100% by ${diff.toFixed(1)}%`
+            : `${diff.toFixed(1)}% remains to be assigned`
+        };
+      }
       return { 
-        isValid: false,
-        errorMessage: `Percentages must sum to 100%. Current total: ${total.toFixed(1)}%` 
+        isValid: true, 
+        errorMessage: null 
       };
     }
+    
+    default:
+      return { 
+        isValid: false, 
+        errorMessage: "Unknown split method" 
+      };
   }
-
-  return { isValid: true, errorMessage: null };
 };

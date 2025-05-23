@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -73,7 +74,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
   const handleSplitDataChange = (newSplitData: any[]) => {
     setSplitData(newSplitData);
     form.setValue('splitData', newSplitData);
-    setIsSplitValid(true);
+    
+    // Check if the split data is valid based on the validation
+    let isValid = true;
+    
+    if (splitMethod === 'amount') {
+      const activeUsers = newSplitData.filter(data => data.isActive !== false);
+      const totalAssigned = activeUsers.reduce((sum, item) => sum + (item.amount || 0), 0);
+      isValid = Math.abs(form.watch('amount') - totalAssigned) < 0.01;
+    } else if (splitMethod === 'percentage') {
+      const activeUsers = newSplitData.filter(data => data.isActive !== false);
+      const totalPercentage = activeUsers.reduce((sum, item) => sum + (item.percentage || 0), 0);
+      isValid = Math.abs(100 - totalPercentage) < 0.1;
+    }
+    
+    setIsSplitValid(isValid);
   };
 
   if (loading) {
@@ -89,7 +104,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Form fields */}
-              <ExpenseFormFields form={form} users={users} />
+              <ExpenseFormFields 
+                form={form} 
+                users={users}
+                onSplitMethodChange={setSplitMethod} 
+              />
               
               {/* Unified Participant Table */}
               <div className="space-y-2">

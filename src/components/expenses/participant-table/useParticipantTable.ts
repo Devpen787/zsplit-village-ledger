@@ -1,6 +1,7 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ExpenseUser, UserSplitData } from '@/types/expenses';
+import { calculateEqualSplit, calculateUserAmount, calculateTotalShares } from '@/utils/expenseSplitUtils';
 
 export function useParticipantTable(
   users: ExpenseUser[],
@@ -11,6 +12,10 @@ export function useParticipantTable(
   paidBy: string
 ) {
   const [groupFilter, setGroupFilter] = useState<string>('All');
+  const [validationState, setValidationState] = useState<{
+    isValid: boolean;
+    message: string;
+  }>({ isValid: true, message: '' });
 
   // Get unique groups from users
   const groupOptions = useMemo(() => {
@@ -35,6 +40,17 @@ export function useParticipantTable(
     const userData = splitData.find(data => data.userId === userId);
     return userData?.isActive !== false;
   };
+
+  const activeUsers = useMemo(() => {
+    return splitData.filter(data => data.isActive !== false);
+  }, [splitData]);
+
+  const selectedCount = activeUsers.length;
+
+  // Calculate equal share amount for display
+  const equalShareAmount = useMemo(() => {
+    return selectedCount > 0 ? totalAmount / selectedCount : 0;
+  }, [totalAmount, selectedCount]);
 
   const toggleSelection = (userId: string) => {
     const updatedSplitData = [...splitData];
@@ -78,12 +94,51 @@ export function useParticipantTable(
   };
 
   const handleDeselectAll = () => {
+    // Never deselect the payer
     const updatedSplitData = splitData.map(data => ({
       ...data,
-      isActive: false
+      isActive: data.userId === paidBy ? true : false
     }));
     
     onSplitDataChange(updatedSplitData);
+  };
+
+  // Handle amount change for custom split
+  const handleAmountChange = (userId: string, amount: number) => {
+    const updatedSplitData = splitData.map(item =>
+      item.userId === userId
+        ? { ...item, amount: amount }
+        : item
+    );
+    
+    onSplitDataChange(updatedSplitData);
+  };
+
+  // Handle percentage change for percentage split
+  const handlePercentageChange = (userId: string, percentage: number) => {
+    const updatedSplitData = splitData.map(item =>
+      item.userId === userId
+        ? { ...item, percentage: percentage }
+        : item
+    );
+    
+    onSplitDataChange(updatedSplitData);
+  };
+
+  // Calculate the actual amount a user should pay based on split method
+  const getCalculatedAmount = (userData: UserSplitData): number => {
+    if (!userData.isActive) return 0;
+    
+    switch (splitMethod) {
+      case 'equal':
+        return equalShareAmount;
+      case 'amount':
+        return userData.amount || 0;
+      case 'percentage':
+        return totalAmount * ((userData.percentage || 0) / 100);
+      default:
+        return 0;
+    }
   };
 
   // Helper function to recalculate split values based on active users
@@ -111,25 +166,58 @@ export function useParticipantTable(
             totalAmount * (item.percentage || defaultPercentage) / 100 : 0
         }));
       
-      case 'shares':
-        const totalShares = activeUsers.reduce((sum, item) => sum + (item.shares || 1), 0);
-        return data.map(item => ({
-          ...item,
-          shares: item.isActive !== false ? (item.shares || 1) : 0,
-          amount: item.isActive !== false ? 
-            totalAmount * (item.shares || 1) / totalShares : 0
-        }));
+      case 'amount':
+        // For custom amounts, we don't automatically recalculate
+        return data;
       
-      default: // custom amounts
+      default:
         return data;
     }
   };
 
-  // Calculate how many active users are selected
-  const selectedCount = splitData.filter(data => data.isActive !== false).length;
-
-  // Calculate equal share amount for display
-  const equalShareAmount = selectedCount > 0 ? totalAmount / selectedCount : 0;
+  // Validate the split data
+  useEffect(() => {
+    if (splitMethod === 'amount') {
+      const totalAssigned = activeUsers.reduce((sum, item) => sum + (item.amount || 0), 0);
+      const diff = Math.abs(totalAmount - totalAssigned);
+      
+      if (diff > 0.01) {
+        setValidationState({
+          isValid: false,
+          message: totalAssigned > totalAmount 
+            ? `Exceeds total by $${(totalAssigned - totalAmount).toFixed(2)}`
+            : `$${(totalAmount - totalAssigned).toFixed(2)} left to assign`
+        });
+      } else {
+        setValidationState({
+          isValid: true,
+          message: 'Amounts add up correctly'
+        });
+      }
+    } else if (splitMethod === 'percentage') {
+      const totalPercentage = activeUsers.reduce((sum, item) => sum + (item.percentage || 0), 0);
+      const diff = Math.abs(100 - totalPercentage);
+      
+      if (diff > 0.1) {
+        setValidationState({
+          isValid: false,
+          message: totalPercentage > 100 
+            ? `Exceeds 100% by ${(totalPercentage - 100).toFixed(1)}%`
+            : `${(100 - totalPercentage).toFixed(1)}% left to assign`
+        });
+      } else {
+        setValidationState({
+          isValid: true,
+          message: 'Percentages add up to 100%'
+        });
+      }
+    } else {
+      setValidationState({
+        isValid: true,
+        message: ''
+      });
+    }
+  }, [splitData, splitMethod, totalAmount, activeUsers]);
 
   return {
     groupFilter,
@@ -142,6 +230,10 @@ export function useParticipantTable(
     handleSelectAllVisible,
     handleDeselectAll,
     selectedCount,
-    equalShareAmount
+    equalShareAmount,
+    handleAmountChange,
+    handlePercentageChange,
+    getCalculatedAmount,
+    validation: validationState
   };
 }

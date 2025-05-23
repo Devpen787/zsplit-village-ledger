@@ -1,2 +1,2 @@
 
-export { ParticipantTable as UnifiedParticipantTable } from './ParticipantTable';
+export * from './UnifiedParticipantTable';
