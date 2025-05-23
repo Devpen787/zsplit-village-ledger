@@ -1,21 +1,13 @@
-
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { UserCheck, UserX, Users } from "lucide-react";
-
-type User = {
-  id: string;
-  name: string | null;
-  email?: string | null;
-  display_name?: string | null;
-  group_id?: string | null;
-};
+import { ExpenseUser } from "@/types/expenses";
 
 interface ExpenseParticipantsSelectorProps {
-  users: User[];
+  users: ExpenseUser[];
   selectedUsers: Record<string, boolean>;
   toggleUser: (userId: string) => void;
   paidBy?: string;
@@ -23,7 +15,7 @@ interface ExpenseParticipantsSelectorProps {
   onSelectAll: () => void;
   onDeselectAll: () => void;
   onSelectGroup: () => void;
-  formatUserName: (user: User) => string;
+  formatUserName: (user: ExpenseUser) => string;
 }
 
 const ExpenseParticipantsSelector: React.FC<ExpenseParticipantsSelectorProps> = ({

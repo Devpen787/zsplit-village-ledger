@@ -1,21 +1,14 @@
-
 import React from "react";
 import EqualSplit from "./EqualSplit";
 import AmountSplit from "./AmountSplit";
 import PercentageSplit from "./PercentageSplit";
 import SharesSplit from "./SharesSplit";
-import { UserSplitData } from "@/types/expenses";
-
-type User = {
-  id: string;
-  name?: string | null;
-  email: string | null;
-};
+import { UserSplitData, ExpenseUser } from "@/types/expenses";
 
 interface SplitInputsProps {
   splitMethod: string;
   splitData: UserSplitData[];
-  users: User[];
+  users: ExpenseUser[];
   totalAmount: number;
   paidBy: string;
   onInputChange: (userId: string, value: string, field: 'amount' | 'percentage' | 'shares') => void;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import SplitMethodSelector from "./split-methods/SplitMethodSelector";
 import SplitSummary from "./split-methods/SplitSummary";
 import ValidationAlert from "./split-methods/ValidationAlert";
-import { UserSplitData } from "@/types/expenses";
+import { UserSplitData, ExpenseUser } from "@/types/expenses";
 import { useExpenseSplit } from "@/hooks/useExpenseSplit";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -10,16 +10,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, ChevronUp, Check } from "lucide-react";
 import ExpenseParticipantsSelector from "./ExpenseParticipantsSelector";
 
-type User = {
-  id: string;
-  name?: string | null;
-  email: string | null;
-  display_name?: string | null;
-  group_id?: string | null;
-};
-
 interface ExpenseSplitMethodFieldsProps {
-  users: User[];
+  users: ExpenseUser[];
   splitMethod: string;
   setSplitMethod: (value: string) => void;
   totalAmount: number;
@@ -89,7 +81,7 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
   };
 
   // Format user names with proper fallback logic
-  const formatUserName = (user: User): string => {
+  const formatUserName = (user: ExpenseUser): string => {
     // First priority: display_name if available
     if (user.display_name) return user.display_name;
     

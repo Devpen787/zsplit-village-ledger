@@ -48,7 +48,17 @@ export type UserSplitData = {
   shares?: number;
   isActive?: boolean;
   // Add user details for better name rendering
-  email?: string;
+  email?: string | null;
   name?: string | null;
   display_name?: string | null;
+};
+
+// Define a common User type for expense-related components
+export type ExpenseUser = {
+  id: string;
+  name?: string | null;
+  email: string | null;
+  display_name?: string | null;
+  group_id?: string | null;
+  isActive?: boolean;
 };
