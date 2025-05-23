@@ -7,6 +7,7 @@ import { ExpenseFormValues } from '@/hooks/useExpenseForm';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
+import { Bitcoin, DollarSign, Euro, PoundSterling, IndianRupee, JapaneseYen, SwissFranc } from "lucide-react";
 
 interface ExpenseBasicFieldsProps {
   form: UseFormReturn<ExpenseFormValues>;
@@ -65,11 +66,61 @@ const ExpenseBasicFields: React.FC<ExpenseBasicFieldsProps> = ({ form }) => {
                     <SelectValue placeholder="Select a currency" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="GBP">GBP</SelectItem>
-                  <SelectItem value="CHF">CHF</SelectItem>
+                <SelectContent className="max-h-[300px]">
+                  <SelectItem value="USD">
+                    <div className="flex items-center">
+                      <DollarSign className="mr-2 h-4 w-4" />
+                      <span>USD</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="EUR">
+                    <div className="flex items-center">
+                      <Euro className="mr-2 h-4 w-4" />
+                      <span>EUR</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="GBP">
+                    <div className="flex items-center">
+                      <PoundSterling className="mr-2 h-4 w-4" />
+                      <span>GBP</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="CHF">
+                    <div className="flex items-center">
+                      <SwissFranc className="mr-2 h-4 w-4" />
+                      <span>CHF</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="JPY">
+                    <div className="flex items-center">
+                      <JapaneseYen className="mr-2 h-4 w-4" />
+                      <span>JPY</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="INR">
+                    <div className="flex items-center">
+                      <IndianRupee className="mr-2 h-4 w-4" />
+                      <span>INR</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="BTC">
+                    <div className="flex items-center">
+                      <Bitcoin className="mr-2 h-4 w-4" />
+                      <span>BTC</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="ETH">
+                    <div className="flex items-center">
+                      <span className="mr-2 text-sm font-mono">Ξ</span>
+                      <span>ETH</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="USDC">
+                    <div className="flex items-center">
+                      <span className="mr-2 text-sm font-mono">$</span>
+                      <span>USDC</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
