@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, DollarSign, Euro, PoundSterling, SwissFranc } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 
 interface ExpenseDetailEditProps {
@@ -23,6 +23,16 @@ interface ExpenseDetailEditProps {
   onSave: () => void;
   loading: boolean;
 }
+
+const currencies = [
+  { value: "USD", label: "USD", icon: DollarSign },
+  { value: "USDC", label: "USDC", icon: DollarSign },
+  { value: "EUR", label: "EUR", icon: Euro },
+  { value: "GBP", label: "GBP", icon: PoundSterling },
+  { value: "CHF", label: "CHF", icon: SwissFranc },
+  { value: "BTC", label: "BTC", icon: DollarSign },
+  { value: "ETH", label: "ETH", icon: DollarSign },
+];
 
 export const ExpenseDetailEdit = ({
   editedTitle,
@@ -67,9 +77,14 @@ export const ExpenseDetailEdit = ({
             <SelectValue placeholder="Select a currency" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="CHF">CHF</SelectItem>
-            <SelectItem value="USD">USD</SelectItem>
-            <SelectItem value="EUR">EUR</SelectItem>
+            {currencies.map((curr) => (
+              <SelectItem key={curr.value} value={curr.value}>
+                <div className="flex items-center">
+                  <curr.icon className="mr-2 h-4 w-4" />
+                  <span>{curr.label}</span>
+                </div>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

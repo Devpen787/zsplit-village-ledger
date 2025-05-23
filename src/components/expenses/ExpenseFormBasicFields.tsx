@@ -3,6 +3,7 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DollarSign, Euro, PoundSterling, SwissFranc } from 'lucide-react';
 
 interface ExpenseFormBasicFieldsProps {
   title: string;
@@ -15,7 +16,15 @@ interface ExpenseFormBasicFieldsProps {
   setDate: (value: string) => void;
 }
 
-const currencies = ["CHF", "USD", "EUR", "USDC"];
+const currencies = [
+  { value: "USD", label: "USD", icon: DollarSign },
+  { value: "USDC", label: "USDC", icon: DollarSign },
+  { value: "EUR", label: "EUR", icon: Euro },
+  { value: "GBP", label: "GBP", icon: PoundSterling },
+  { value: "CHF", label: "CHF", icon: SwissFranc },
+  { value: "BTC", label: "BTC", icon: DollarSign },
+  { value: "ETH", label: "ETH", icon: DollarSign },
+];
 
 const ExpenseFormBasicFields: React.FC<ExpenseFormBasicFieldsProps> = ({
   title,
@@ -62,8 +71,11 @@ const ExpenseFormBasicFields: React.FC<ExpenseFormBasicFieldsProps> = ({
             </SelectTrigger>
             <SelectContent>
               {currencies.map((curr) => (
-                <SelectItem key={curr} value={curr}>
-                  {curr}
+                <SelectItem key={curr.value} value={curr.value}>
+                  <div className="flex items-center">
+                    <curr.icon className="mr-2 h-4 w-4" />
+                    <span>{curr.label}</span>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>

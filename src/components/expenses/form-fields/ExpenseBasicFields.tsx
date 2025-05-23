@@ -7,10 +7,21 @@ import { ExpenseFormValues } from '@/hooks/useExpenseForm';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
+import { DollarSign, Euro, PoundSterling, SwissFranc } from 'lucide-react';
 
 interface ExpenseBasicFieldsProps {
   form: UseFormReturn<ExpenseFormValues>;
 }
+
+const currencies = [
+  { value: "USD", label: "USD", icon: DollarSign },
+  { value: "USDC", label: "USDC", icon: DollarSign },
+  { value: "EUR", label: "EUR", icon: Euro },
+  { value: "GBP", label: "GBP", icon: PoundSterling },
+  { value: "CHF", label: "CHF", icon: SwissFranc },
+  { value: "BTC", label: "BTC", icon: DollarSign },
+  { value: "ETH", label: "ETH", icon: DollarSign },
+];
 
 const ExpenseBasicFields: React.FC<ExpenseBasicFieldsProps> = ({ form }) => {
   return (
@@ -66,10 +77,14 @@ const ExpenseBasicFields: React.FC<ExpenseBasicFieldsProps> = ({ form }) => {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="GBP">GBP</SelectItem>
-                  <SelectItem value="CHF">CHF</SelectItem>
+                  {currencies.map((currency) => (
+                    <SelectItem key={currency.value} value={currency.value}>
+                      <div className="flex items-center">
+                        <currency.icon className="mr-2 h-4 w-4" />
+                        <span>{currency.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
