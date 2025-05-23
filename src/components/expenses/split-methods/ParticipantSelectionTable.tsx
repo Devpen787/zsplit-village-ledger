@@ -2,8 +2,6 @@
 import React from "react";
 import { UserSplitData, ExpenseUser } from "@/types/expenses";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { UserCheck, UserX, Users } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { 
   Table,
@@ -17,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import UserSelectionControls from "./UserSelectionControls";
 
 interface ParticipantSelectionTableProps {
   splitData: UserSplitData[];
@@ -181,42 +180,12 @@ const ParticipantSelectionTable: React.FC<ParticipantSelectionTableProps> = ({
       <Label>Split with</Label>
       
       {/* Bulk selection controls */}
-      <div className="flex flex-wrap gap-2 mb-2">
-        <Button 
-          type="button"
-          variant="outline" 
-          size="sm"
-          onClick={onSelectAll}
-          className="flex items-center"
-        >
-          <UserCheck className="h-4 w-4 mr-1" />
-          Select All
-        </Button>
-        
-        <Button 
-          type="button"
-          variant="outline" 
-          size="sm"
-          onClick={onDeselectAll}
-          className="flex items-center"
-        >
-          <UserX className="h-4 w-4 mr-1" />
-          Deselect All
-        </Button>
-        
-        {groupId && (
-          <Button 
-            type="button"
-            variant="outline" 
-            size="sm"
-            onClick={onSelectGroup}
-            className="flex items-center"
-          >
-            <Users className="h-4 w-4 mr-1" />
-            Select Group Only
-          </Button>
-        )}
-      </div>
+      <UserSelectionControls
+        onSelectAll={onSelectAll}
+        onDeselectAll={onDeselectAll}
+        onSelectGroup={onSelectGroup}
+        groupId={groupId}
+      />
       
       <Card>
         <CardContent className="p-4">
@@ -243,7 +212,7 @@ const ParticipantSelectionTable: React.FC<ParticipantSelectionTableProps> = ({
                 const initials = getInitials(userName);
                 const isActive = selectedUsers[user.id] !== false;
                 const isPayer = user.id === paidBy;
-                const amount = getCalculatedAmount(userData);
+                const amount = userData ? getCalculatedAmount(userData) : 0;
                 
                 return (
                   <TableRow key={user.id} className={!isActive ? "opacity-60" : ""}>
@@ -279,7 +248,7 @@ const ParticipantSelectionTable: React.FC<ParticipantSelectionTableProps> = ({
                       </div>
                     </TableCell>
                     {splitMethod !== "equal" ? (
-                      <TableCell>{renderInputField(userData)}</TableCell>
+                      <TableCell>{userData && renderInputField(userData)}</TableCell>
                     ) : null}
                     <TableCell className="text-right font-medium">
                       {isActive ? amount.toFixed(2) : "—"}

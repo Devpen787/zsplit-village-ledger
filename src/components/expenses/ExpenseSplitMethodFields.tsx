@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from "react";
 import SplitMethodSelector from "./split-methods/SplitMethodSelector";
-import SplitSummary from "./split-methods/SplitSummary";
 import ValidationAlert from "./split-methods/ValidationAlert";
 import { UserSplitData, ExpenseUser } from "@/types/expenses";
 import { useExpenseSplit } from "@/hooks/useExpenseSplit";
-import { Card, CardContent } from "@/components/ui/card";
-import { Check } from "lucide-react";
-import ExpenseParticipantsSelector from "./ExpenseParticipantsSelector";
-import GroupContext from "./split-methods/GroupContext";
 import EqualSplitInfo from "./split-methods/EqualSplitInfo";
 import SplitSummaryCollapsible from "./split-methods/SplitSummaryCollapsible";
+import GroupContext from "./split-methods/GroupContext";
+import { Card, CardContent } from "@/components/ui/card";
+import SplitSummary from "./split-methods/SplitSummary";
 
 interface ExpenseSplitMethodFieldsProps {
   users: ExpenseUser[];
@@ -193,17 +191,23 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
       <ValidationAlert validationError={validationError} />
       
       {/* Participant Selection with Bulk Controls */}
-      <ExpenseParticipantsSelector
-        users={sortedUsers}
-        selectedUsers={selectedUsers}
-        toggleUser={toggleUser}
-        paidBy={paidBy}
-        groupId={groupId}
-        onSelectAll={handleSelectAll}
-        onDeselectAll={handleDeselectAll}
-        onSelectGroup={handleSelectGroup}
-        formatUserName={formatUserName}
-      />
+      <div className="space-y-2">
+        <ParticipantSelectionTable
+          splitData={splitData}
+          users={sortedUsers}
+          paidBy={paidBy}
+          groupId={groupId}
+          selectedUsers={selectedUsers}
+          toggleUser={toggleUser}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onSelectGroup={handleSelectGroup}
+          splitMethod={splitMethod}
+          handleInputChange={handleInputChange}
+          adjustShares={adjustShares}
+          getCalculatedAmount={getCalculatedAmount}
+        />
+      </div>
       
       {/* Split Summary Table */}
       <Card>
