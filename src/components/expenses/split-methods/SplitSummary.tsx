@@ -19,7 +19,7 @@ interface SplitSummaryProps {
   totalAmount: number;
   paidBy: string;
   getCalculatedAmount: (userData: UserSplitData) => number;
-  getUserName: (userId: string) => string;
+  getUserName: (userData: UserSplitData) => string;
   splitMethod: string;
   selectedUsers: Record<string, boolean>;
   toggleUser: (userId: string) => void;
@@ -141,10 +141,11 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
       </TableHeader>
       <TableBody>
         {splitData.map((data) => {
-          const userName = getUserName(data.userId);
+          const userName = getUserName(data);
           const amount = getCalculatedAmount(data);
           const initials = getInitials(userName);
           const isActive = selectedUsers[data.userId] !== false;
+          const isPayer = data.userId === paidBy;
           
           return (
             <TableRow key={data.userId} className={!isActive ? "opacity-60" : ""}>
@@ -160,16 +161,16 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
                   <Avatar className="h-7 w-7 mr-2">
                     <AvatarFallback className={cn(
                       "text-xs",
-                      data.userId === paidBy ? "bg-green-100 text-green-800" : ""
+                      isPayer ? "bg-green-100 text-green-800" : ""
                     )}>
                       {initials}
                     </AvatarFallback>
                   </Avatar>
                   <span className={cn(
-                    data.userId === paidBy ? "font-medium text-green-600" : "",
+                    isPayer ? "font-medium text-green-600" : "",
                     !isActive && "line-through"
                   )}>
-                    {userName} {data.userId === paidBy ? "(paid)" : ""}
+                    {userName} {isPayer ? "(paid)" : ""}
                   </span>
                 </div>
               </TableCell>

@@ -66,6 +66,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
                 totalAmount={form.watch('amount')}
                 paidBy={form.watch('paidBy')}
                 groupName={groupName}
+                groupId={groupId}
                 onSplitDataChange={(splitData) => {
                   form.setValue('splitData', splitData);
                   // Split is valid when we receive data from the component

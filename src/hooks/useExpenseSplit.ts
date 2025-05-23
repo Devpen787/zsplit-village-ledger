@@ -5,7 +5,9 @@ import { UserSplitData } from "@/types/expenses";
 type User = {
   id: string;
   name?: string | null;
-  email: string | null;
+  email?: string | null;
+  display_name?: string | null;
+  isActive?: boolean;
 };
 
 interface UseExpenseSplitProps {
@@ -31,14 +33,21 @@ export const useExpenseSplit = ({
   useEffect(() => {
     if (users.length > 0) {
       const initialData = users.map(user => {
-        const baseData = { userId: user.id };
+        // Include user details for better name rendering
+        const baseData = { 
+          userId: user.id,
+          name: user.name,
+          email: user.email,
+          display_name: user.display_name,
+          isActive: user.isActive !== false
+        };
         
         switch (splitMethod) {
           case 'equal':
             return {
               ...baseData,
-              amount: calculateEqualSplit(users.length),
-              percentage: 100 / users.length,
+              amount: calculateEqualSplit(users.filter(u => u.isActive !== false).length),
+              percentage: 100 / users.filter(u => u.isActive !== false).length,
               shares: 1,
             };
           case 'amount':
@@ -185,13 +194,25 @@ export const useExpenseSplit = ({
       .reduce((sum, item) => sum + (item.shares || 0), 0);
   };
 
-  const getUserName = (userId: string): string => {
-    const user = users.find(u => u.id === userId);
-    return user?.name || user?.email || "User";
+  const getUserName = (userData: UserSplitData): string => {
+    // First priority: display_name
+    if (userData.display_name) return userData.display_name;
+    
+    // Second priority: email prefix
+    if (userData.email) return userData.email.split('@')[0];
+    
+    // Third priority: name
+    if (userData.name) return userData.name || '';
+    
+    // Last resort: truncated user ID
+    return userData.userId.substring(0, 8) + '...';
   };
 
   // Mark a user as active or inactive without removing them from the array
   const toggleUserActive = (userId: string, isActive: boolean) => {
+    // Never deactivate the payer
+    if (userId === paidBy && !isActive) return;
+    
     const newSplitData = splitData.map(item => 
       item.userId === userId 
         ? { ...item, isActive } 

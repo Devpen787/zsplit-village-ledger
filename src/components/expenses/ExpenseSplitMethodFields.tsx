@@ -8,11 +8,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp, Check } from "lucide-react";
+import ExpenseParticipantsSelector from "./ExpenseParticipantsSelector";
 
 type User = {
   id: string;
   name?: string | null;
   email: string | null;
+  display_name?: string | null;
+  group_id?: string | null;
 };
 
 interface ExpenseSplitMethodFieldsProps {
@@ -23,6 +26,7 @@ interface ExpenseSplitMethodFieldsProps {
   paidBy: string;
   onSplitDataChange: (splitData: UserSplitData[]) => void;
   groupName?: string | null;
+  groupId?: string | null;
 }
 
 const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
@@ -32,7 +36,8 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
   totalAmount,
   paidBy,
   onSplitDataChange,
-  groupName
+  groupName,
+  groupId
 }) => {
   const [selectedUsers, setSelectedUsers] = useState<Record<string, boolean>>(() => {
     // Initialize all users as selected by default
@@ -45,9 +50,8 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
 
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   
-  // We'll now keep all users in the splitData, but mark some as inactive
-  // This is used for the main calculation logic
-  const filteredUsers = users.map(user => ({
+  // Mark users with their active status for split calculations
+  const usersWithActiveStatus = users.map(user => ({
     ...user,
     isActive: selectedUsers[user.id] !== false
   }));
@@ -62,14 +66,18 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
     getUserName,
     toggleUserActive
   } = useExpenseSplit({
-    users: filteredUsers,
+    users: usersWithActiveStatus,
     totalAmount,
     paidBy,
     splitMethod,
     onSplitDataChange
   });
   
+  // Toggle a single user's selection status
   const toggleUser = (userId: string) => {
+    // Never deselect the user who paid
+    if (userId === paidBy) return;
+    
     // Update the local selected users state
     setSelectedUsers(prev => ({
       ...prev,
@@ -79,6 +87,91 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
     // Also update the active status in the split data
     toggleUserActive(userId, !selectedUsers[userId]);
   };
+
+  // Format user names with proper fallback logic
+  const formatUserName = (user: User): string => {
+    // First priority: display_name if available
+    if (user.display_name) return user.display_name;
+    
+    // Second priority: use email prefix (before @)
+    if (user.email) {
+      const emailPrefix = user.email.split('@')[0];
+      return emailPrefix;
+    }
+    
+    // Third priority: use name if available
+    if (user.name) return user.name;
+    
+    // Last resort: truncated user ID
+    return user.id.substring(0, 8) + '...';
+  };
+
+  // Bulk selection handlers
+  const handleSelectAll = () => {
+    const newSelectedUsers = { ...selectedUsers };
+    users.forEach(user => {
+      newSelectedUsers[user.id] = true;
+    });
+    setSelectedUsers(newSelectedUsers);
+    
+    // Update all users as active in the split data
+    users.forEach(user => {
+      toggleUserActive(user.id, true);
+    });
+  };
+  
+  const handleDeselectAll = () => {
+    const newSelectedUsers = { ...selectedUsers };
+    
+    // Keep the payer selected
+    users.forEach(user => {
+      newSelectedUsers[user.id] = (user.id === paidBy);
+    });
+    setSelectedUsers(newSelectedUsers);
+    
+    // Update all non-payer users as inactive
+    users.forEach(user => {
+      if (user.id !== paidBy) {
+        toggleUserActive(user.id, false);
+      }
+    });
+  };
+  
+  const handleSelectGroup = () => {
+    if (!groupId) return;
+    
+    const newSelectedUsers = { ...selectedUsers };
+    
+    // Always keep the payer selected
+    users.forEach(user => {
+      // Select only users in the current group or the payer
+      const isInGroup = user.group_id === groupId;
+      newSelectedUsers[user.id] = isInGroup || user.id === paidBy;
+      
+      // Update active status in split data
+      toggleUserActive(user.id, isInGroup || user.id === paidBy);
+    });
+    
+    setSelectedUsers(newSelectedUsers);
+  };
+  
+  // Sort users - group members first, then alphabetically
+  const sortedUsers = [...users].sort((a, b) => {
+    // Payer always comes first
+    if (a.id === paidBy) return -1;
+    if (b.id === paidBy) return 1;
+    
+    // Group members come before non-members
+    const aInGroup = a.group_id === groupId;
+    const bInGroup = b.group_id === groupId;
+    if (aInGroup && !bInGroup) return -1;
+    if (!aInGroup && bInGroup) return 1;
+    
+    // Sort alphabetically by display name or email
+    const aName = formatUserName(a).toLowerCase();
+    const bName = formatUserName(b).toLowerCase();
+    return aName.localeCompare(bName);
+  });
   
   // If no users are available, show a message
   if (users.length === 0) {
@@ -110,34 +203,53 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
       {/* Validation Alert */}
       <ValidationAlert validationError={validationError} />
       
-      {/* Consolidated Split Input Table */}
-      <div>
-        <Label className="mb-2 block">Split with</Label>
-        <Card>
-          <CardContent className="pt-4 pb-2 overflow-x-auto">
-            <SplitSummary
-              splitData={splitData}
-              totalAmount={totalAmount}
-              paidBy={paidBy}
-              getCalculatedAmount={getCalculatedAmount}
-              getUserName={getUserName}
-              splitMethod={splitMethod}
-              selectedUsers={selectedUsers}
-              toggleUser={toggleUser}
-              onInputChange={handleInputChange}
-              adjustShares={adjustShares}
-            />
-          </CardContent>
-        </Card>
-        
-        {/* Equal split info displayed directly */}
-        {splitMethod === "equal" && activeUserCount > 0 && totalAmount > 0 && (
-          <div className="text-sm text-green-600 flex items-center mt-2">
-            <Check className="h-4 w-4 mr-2" />
-            Each person will pay {(totalAmount / activeUserCount).toFixed(2)}
-          </div>
-        )}
-      </div>
+      {/* Participant Selection with Bulk Controls */}
+      <ExpenseParticipantsSelector
+        users={sortedUsers}
+        selectedUsers={selectedUsers}
+        toggleUser={toggleUser}
+        paidBy={paidBy}
+        groupId={groupId}
+        onSelectAll={handleSelectAll}
+        onDeselectAll={handleDeselectAll}
+        onSelectGroup={handleSelectGroup}
+        formatUserName={formatUserName}
+      />
+      
+      {/* Split Summary Table */}
+      <Card>
+        <CardContent className="pt-4 pb-2 overflow-x-auto">
+          <SplitSummary
+            splitData={splitData}
+            totalAmount={totalAmount}
+            paidBy={paidBy}
+            getCalculatedAmount={getCalculatedAmount}
+            getUserName={(userData) => {
+              // If we have user details in the splitData, use them
+              if (userData.display_name) return userData.display_name;
+              if (userData.email) return userData.email.split('@')[0];
+              if (userData.name) return userData.name;
+              
+              // Otherwise find the user in the users array
+              const user = users.find(u => u.id === userData.userId);
+              return formatUserName(user || { id: userData.userId, email: null });
+            }}
+            splitMethod={splitMethod}
+            selectedUsers={selectedUsers}
+            toggleUser={toggleUser}
+            onInputChange={handleInputChange}
+            adjustShares={adjustShares}
+          />
+        </CardContent>
+      </Card>
+      
+      {/* Equal split info displayed directly */}
+      {splitMethod === "equal" && activeUserCount > 0 && totalAmount > 0 && (
+        <div className="text-sm text-green-600 flex items-center mt-2">
+          <Check className="h-4 w-4 mr-2" />
+          Each person will pay {(totalAmount / activeUserCount).toFixed(2)}
+        </div>
+      )}
       
       {/* Collapsible Summary - only show if we have a valid amount */}
       {totalAmount > 0 && activeUserCount > 0 && splitMethod !== "equal" && (
@@ -158,7 +270,7 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
                       const amount = getCalculatedAmount(userData);
                       return (
                         <div key={userData.userId} className="flex justify-between">
-                          <span>{getUserName(userData.userId)}</span>
+                          <span>{getUserName(userData)}</span>
                           <span className="font-medium">{amount.toFixed(2)}</span>
                         </div>
                       );
