@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ExpenseUser } from "@/types/expenses";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DollarSign, Euro, PoundSterling, SwissFranc } from 'lucide-react';
 
 interface ExpenseFormFieldsProps {
   form: any;
@@ -17,6 +19,16 @@ const splitMethods = [
   { id: "equal", label: "Equal split" },
   { id: "amount", label: "Custom amounts" },
   { id: "percentage", label: "Percentage split" },
+];
+
+const currencies = [
+  { value: "USD", label: "USD", icon: DollarSign },
+  { value: "USDC", label: "USDC", icon: DollarSign },
+  { value: "EUR", label: "EUR", icon: Euro },
+  { value: "GBP", label: "GBP", icon: PoundSterling },
+  { value: "CHF", label: "CHF", icon: SwissFranc },
+  { value: "BTC", label: "BTC", icon: DollarSign },
+  { value: "ETH", label: "ETH", icon: DollarSign },
 ];
 
 const ExpenseFormFields: React.FC<ExpenseFormFieldsProps> = ({ 
@@ -50,27 +62,63 @@ const ExpenseFormFields: React.FC<ExpenseFormFieldsProps> = ({
         )}
       />
 
-      {/* Amount field */}
-      <FormField
-        control={form.control}
-        name="amount"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Amount</FormLabel>
-            <FormControl>
-              <Input 
-                type="number" 
-                placeholder="0.00" 
-                step="0.01" 
-                min="0"
-                {...field} 
-                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {/* Amount and Currency fields in a grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Amount field */}
+        <FormField
+          control={form.control}
+          name="amount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Amount</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  placeholder="0.00" 
+                  step="0.01" 
+                  min="0"
+                  {...field} 
+                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        {/* Currency field */}
+        <FormField
+          control={form.control}
+          name="currency"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Currency</FormLabel>
+              <FormControl>
+                <Select 
+                  value={field.value} 
+                  onValueChange={field.onChange}
+                  defaultValue="USD"
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map((curr) => (
+                      <SelectItem key={curr.value} value={curr.value}>
+                        <div className="flex items-center">
+                          <curr.icon className="mr-2 h-4 w-4" />
+                          <span>{curr.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
 
       {/* Paid By field */}
       <FormField
