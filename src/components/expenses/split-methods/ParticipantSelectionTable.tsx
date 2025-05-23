@@ -13,9 +13,6 @@ interface ParticipantSelectionTableProps {
   groupId?: string | null;
   selectedUsers: Record<string, boolean>;
   toggleUser: (userId: string) => void;
-  onSelectAll: () => void;
-  onDeselectAll: () => void;
-  onSelectGroup: () => void;
   splitMethod: string;
   handleInputChange: (userId: string, value: string, field: 'amount' | 'percentage' | 'shares') => void;
   adjustShares: (userId: string, adjustment: number) => void;
