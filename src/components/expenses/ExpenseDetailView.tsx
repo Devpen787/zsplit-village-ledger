@@ -31,6 +31,18 @@ export const ExpenseDetailView = ({
     }
   };
 
+  // Determine the best name to display for the user who paid
+  const getPaidByDisplayName = () => {
+    if (expense.paid_by_user) {
+      // Prioritize display_name if available, then name, then fall back to email
+      return expense.paid_by_user.display_name || 
+             expense.paid_by_user.name || 
+             expense.paid_by_user.email || 
+             expense.paid_by;
+    }
+    return expense.paid_by; // Fall back to the ID if no user info
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -54,7 +66,7 @@ export const ExpenseDetailView = ({
       
       <div className="space-y-2">
         <p className="text-lg font-semibold">Paid By</p>
-        <p className="text-muted-foreground">{expense.paid_by_user?.name || expense.paid_by}</p>
+        <p className="text-muted-foreground">{getPaidByDisplayName()}</p>
       </div>
       
       {expense.group_id && (

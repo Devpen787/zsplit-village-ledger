@@ -9,6 +9,7 @@ export type Expense = {
   paid_by_user?: {
     name: string | null;
     email: string;
+    display_name?: string | null;
   };
   group_name?: string | null;
   leftover_notes?: string | null;

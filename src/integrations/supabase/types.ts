@@ -279,6 +279,7 @@ export type Database = {
         Row: {
           avatar_emoji: string | null
           created_at: string
+          display_name: string | null
           email: string
           group_name: string | null
           id: string
@@ -290,6 +291,7 @@ export type Database = {
         Insert: {
           avatar_emoji?: string | null
           created_at?: string
+          display_name?: string | null
           email: string
           group_name?: string | null
           id: string
@@ -301,6 +303,7 @@ export type Database = {
         Update: {
           avatar_emoji?: string | null
           created_at?: string
+          display_name?: string | null
           email?: string
           group_name?: string | null
           id?: string

@@ -13,6 +13,12 @@ type Expense = {
   paid_by: string;
   group_id?: string | null;
   group_name?: string | null;
+  leftover_notes?: string | null;
+  paid_by_user?: {
+    name: string | null;
+    email: string;
+    display_name: string | null;
+  };
 };
 
 export const useExpenseDetail = (id: string | undefined) => {
@@ -37,13 +43,18 @@ export const useExpenseDetail = (id: string | undefined) => {
     const fetchExpense = async () => {
       setLoading(true);
       try {
-        // Join with groups table to get group name
+        // Join with groups table to get group name and users table to get user details
         const { data, error } = await supabase
           .from('expenses')
           .select(`
             *,
             groups (
               name
+            ),
+            users:paid_by (
+              name,
+              email,
+              display_name
             )
           `)
           .eq('id', id)
@@ -51,12 +62,13 @@ export const useExpenseDetail = (id: string | undefined) => {
 
         if (error) throw error;
 
-        const expenseWithGroupName = {
+        const expenseWithDetails = {
           ...data,
-          group_name: data.groups?.name
+          group_name: data.groups?.name,
+          paid_by_user: data.users
         };
         
-        setExpense(expenseWithGroupName);
+        setExpense(expenseWithDetails);
         setEditedTitle(data.title);
         setEditedAmount(String(data.amount));
         setEditedCurrency(data.currency);
