@@ -5,6 +5,9 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ExpenseUser, UserSplitData } from '@/types/expenses';
 import { formatUserName } from '@/utils/userFormatUtils';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { CreditCard } from 'lucide-react';
 
 interface ParticipantRowProps {
   user: ExpenseUser;
@@ -40,15 +43,17 @@ export const ParticipantRow: React.FC<ParticipantRowProps> = ({
     switch (splitMethod) {
       case 'equal':
         return (
-          <td className="p-2 text-right">
-            ${equalShareAmount.toFixed(2)}
+          <td className="p-3 text-right">
+            <Badge variant="outline" className="bg-primary/5">
+              ${equalShareAmount.toFixed(2)}
+            </Badge>
           </td>
         );
       
       case 'amount':
         return (
-          <td className="p-2 text-right space-x-2 flex items-center justify-end">
-            <span>$</span>
+          <td className="p-3 text-right space-x-2 flex items-center justify-end">
+            <span className="text-muted-foreground">$</span>
             <Input
               type="number"
               value={userData.amount || ''}
@@ -64,7 +69,7 @@ export const ParticipantRow: React.FC<ParticipantRowProps> = ({
       
       case 'percentage':
         return (
-          <td className="p-2 text-right space-x-2 flex items-center justify-end">
+          <td className="p-3 text-right space-x-2 flex items-center justify-end">
             <Input
               type="number"
               value={userData.percentage || ''}
@@ -77,7 +82,7 @@ export const ParticipantRow: React.FC<ParticipantRowProps> = ({
               disabled={!isUserSelected}
             />
             <span className="w-4">%</span>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground ml-1">
               (${calculatedAmount.toFixed(2)})
             </span>
           </td>
@@ -89,32 +94,56 @@ export const ParticipantRow: React.FC<ParticipantRowProps> = ({
   };
 
   return (
-    <tr
-      className={cn(
-        'border-t hover:bg-muted/40', 
-        isUserSelected && 'bg-muted/30',
-        isPayer && 'font-medium'
-      )}
-    >
-      <td className="p-2">
-        <Checkbox
-          checked={isUserSelected}
-          onCheckedChange={() => toggleSelection(user.id)}
-          disabled={isPayer} // Prevent deselecting the payer
-        />
-      </td>
-      <td className="p-2">
-        {formatUserName(user)}
-        {isPayer && ' (paid)'}
-      </td>
-      
-      {renderSplitMethodCell()}
-      
-      {splitMethod !== 'equal' && (
-        <td className="p-2 text-right">
-          {isUserSelected ? `$${calculatedAmount.toFixed(2)}` : '-'}
+    <TooltipProvider>
+      <tr
+        className={cn(
+          'border-t hover:bg-muted/40 transition-colors', 
+          isUserSelected && 'bg-muted/30',
+          isPayer && 'bg-primary/5'
+        )}
+      >
+        <td className="p-3">
+          <Checkbox
+            checked={isUserSelected}
+            onCheckedChange={() => toggleSelection(user.id)}
+            disabled={isPayer} // Prevent deselecting the payer
+          />
         </td>
-      )}
-    </tr>
+        <td className="p-3">
+          <div className="flex items-center gap-2">
+            <span className={isPayer ? "font-medium" : ""}>
+              {formatUserName(user)}
+            </span>
+            {isPayer && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="bg-primary/10 text-xs">
+                    <CreditCard className="h-3 w-3 mr-1" />
+                    paid
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>This user paid for the expense</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </td>
+        
+        {renderSplitMethodCell()}
+        
+        {splitMethod !== 'equal' && (
+          <td className="p-3 text-right">
+            {isUserSelected ? (
+              <Badge variant="outline" className="bg-primary/5">
+                ${calculatedAmount.toFixed(2)}
+              </Badge>
+            ) : (
+              '-'
+            )}
+          </td>
+        )}
+      </tr>
+    </TooltipProvider>
   );
 };

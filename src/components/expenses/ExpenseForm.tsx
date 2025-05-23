@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { useNavigate } from 'react-router-dom';
 import { expenseFormSchema, useExpenseForm, ExpenseFormValues } from '@/hooks/useExpenseForm';
@@ -12,6 +12,7 @@ import ExpenseFormSubmitButton from './ExpenseFormSubmitButton';
 import { UnifiedParticipantTable } from './participant-table';
 import ExpenseFormFooter from './ExpenseFormFooter';
 import ExpenseFormLoading from './ExpenseFormLoading';
+import { motion } from 'framer-motion';
 
 interface ExpenseFormProps {
   groupId: string | null;
@@ -99,33 +100,50 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
     <div className="container mx-auto py-6 pb-24">
       <ExpenseFormHeader isEditing={isEditing} groupName={groupName} />
       
-      <Card>
-        <CardContent className="pt-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Form fields */}
-              <ExpenseFormFields 
-                form={form} 
-                users={users}
-                onSplitMethodChange={setSplitMethod} 
-              />
-              
-              {/* Unified Participant Table */}
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium">Split with participants</h3>
-                <UnifiedParticipantTable
-                  users={users || []}
-                  splitData={splitData}
-                  splitMethod={splitMethod}
-                  totalAmount={form.watch('amount') || 0}
-                  onSplitDataChange={handleSplitDataChange}
-                  paidBy={form.watch('paidBy') || ''}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle>
+              {isEditing ? 'Edit Expense' : 'New Expense'}
+            </CardTitle>
+            <CardDescription>
+              {groupName ? `Adding an expense to ${groupName}` : 'Create a new expense'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Form fields */}
+                <ExpenseFormFields 
+                  form={form} 
+                  users={users}
+                  onSplitMethodChange={setSplitMethod} 
                 />
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                
+                {/* Unified Participant Table */}
+                <div className="space-y-2 mt-8">
+                  <h3 className="text-lg font-medium">Split with participants</h3>
+                  <p className="text-sm text-muted-foreground">Select who will share this expense and how it will be split</p>
+                  <div className="mt-3">
+                    <UnifiedParticipantTable
+                      users={users || []}
+                      splitData={splitData}
+                      splitMethod={splitMethod}
+                      totalAmount={form.watch('amount') || 0}
+                      onSplitDataChange={handleSplitDataChange}
+                      paidBy={form.watch('paidBy') || ''}
+                    />
+                  </div>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </motion.div>
       
       <ExpenseFormFooter 
         navigate={navigate}
