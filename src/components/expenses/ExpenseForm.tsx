@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,7 +9,7 @@ import { expenseFormSchema, useExpenseForm, ExpenseFormValues } from '@/hooks/us
 import ExpenseFormFields from './ExpenseFormFields';
 import ExpenseFormHeader from './ExpenseFormHeader';
 import ExpenseFormSubmitButton from './ExpenseFormSubmitButton';
-import ExpenseSplitMethodFields from './ExpenseSplitMethodFields';
+import { UnifiedParticipantTable } from './UnifiedParticipantTable';
 
 interface ExpenseFormProps {
   groupId: string | null;
@@ -39,6 +38,43 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
   // Track form validity separately from React Hook Form
   const isFormValid = form.formState.isValid && isSplitValid;
 
+  // Initialize splitData with all users
+  const [splitData, setSplitData] = useState<any[]>(
+    users?.map(user => ({
+      userId: user.id,
+      isActive: true,
+    })) || []
+  );
+
+  // Update split data when users change
+  React.useEffect(() => {
+    if (users && users.length > 0) {
+      setSplitData(prevSplitData => {
+        // Keep existing users' data and add new users
+        const existingUserIds = prevSplitData.map(data => data.userId);
+        const newSplitData = [...prevSplitData];
+        
+        users.forEach(user => {
+          if (!existingUserIds.includes(user.id)) {
+            newSplitData.push({
+              userId: user.id,
+              isActive: true,
+            });
+          }
+        });
+        
+        return newSplitData;
+      });
+    }
+  }, [users]);
+
+  // Handle split data changes from the unified table
+  const handleSplitDataChange = (newSplitData: any[]) => {
+    setSplitData(newSplitData);
+    form.setValue('splitData', newSplitData);
+    setIsSplitValid(true);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -58,21 +94,18 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
               {/* Form fields */}
               <ExpenseFormFields form={form} users={users} />
               
-              {/* Split method fields - Unified interface */}
-              <ExpenseSplitMethodFields 
-                users={users}
-                splitMethod={splitMethod}
-                setSplitMethod={setSplitMethod}
-                totalAmount={form.watch('amount')}
-                paidBy={form.watch('paidBy')}
-                groupName={groupName}
-                groupId={groupId}
-                onSplitDataChange={(splitData) => {
-                  form.setValue('splitData', splitData);
-                  // Split is valid when we receive data from the component
-                  setIsSplitValid(true);
-                }}
-              />
+              {/* Unified Participant Table */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-medium">Split with participants</h3>
+                <UnifiedParticipantTable
+                  users={users || []}
+                  splitData={splitData}
+                  splitMethod={splitMethod}
+                  totalAmount={form.watch('amount') || 0}
+                  onSplitDataChange={handleSplitDataChange}
+                  paidBy={form.watch('paidBy') || ''}
+                />
+              </div>
             </form>
           </Form>
         </CardContent>
