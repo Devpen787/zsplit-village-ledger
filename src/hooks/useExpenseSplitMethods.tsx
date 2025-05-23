@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { UserSplitData, ExpenseUser } from "@/types/expenses";
 import { formatSplitDataUserName } from "@/utils/userFormatUtils";
@@ -68,6 +69,7 @@ export const useExpenseSplitMethods = ({
       newSelectedUsers[user.id] = true;
     });
     setSelectedUsers(newSelectedUsers);
+    toast.success("Selected all participants");
   };
   
   const handleDeselectAll = () => {
@@ -78,6 +80,7 @@ export const useExpenseSplitMethods = ({
       newSelectedUsers[user.id] = (user.id === paidBy);
     });
     setSelectedUsers(newSelectedUsers);
+    toast.success("Deselected all participants (except payer)");
   };
   
   const handleSelectGroup = (groupId: string) => {
@@ -95,7 +98,7 @@ export const useExpenseSplitMethods = ({
     });
     
     setSelectedUsers(newSelectedUsers);
-    toast.success(`Selected members of the group`);
+    toast.success(`Selected members of group ${groupId.substring(0, 8)}`);
   };
 
   // Sort users - group members first, then alphabetically

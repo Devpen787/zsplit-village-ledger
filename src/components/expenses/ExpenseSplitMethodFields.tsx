@@ -90,7 +90,7 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
         validationError={validationError}
       />
       
-      {/* Participant Selection with Bulk Controls */}
+      {/* Unified Participant Selection with Bulk Controls */}
       <ParticipantSection
         splitData={splitData}
         users={sortedUsers}

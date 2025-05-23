@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody } from "@/components/ui/table";
 import TableHeader from "./TableHeader";
 import UserTableRow from "./UserTableRow";
+import UserSelectionControls from "./UserSelectionControls";
 
 interface ParticipantSelectionTableProps {
   splitData: UserSplitData[];
@@ -17,18 +18,27 @@ interface ParticipantSelectionTableProps {
   handleInputChange: (userId: string, value: string, field: 'amount' | 'percentage' | 'shares') => void;
   adjustShares: (userId: string, adjustment: number) => void;
   getCalculatedAmount: (userData: UserSplitData) => number;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
+  onSelectGroup: (groupId: string) => void;
+  availableGroups?: Record<string, string>;
 }
 
 const ParticipantSelectionTable: React.FC<ParticipantSelectionTableProps> = ({
   splitData,
   users,
   paidBy,
+  groupId,
   selectedUsers,
   toggleUser,
   splitMethod,
   handleInputChange,
   adjustShares,
   getCalculatedAmount,
+  onSelectAll,
+  onDeselectAll,
+  onSelectGroup,
+  availableGroups = {}
 }) => {
   // Find matching split data for a user
   const findSplitData = (userId: string): UserSplitData | undefined => {
@@ -38,6 +48,17 @@ const ParticipantSelectionTable: React.FC<ParticipantSelectionTableProps> = ({
   return (
     <Card>
       <CardContent className="p-4">
+        {/* Integrated selection controls at the top of the table */}
+        <div className="mb-3">
+          <UserSelectionControls
+            onSelectAll={onSelectAll}
+            onDeselectAll={onDeselectAll}
+            onSelectGroup={onSelectGroup}
+            groupId={groupId}
+            availableGroups={availableGroups}
+          />
+        </div>
+        
         <Table>
           <TableHeader splitMethod={splitMethod} />
           <TableBody>

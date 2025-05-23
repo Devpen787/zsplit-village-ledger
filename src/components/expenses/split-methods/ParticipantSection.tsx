@@ -3,7 +3,6 @@ import React from "react";
 import { UserSplitData, ExpenseUser } from "@/types/expenses";
 import ParticipantSelectionTable from "./ParticipantSelectionTable";
 import { Label } from "@/components/ui/label";
-import UserSelectionControls from "./UserSelectionControls";
 
 interface ParticipantSectionProps {
   splitData: UserSplitData[];
@@ -42,15 +41,7 @@ const ParticipantSection: React.FC<ParticipantSectionProps> = ({
     <div className="space-y-2">
       <Label>Split with</Label>
       
-      {/* Bulk selection controls with group dropdown */}
-      <UserSelectionControls
-        onSelectAll={onSelectAll}
-        onDeselectAll={onDeselectAll}
-        onSelectGroup={onSelectGroup}
-        groupId={groupId}
-        availableGroups={availableGroups}
-      />
-      
+      {/* Single unified table with built-in selection controls */}
       <ParticipantSelectionTable
         splitData={splitData}
         users={users}
@@ -62,6 +53,10 @@ const ParticipantSection: React.FC<ParticipantSectionProps> = ({
         handleInputChange={handleInputChange}
         adjustShares={adjustShares}
         getCalculatedAmount={getCalculatedAmount}
+        onSelectAll={onSelectAll}
+        onDeselectAll={onDeselectAll}
+        onSelectGroup={onSelectGroup}
+        availableGroups={availableGroups}
       />
     </div>
   );

@@ -29,7 +29,7 @@ const UserSelectionControls: React.FC<UserSelectionControlsProps> = ({
   const hasGroups = Object.keys(availableGroups).length > 0;
   
   return (
-    <div className="flex flex-wrap gap-2 mb-2">
+    <div className="flex flex-wrap gap-2">
       <Button 
         type="button"
         variant="outline" 
