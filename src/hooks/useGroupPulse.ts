@@ -31,7 +31,32 @@ interface GroupPulseData {
   allGroupsStats: AllGroupsStats | null;
 }
 
-export const useGroupPulse = (groupId: string): GroupPulseData => {
+export const useGroupPulse = (groupId: string | undefined): GroupPulseData => {
+  // Guard against undefined groupId to prevent issues
+  if (!groupId) {
+    // Return default values when no groupId is provided
+    return {
+      potBalance: 0,
+      totalPayouts: 0,
+      pendingPayoutsCount: 0,
+      connectedWalletsCount: 0,
+      totalMembersCount: 0,
+      pendingRequests: [],
+      recentActivities: [],
+      totalExpenses: 0,
+      isAdmin: false,
+      handleApproveRequest: async () => {},
+      handleRejectRequest: async () => {},
+      loading: false,
+      averagePayoutSize: 0,
+      estimatedPayoutsRemaining: 0,
+      recentExpensesCount: 0,
+      latestExpenseDate: null,
+      averageApprovalTime: "N/A",
+      allGroupsStats: null
+    };
+  }
+  
   const { 
     activities,
     pendingRequests,

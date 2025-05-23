@@ -5,35 +5,29 @@ import { toast } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
 import { Group } from '@/types/supabase';
 import { User } from '@/types/auth';
-import { useGroupPulse } from '@/hooks/useGroupPulse';
-import { useExpenses } from '@/hooks/useExpenses';
-import { GroupMember } from '@/types/supabase';
+import { Expense } from '@/types/expenses';
 import { useGroupMembers } from '@/hooks/useGroupMembers';
 import { useGroupInvites } from '@/hooks/useGroupInvites';
 import { useGroupAdminStatus } from '@/hooks/useGroupAdminStatus';
-import { Expense } from '@/types/expenses';
+import { useExpenses } from '@/hooks/useExpenses';
 
 export const useGroupDetails = (id: string | undefined, user: User | null) => {
   const navigate = useNavigate();
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
+  const [potBalance, setPotBalance] = useState(0);
+  const [pendingPayoutsCount, setPendingPayoutsCount] = useState(0);
+  const [connectedWalletsCount, setConnectedWalletsCount] = useState(0);
   
   // Use the extracted hooks
   const { members } = useGroupMembers(id);
   const { inviteMember } = useGroupInvites(id);
   const { isAdmin } = useGroupAdminStatus(id, user);
   
-  // Get group pulse data for metrics
-  const { 
-    potBalance = 0, 
-    pendingPayoutsCount = 0, 
-    connectedWalletsCount = 0 
-  } = id ? useGroupPulse(id) : { potBalance: 0, pendingPayoutsCount: 0, connectedWalletsCount: 0 };
-  
   // Get expenses data for metrics
   const { expenses } = id ? useExpenses(undefined, id) : { expenses: [] };
   
-  // Calculate total expenses - Using the provided fix
+  // Calculate total expenses
   const totalExpenses = (expenses || []).reduce(
     (sum: number, expense: Expense) => sum + Number(expense.amount || 0),
     0
@@ -57,6 +51,77 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
       supabase.removeChannel(groupsChannel);
     };
   }, [id, user]);
+  
+  // Load pot metrics in a separate effect to avoid circular dependencies
+  useEffect(() => {
+    if (!id) return;
+    
+    const fetchPotMetrics = async () => {
+      try {
+        // Fetch pot balance and other metrics from group_pot_activity table
+        const { data: activities, error } = await supabase
+          .from('group_pot_activity')
+          .select('*')
+          .eq('group_id', id);
+          
+        if (error) throw error;
+        
+        // Calculate pot balance from activities
+        let balance = 0;
+        let pending = 0;
+        
+        if (activities) {
+          // Calculate balance
+          balance = activities.reduce((bal, activity) => {
+            if (activity.type === 'contribution' && activity.status === 'complete') {
+              return bal + Number(activity.amount || 0);
+            } else if (activity.type === 'payout' && 
+                      (activity.status === 'approved' || activity.status === 'complete')) {
+              return bal - Number(activity.amount || 0);
+            }
+            return bal;
+          }, 0);
+          
+          // Count pending payouts
+          pending = activities.filter(
+            activity => activity.type === 'payout' && activity.status === 'pending'
+          ).length;
+        }
+        
+        // Fetch wallet connection data
+        const { data: groupMembers, error: membersError } = await supabase
+          .from('group_members')
+          .select('user_id')
+          .eq('group_id', id);
+          
+        if (membersError) throw membersError;
+        
+        // Get all users with connected wallets
+        const { data: connectedUsers, error: usersError } = await supabase
+          .from('users')
+          .select('id, wallet_address')
+          .not('wallet_address', 'is', null);
+          
+        if (usersError) throw usersError;
+        
+        // Count members with connected wallets
+        const connectedCount = groupMembers?.filter(member => 
+          connectedUsers?.some(user => 
+            user.id === member.user_id && user.wallet_address
+          )
+        ).length || 0;
+        
+        setPotBalance(balance);
+        setPendingPayoutsCount(pending);
+        setConnectedWalletsCount(connectedCount);
+        
+      } catch (error: any) {
+        console.error("Error fetching pot metrics:", error);
+      }
+    };
+    
+    fetchPotMetrics();
+  }, [id]);
   
   const fetchGroupDetails = async () => {
     if (!id || !user) return;
@@ -107,7 +172,7 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
     isAdmin,
     inviteMember: handleInviteMember,
     refreshData: fetchGroupDetails,
-    // Add these properties to fix the errors
+    // Use the state values instead of calling useGroupPulse
     potBalance,
     totalExpenses,
     pendingPayoutsCount,
