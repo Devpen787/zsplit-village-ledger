@@ -4,20 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from 'lucide-react';
 import { AllGroupsStats } from '@/hooks/group-pulse/useCrossGroupStats';
 import { motion } from 'framer-motion';
+import { useAnimations } from '@/hooks/useAnimations';
 
 interface CrossGroupOverviewProps {
   allGroupsStats: AllGroupsStats | null;
 }
 
 export const CrossGroupOverview = ({ allGroupsStats }: CrossGroupOverviewProps) => {
-  // Animation variant
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-  };
+  const { itemVariants } = useAnimations();
 
   return (
-    <motion.div variants={item} className="grid gap-6">
+    <motion.div variants={itemVariants} className="grid gap-6">
       <Card>
         <CardHeader>
           <CardTitle>All Groups Overview</CardTitle>

@@ -5,6 +5,7 @@ import { useGroupPulse } from '@/hooks/useGroupPulse';
 import { motion } from 'framer-motion';
 import { useGroupDetails } from '@/hooks/useGroupDetails';
 import { useAuth } from '@/contexts';
+import { useAnimations } from '@/hooks/useAnimations';
 import { GroupPulseHeader } from './GroupPulseHeader';
 import { GroupFinancialMetrics } from './GroupFinancialMetrics';
 import { GroupConnectivityMetrics } from './GroupConnectivityMetrics';
@@ -16,6 +17,7 @@ export const GroupPulse = ({ groupId }: { groupId: string }) => {
   const { user } = useAuth();
   const { group } = useGroupDetails(groupId, user);
   const [activeTab, setActiveTab] = useState<"group" | "all">("group");
+  const { containerVariants, itemVariants } = useAnimations();
   
   const {
     loading,
@@ -35,31 +37,15 @@ export const GroupPulse = ({ groupId }: { groupId: string }) => {
     allGroupsStats
   } = useGroupPulse(groupId);
 
-  // Animation variants for staggered card appearance
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-  
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-  };
-
   return (
     <motion.div 
       className="grid gap-6"
-      variants={container}
+      variants={containerVariants}
       initial="hidden"
       animate="show"
     >
       {/* Group Info Header */}
-      <motion.div variants={item}>
+      <motion.div variants={itemVariants}>
         <GroupPulseHeader 
           groupName={group?.name} 
           activeTab={activeTab} 
@@ -88,7 +74,7 @@ export const GroupPulse = ({ groupId }: { groupId: string }) => {
           />
 
           {/* Pending payout requests list - shown to all but actions only for admins */}
-          <motion.div variants={item} className="grid gap-6">
+          <motion.div variants={itemVariants} className="grid gap-6">
             <PendingRequestsSection 
               pendingRequests={pendingRequests} 
               onApprove={handleApproveRequest}

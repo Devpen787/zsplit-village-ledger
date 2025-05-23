@@ -5,6 +5,7 @@ import { ExpensesStatusCard } from './ExpensesStatusCard';
 import { PotHealthCard } from './PotHealthCard';
 import { RecentActivityCard } from './RecentActivityCard';
 import { motion } from 'framer-motion';
+import { useAnimations } from '@/hooks/useAnimations';
 
 interface GroupFinancialMetricsProps {
   potBalance: number;
@@ -23,31 +24,27 @@ export const GroupFinancialMetrics = ({
   recentExpensesCount,
   latestExpenseDate
 }: GroupFinancialMetricsProps) => {
-  // Animation variants for staggered card appearance
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-  };
+  const { itemVariants } = useAnimations();
 
   return (
     <>
       <div className="grid gap-6 md:grid-cols-2">
-        <motion.div variants={item}>
+        <motion.div variants={itemVariants}>
           <PotBalanceCard potBalance={potBalance} />
         </motion.div>
-        <motion.div variants={item}>
+        <motion.div variants={itemVariants}>
           <ExpensesStatusCard potBalance={potBalance} loading={loading} />
         </motion.div>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2">
-        <motion.div variants={item}>
+        <motion.div variants={itemVariants}>
           <PotHealthCard 
             averagePayoutSize={averagePayoutSize} 
             estimatedPayoutsRemaining={estimatedPayoutsRemaining} 
           />
         </motion.div>
-        <motion.div variants={item}>
+        <motion.div variants={itemVariants}>
           <RecentActivityCard 
             recentExpensesCount={recentExpensesCount} 
             latestExpenseDate={latestExpenseDate} 

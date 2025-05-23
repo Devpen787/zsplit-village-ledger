@@ -3,6 +3,7 @@ import React from 'react';
 import { GroupConnectivityCard } from './GroupConnectivityCard';
 import { PayoutRequestsCard } from './PayoutRequestsCard';
 import { motion } from 'framer-motion';
+import { useAnimations } from '@/hooks/useAnimations';
 
 interface GroupConnectivityMetricsProps {
   connectedWalletsCount: number;
@@ -17,21 +18,17 @@ export const GroupConnectivityMetrics = ({
   pendingPayoutsCount,
   averageApprovalTime
 }: GroupConnectivityMetricsProps) => {
-  // Animation variants for staggered card appearance
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-  };
+  const { itemVariants } = useAnimations();
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <motion.div variants={item}>
+      <motion.div variants={itemVariants}>
         <GroupConnectivityCard 
           connectedWalletsCount={connectedWalletsCount} 
           totalMembersCount={totalMembersCount} 
         />
       </motion.div>
-      <motion.div variants={item}>
+      <motion.div variants={itemVariants}>
         <PayoutRequestsCard 
           pendingPayoutsCount={pendingPayoutsCount} 
           averageApprovalTime={averageApprovalTime} 
