@@ -1,7 +1,6 @@
 
 import React from "react";
 import { UserSplitData } from "@/types/expenses";
-import { Card, CardContent } from "@/components/ui/card";
 import { 
   Table,
   TableBody,
@@ -13,6 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getUserInitials } from "@/utils/userFormatUtils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface SplitSummaryProps {
   splitData: UserSplitData[];
@@ -39,16 +40,6 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
   onInputChange,
   adjustShares
 }) => {
-  // Get initials from user name
-  const getInitials = (name: string): string => {
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
   // Render the appropriate input field based on split method
   const renderInputField = (userData: UserSplitData) => {
     if (splitMethod === "equal") return null;
@@ -143,7 +134,7 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
       <TableBody>
         {splitData.map((userData) => {
           const userName = getUserName(userData);
-          const initials = getInitials(userName);
+          const initials = getUserInitials(userName);
           const isActive = selectedUsers[userData.userId] !== false;
           const isPayer = userData.userId === paidBy;
           const amount = getCalculatedAmount(userData);
@@ -151,12 +142,10 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
           return (
             <TableRow key={userData.userId} className={!isActive ? "opacity-60" : ""}>
               <TableCell>
-                <input 
-                  type="checkbox" 
+                <Checkbox 
                   checked={isActive}
-                  onChange={() => toggleUser(userData.userId)}
+                  onCheckedChange={() => toggleUser(userData.userId)}
                   disabled={isPayer} // Can't deselect the payer
-                  className="h-4 w-4 rounded border-gray-300"
                 />
               </TableCell>
               <TableCell>

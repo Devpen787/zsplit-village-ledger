@@ -3,12 +3,10 @@ import SplitMethodSelector from "./split-methods/SplitMethodSelector";
 import ValidationAlert from "./split-methods/ValidationAlert";
 import { UserSplitData, ExpenseUser } from "@/types/expenses";
 import { useExpenseSplit } from "@/hooks/useExpenseSplit";
-import EqualSplitInfo from "./split-methods/EqualSplitInfo";
-import SplitSummaryCollapsible from "./split-methods/SplitSummaryCollapsible";
 import GroupContext from "./split-methods/GroupContext";
-import { Card, CardContent } from "@/components/ui/card";
-import SplitSummary from "./split-methods/SplitSummary";
-import ParticipantSelectionTable from "./split-methods/ParticipantSelectionTable";
+import EmptyParticipantsState from "./split-methods/EmptyParticipantsState";
+import ParticipantSection from "./split-methods/ParticipantSection";
+import SplitSummarySection from "./split-methods/SplitSummarySection";
 
 interface ExpenseSplitMethodFieldsProps {
   users: ExpenseUser[];
@@ -80,24 +78,6 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
     toggleUserActive(userId, !selectedUsers[userId]);
   };
 
-  // Format user names with proper fallback logic
-  const formatUserName = (user: ExpenseUser): string => {
-    // First priority: display_name if available
-    if (user.display_name) return user.display_name;
-    
-    // Second priority: use email prefix (before @)
-    if (user.email) {
-      const emailPrefix = user.email.split('@')[0];
-      return emailPrefix;
-    }
-    
-    // Third priority: use name if available
-    if (user.name) return user.name;
-    
-    // Last resort: truncated user ID
-    return user.id.substring(0, 8) + '...';
-  };
-
   // Bulk selection handlers
   const handleSelectAll = () => {
     const newSelectedUsers = { ...selectedUsers };
@@ -159,21 +139,19 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
     if (aInGroup && !bInGroup) return -1;
     if (!aInGroup && bInGroup) return 1;
     
-    // Sort alphabetically by display name or email
-    const aName = formatUserName(a).toLowerCase();
-    const bName = formatUserName(b).toLowerCase();
-    return aName.localeCompare(bName);
+    // Sort alphabetically by name or email
+    const aName = a.display_name || a.email?.split('@')[0] || a.name || a.id;
+    const bName = b.display_name || b.email?.split('@')[0] || b.name || b.id;
+    return String(aName).toLowerCase().localeCompare(String(bName).toLowerCase());
   });
   
   // If no users are available, show a message
   if (users.length === 0) {
     return (
-      <div className="space-y-4">
-        <SplitMethodSelector splitMethod={splitMethod} setSplitMethod={setSplitMethod} />
-        <div className="text-amber-500 text-center p-4">
-          Please add participants to your group to split expenses with.
-        </div>
-      </div>
+      <EmptyParticipantsState
+        splitMethod={splitMethod}
+        setSplitMethod={setSplitMethod}
+      />
     );
   }
 
@@ -192,68 +170,38 @@ const ExpenseSplitMethodFields: React.FC<ExpenseSplitMethodFieldsProps> = ({
       <ValidationAlert validationError={validationError} />
       
       {/* Participant Selection with Bulk Controls */}
-      <div className="space-y-2">
-        <ParticipantSelectionTable
-          splitData={splitData}
-          users={sortedUsers}
-          paidBy={paidBy}
-          groupId={groupId}
-          selectedUsers={selectedUsers}
-          toggleUser={toggleUser}
-          onSelectAll={handleSelectAll}
-          onDeselectAll={handleDeselectAll}
-          onSelectGroup={handleSelectGroup}
-          splitMethod={splitMethod}
-          handleInputChange={handleInputChange}
-          adjustShares={adjustShares}
-          getCalculatedAmount={getCalculatedAmount}
-        />
-      </div>
-      
-      {/* Split Summary Table */}
-      <Card>
-        <CardContent className="pt-4 pb-2 overflow-x-auto">
-          <SplitSummary
-            splitData={splitData}
-            totalAmount={totalAmount}
-            paidBy={paidBy}
-            getCalculatedAmount={getCalculatedAmount}
-            getUserName={(userData) => {
-              // If we have user details in the splitData, use them
-              if (userData.display_name) return userData.display_name;
-              if (userData.email) return userData.email.split('@')[0];
-              if (userData.name) return userData.name;
-              
-              // Otherwise find the user in the users array
-              const user = users.find(u => u.id === userData.userId);
-              return formatUserName(user || { id: userData.userId, email: null });
-            }}
-            splitMethod={splitMethod}
-            selectedUsers={selectedUsers}
-            toggleUser={toggleUser}
-            onInputChange={handleInputChange}
-            adjustShares={adjustShares}
-          />
-        </CardContent>
-      </Card>
-      
-      {/* Equal split info displayed directly */}
-      <EqualSplitInfo 
-        totalAmount={totalAmount} 
-        activeUserCount={activeUserCount} 
+      <ParticipantSection
+        splitData={splitData}
+        users={sortedUsers}
+        paidBy={paidBy}
+        groupId={groupId}
+        selectedUsers={selectedUsers}
+        toggleUser={toggleUser}
+        onSelectAll={handleSelectAll}
+        onDeselectAll={handleDeselectAll}
+        onSelectGroup={handleSelectGroup}
+        splitMethod={splitMethod}
+        handleInputChange={handleInputChange}
+        adjustShares={adjustShares}
+        getCalculatedAmount={getCalculatedAmount}
       />
       
-      {/* Collapsible Summary - only show if we have a valid amount */}
-      {totalAmount > 0 && activeUserCount > 0 && splitMethod !== "equal" && (
-        <SplitSummaryCollapsible
-          isOpen={isSummaryOpen}
-          setIsOpen={setIsSummaryOpen}
-          splitData={splitData}
-          selectedUsers={selectedUsers}
-          getUserName={getUserName}
-          getCalculatedAmount={getCalculatedAmount}
-        />
-      )}
+      {/* Split Summary Section */}
+      <SplitSummarySection
+        splitData={splitData}
+        totalAmount={totalAmount}
+        paidBy={paidBy}
+        selectedUsers={selectedUsers}
+        activeUserCount={activeUserCount}
+        splitMethod={splitMethod}
+        isSummaryOpen={isSummaryOpen}
+        setIsSummaryOpen={setIsSummaryOpen}
+        getUserName={getUserName}
+        getCalculatedAmount={getCalculatedAmount}
+        toggleUser={toggleUser}
+        handleInputChange={handleInputChange}
+        adjustShares={adjustShares}
+      />
     </div>
   );
 };
