@@ -9,7 +9,7 @@ import { expenseFormSchema, useExpenseForm, ExpenseFormValues } from '@/hooks/us
 import ExpenseFormFields from './ExpenseFormFields';
 import ExpenseFormHeader from './ExpenseFormHeader';
 import ExpenseFormSubmitButton from './ExpenseFormSubmitButton';
-import { UnifiedParticipantTable } from './UnifiedParticipantTable';
+import { UnifiedParticipantTable } from './participant-table';
 
 interface ExpenseFormProps {
   groupId: string | null;
