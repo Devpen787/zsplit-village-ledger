@@ -1,10 +1,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { ExpenseUser, UserSplitData } from '@/types/expenses';
-import ParticipantTableHeader from './ParticipantTableHeader';
-import ParticipantRow from './ParticipantRow';
-import { useParticipantTable } from './useParticipantTable';
 import { getUserDisplayName } from '@/utils/userFormatUtils';
+import { ParticipantTableHeader } from './ParticipantTableHeader';
+import { ParticipantRow } from './ParticipantRow';
+import { calculateEqualSplit, calculateUserAmount, calculateTotalShares } from '@/utils/expenseCalculationUtils';
 
 interface ParticipantTableProps {
   users: ExpenseUser[];
@@ -23,14 +23,10 @@ export const ParticipantTable: React.FC<ParticipantTableProps> = ({
   onSplitDataChange,
   paidBy,
 }) => {
-  const {
-    isValid,
-    totalPercentage,
-    totalCustomAmount,
-    getParticipantAmount,
-    calculateEvenSplitAmount,
-  } = useParticipantTable({ splitData, splitMethod, totalAmount });
-
+  const [isValid, setIsValid] = useState(true);
+  const [totalPercentage, setTotalPercentage] = useState(0);
+  const [totalCustomAmount, setTotalCustomAmount] = useState(0);
+  
   // Toggle participant active status
   const toggleParticipant = (userId: string) => {
     const updatedSplitData = splitData.map(data => {
@@ -78,6 +74,50 @@ export const ParticipantTable: React.FC<ParticipantTableProps> = ({
 
     onSplitDataChange(updatedSplitData);
   };
+  
+  // Get the calculated amount for a participant
+  const getParticipantAmount = (participant: UserSplitData): number => {
+    if (participant.isActive === false) return 0;
+    
+    const activeUsers = splitData.filter(data => data.isActive !== false);
+    const activeCount = activeUsers.length || 1;
+    const totalShares = calculateTotalShares(splitData);
+    
+    switch (splitMethod) {
+      case 'equal':
+        return calculateEqualSplit(totalAmount, activeCount);
+      case 'percentage':
+        return totalAmount * ((participant.percentage || 0) / 100);
+      case 'amount':
+        return participant.amount || 0;
+      default:
+        return 0;
+    }
+  };
+  
+  // Calculate the even split amount
+  const calculateEvenSplitAmount = (): number => {
+    const activeUsers = splitData.filter(data => data.isActive !== false);
+    const activeCount = activeUsers.length || 1;
+    return calculateEqualSplit(totalAmount, activeCount);
+  };
+
+  // Calculate and validate totals
+  useEffect(() => {
+    const activeUsers = splitData.filter(data => data.isActive !== false);
+    
+    if (splitMethod === 'percentage') {
+      const totalPerc = activeUsers.reduce((sum, item) => sum + (item.percentage || 0), 0);
+      setTotalPercentage(totalPerc);
+      setIsValid(Math.abs(100 - totalPerc) <= 0.1);
+    } else if (splitMethod === 'amount') {
+      const totalAmt = activeUsers.reduce((sum, item) => sum + (item.amount || 0), 0);
+      setTotalCustomAmount(totalAmt);
+      setIsValid(Math.abs(totalAmount - totalAmt) <= 0.01);
+    } else {
+      setIsValid(true);
+    }
+  }, [splitData, splitMethod, totalAmount]);
 
   // Initialize split data with even values when split method changes
   useEffect(() => {
