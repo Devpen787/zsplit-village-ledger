@@ -176,3 +176,16 @@ export const rejectPayoutRequest = async (activityId: string) => {
 
   if (error) throw error;
 };
+
+/**
+ * Updates the target amount for a group pot
+ * Note: This is currently a mock implementation since we don't have a table for storing the target amount
+ */
+export const updateTargetAmount = async (groupId: string, amount: number) => {
+  // In a real implementation, this would save to the database
+  // For now, just log the change
+  console.log(`Updated target amount for group ${groupId} to ${amount}`);
+  
+  // Return true to indicate success
+  return true;
+};

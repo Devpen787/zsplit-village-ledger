@@ -6,27 +6,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Wallet } from "lucide-react";
+import { Wallet, Edit2, Check } from "lucide-react";
 
 interface PotContributionsCardProps {
   totalContributions: number;
   targetAmount: number;
   onContribute: (amount: number, note: string) => Promise<void>;
+  onTargetChange?: (amount: number) => void;
   contributors: { id: string; name?: string | null }[];
   isWalletConnected?: boolean;
+  isAdmin?: boolean;
 }
 
 export const PotContributionsCard = ({ 
   totalContributions, 
   targetAmount, 
-  onContribute, 
+  onContribute,
+  onTargetChange,
   contributors,
-  isWalletConnected = false
+  isWalletConnected = false,
+  isAdmin = false
 }: PotContributionsCardProps) => {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [isEditingTarget, setIsEditingTarget] = useState(false);
+  const [newTargetAmount, setNewTargetAmount] = useState(targetAmount.toString());
   
   const progressPercentage = (totalContributions / targetAmount) * 100;
   
@@ -45,42 +51,74 @@ export const PotContributionsCard = ({
       setIsSubmitting(false);
     }
   };
+
+  const handleTargetSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onTargetChange && newTargetAmount && parseFloat(newTargetAmount) > 0) {
+      onTargetChange(parseFloat(newTargetAmount));
+      setIsEditingTarget(false);
+    }
+  };
   
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pot Contributions</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>Pot Contributions</CardTitle>
+          {isAdmin && onTargetChange && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsEditingTarget(!isEditingTarget)}
+              className="h-8 px-2"
+            >
+              {isEditingTarget ? <Check className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
+            </Button>
+          )}
+        </div>
         <CardDescription>
           Track contributions to the group pot
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>{contributors.length} contributor{contributors.length !== 1 ? 's' : ''}</span>
-            <span>
-              ${totalContributions.toFixed(2)} / ${targetAmount.toFixed(2)}
-            </span>
-          </div>
-          <Progress value={progressPercentage > 100 ? 100 : progressPercentage} />
-        </div>
-        
-        {!showForm && (
-          <div className="flex justify-center pt-4">
-            {isWalletConnected ? (
-              <Button onClick={() => setShowForm(true)}>
-                Contribute to Pot
-              </Button>
-            ) : (
-              <Button variant="outline" disabled>
-                <Wallet className="mr-2 h-4 w-4" />
-                Connect wallet to contribute
-              </Button>
-            )}
+        {isEditingTarget && isAdmin && onTargetChange ? (
+          <form onSubmit={handleTargetSubmit} className="space-y-2">
+            <Label htmlFor="target-amount">Target Amount (CHF)</Label>
+            <div className="flex space-x-2">
+              <Input
+                id="target-amount"
+                type="number"
+                step="1"
+                min="1"
+                value={newTargetAmount}
+                onChange={(e) => setNewTargetAmount(e.target.value)}
+                required
+                className="flex-1"
+              />
+              <Button type="submit" size="sm">Save</Button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>{contributors.length} contributor{contributors.length !== 1 ? 's' : ''}</span>
+              <span>
+                CHF {totalContributions.toFixed(2)} / CHF {targetAmount.toFixed(2)}
+              </span>
+            </div>
+            <Progress value={progressPercentage > 100 ? 100 : progressPercentage} />
           </div>
         )}
         
-        {showForm && isWalletConnected && (
+        {!showForm && (
+          <div className="flex justify-center pt-4">
+            <Button onClick={() => setShowForm(true)}>
+              Contribute to Pot
+            </Button>
+          </div>
+        )}
+        
+        {showForm && (
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label htmlFor="contribution-amount">Amount (CHF)</Label>

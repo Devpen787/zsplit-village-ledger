@@ -9,7 +9,8 @@ import {
   submitPayoutRequest,
   addContribution,
   approvePayoutRequest,
-  rejectPayoutRequest
+  rejectPayoutRequest,
+  updateTargetAmount
 } from '@/services/groupPotService';
 import {
   calculateTotalContributions,
@@ -19,7 +20,8 @@ import {
 interface GroupPotData {
   activities: PotActivity[];
   totalContributions: number;
-  targetAmount: number; // Add this property
+  targetAmount: number;
+  setTargetAmount: (amount: number) => void;
   contributors: {id: string; name?: string | null}[];
   loading: boolean;
   handlePayoutRequest: (amount: number, note: string) => Promise<void>;
@@ -177,11 +179,29 @@ export const useGroupPot = (groupId: string): GroupPotData => {
       toast.error('Failed to reject payout request');
     }
   };
+
+  const handleTargetAmountChange = async (amount: number) => {
+    if (!isAdmin || !user) return;
+    
+    try {
+      // In a real implementation, this would save the target amount in the database
+      // await updateTargetAmount(groupId, amount);
+      console.log(`Updating target amount to ${amount}`);
+      
+      // For now, just update the local state
+      setTargetAmount(amount);
+      toast.success('Target amount updated');
+    } catch (error) {
+      console.error('Error updating target amount:', error);
+      toast.error('Failed to update target amount');
+    }
+  };
   
   return {
     activities,
     totalContributions,
-    targetAmount, // Add the targetAmount to the return object
+    targetAmount,
+    setTargetAmount: handleTargetAmountChange,
     contributors,
     loading,
     handlePayoutRequest,

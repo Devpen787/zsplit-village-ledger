@@ -9,14 +9,16 @@ import { PendingPayoutRequests } from './PendingPayoutRequests';
 import { PotActivityFeed } from './PotActivityFeed';
 import { useGroupPot } from '@/hooks/useGroupPot';
 import { Button } from '@/components/ui/button';
-import { PiggyBank } from 'lucide-react';
+import { PiggyBank, Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Badge } from '@/components/ui/badge';
 
 export const GroupPot = ({ groupId }: { groupId: string }) => {
   const { isConnected } = useWallet();
   const {
     totalContributions,
     targetAmount,
+    setTargetAmount,
     activities,
     contributors,
     handleContribute,
@@ -55,8 +57,16 @@ export const GroupPot = ({ groupId }: { groupId: string }) => {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
               <PiggyBank className="h-6 w-6 text-primary" />
-              <div>
-                <CardTitle>Group Pot</CardTitle>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Group Pot</CardTitle>
+                  {isAdmin && (
+                    <Badge variant="outline" className="flex items-center gap-1 bg-amber-50 text-amber-700 border-amber-200">
+                      <Crown className="h-3 w-3" />
+                      Admin
+                    </Badge>
+                  )}
+                </div>
                 <CardDescription>Manage and view funds for group expenses</CardDescription>
               </div>
             </div>
@@ -65,6 +75,7 @@ export const GroupPot = ({ groupId }: { groupId: string }) => {
             <div className="space-y-4">
               <p className="text-muted-foreground">
                 View and interact with the group pot. You can contribute funds or request payouts for group expenses.
+                {isAdmin && " As an admin, you can approve or reject payout requests and set contribution targets."}
               </p>
               
               <div className="p-4 border rounded-md bg-muted/30">
@@ -87,9 +98,11 @@ export const GroupPot = ({ groupId }: { groupId: string }) => {
           <PotContributionsCard 
             totalContributions={totalContributions}
             targetAmount={targetAmount}
+            onTargetChange={setTargetAmount}
             onContribute={handleContribute}
             contributors={contributors}
             isWalletConnected={isConnected}
+            isAdmin={isAdmin}
           />
         </motion.div>
         
