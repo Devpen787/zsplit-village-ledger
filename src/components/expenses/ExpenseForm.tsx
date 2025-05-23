@@ -55,10 +55,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ groupId }) => {
         <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Basic expense information */}
+              {/* Form fields */}
               <ExpenseFormFields form={form} users={users} />
               
-              {/* Consolidated split method and participant selection */}
+              {/* Split method fields */}
               <ExpenseSplitMethodFields 
                 users={users}
                 splitMethod={splitMethod}
