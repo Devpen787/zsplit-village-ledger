@@ -13,6 +13,8 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { GroupOverview } from "@/components/groups/GroupOverview";
+import { ExpensesList } from "@/components/ExpensesList";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const GroupView = () => {
   const { id } = useParams<{ id: string }>();
@@ -88,18 +90,37 @@ const GroupView = () => {
         />
 
         {activeTab === "overview" ? (
-          <GroupOverview
-            groupId={id!}
-            group={group}
-            members={members}
-            isAdmin={isAdmin}
-            onInviteClick={() => setInviteDialogOpen(true)}
-            currentUserId={user?.id}
-            potBalance={potBalance}
-            totalExpenses={totalExpenses}
-            pendingPayoutsCount={pendingPayoutsCount}
-            connectedWalletsCount={connectedWalletsCount}
-          />
+          <>
+            <GroupOverview
+              groupId={id!}
+              group={group}
+              members={members}
+              isAdmin={isAdmin}
+              onInviteClick={() => setInviteDialogOpen(true)}
+              currentUserId={user?.id}
+              potBalance={potBalance}
+              totalExpenses={totalExpenses}
+              pendingPayoutsCount={pendingPayoutsCount}
+              connectedWalletsCount={connectedWalletsCount}
+            />
+
+            {/* Group Expenses List */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Group Expenses</CardTitle>
+                <Button 
+                  variant="outline" 
+                  onClick={handleCreateExpense} 
+                  className="hidden md:flex"
+                >
+                  Add Expense
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <ExpensesList groupId={id} />
+              </CardContent>
+            </Card>
+          </>
         ) : (
           <GroupTabs
             groupId={id!}

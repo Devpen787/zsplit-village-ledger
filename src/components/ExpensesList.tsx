@@ -44,7 +44,7 @@ export const ExpensesList = ({ limit, groupId }: ExpensesListProps) => {
   }
 
   if (expenses.length === 0) {
-    return <ExpensesEmpty onCreateExpense={handleCreateExpense} />;
+    return <ExpensesEmpty onCreateExpense={handleCreateExpense} groupContext={!!groupId} />;
   }
 
   return (

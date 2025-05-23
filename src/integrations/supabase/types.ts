@@ -156,6 +156,42 @@ export type Database = {
           },
         ]
       }
+      group_overview: {
+        Row: {
+          connected_wallets: string | null
+          created_at: string | null
+          group_name: string
+          id: string
+          organizers: number | null
+          participants: number | null
+          pending_payouts: number | null
+          pot_balance: number | null
+          total_expenses: number | null
+        }
+        Insert: {
+          connected_wallets?: string | null
+          created_at?: string | null
+          group_name: string
+          id?: string
+          organizers?: number | null
+          participants?: number | null
+          pending_payouts?: number | null
+          pot_balance?: number | null
+          total_expenses?: number | null
+        }
+        Update: {
+          connected_wallets?: string | null
+          created_at?: string | null
+          group_name?: string
+          id?: string
+          organizers?: number | null
+          participants?: number | null
+          pending_payouts?: number | null
+          pot_balance?: number | null
+          total_expenses?: number | null
+        }
+        Relationships: []
+      }
       group_pot_activity: {
         Row: {
           amount: number | null
@@ -208,6 +244,7 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          emoji: string | null
           icon: string
           id: string
           name: string
@@ -215,6 +252,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
+          emoji?: string | null
           icon?: string
           id?: string
           name: string
@@ -222,6 +260,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
+          emoji?: string | null
           icon?: string
           id?: string
           name?: string

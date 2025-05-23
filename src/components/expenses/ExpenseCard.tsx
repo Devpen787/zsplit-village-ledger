@@ -2,13 +2,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
-import { getExpenseEmoji } from '@/utils/expenseUtils';
+import { getExpenseEmoji, formatDateForDisplay } from '@/utils/expenseUtils';
 import { Expense } from '@/types/expenses';
 import { useAuth } from '@/contexts';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatDistanceToNow } from 'date-fns';
 
 interface ExpenseCardProps {
   expense: Expense;
@@ -52,6 +53,15 @@ export const ExpenseCard = ({ expense }: ExpenseCardProps) => {
     if (!expense.paid_by_user) return 'Unknown';
     return expense.paid_by_user.name || expense.paid_by_user.email.split('@')[0];
   };
+
+  // Format the date in a readable way
+  const getFormattedDate = () => {
+    try {
+      return formatDistanceToNow(new Date(expense.date), { addSuffix: true });
+    } catch (error) {
+      return 'Date unknown';
+    }
+  };
   
   const displayName = getDisplayName();
   
@@ -66,7 +76,7 @@ export const ExpenseCard = ({ expense }: ExpenseCardProps) => {
               </div>
               <div>
                 <h4 className="font-medium">{expense.title}</h4>
-                <div className="flex items-center text-sm">
+                <div className="flex items-center text-sm space-x-2">
                   <Avatar className="h-5 w-5 mr-1">
                     <AvatarFallback className="text-xs bg-primary/20">
                       {displayName ? getInitials(displayName) : '??'}
@@ -75,6 +85,8 @@ export const ExpenseCard = ({ expense }: ExpenseCardProps) => {
                   <span className={isPayer ? "text-green-600 font-medium" : "text-muted-foreground"}>
                     {isPayer ? 'You paid' : `${displayName} paid`}
                   </span>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-muted-foreground">{getFormattedDate()}</span>
                 </div>
               </div>
             </div>
