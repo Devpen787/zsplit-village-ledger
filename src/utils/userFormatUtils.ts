@@ -36,3 +36,12 @@ export const getUserInitials = (name: string): string => {
   
   return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
 };
+
+/**
+ * Format user name from split data (compatible with UserSplitData format)
+ */
+export const formatSplitDataUserName = (user: { userId: string; name?: string | null; email?: string | null; display_name?: string | null } | null): string => {
+  if (!user) return "Unknown User";
+  return user.display_name || user.name || user.email || "Unknown User";
+};
+
