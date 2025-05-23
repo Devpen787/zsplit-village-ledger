@@ -4,13 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/contexts';
 import { Card, CardContent } from "@/components/ui/card";
-import { Wallet, Receipt } from "lucide-react";
+import { Wallet, Receipt, UsersRound } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const DashboardSummary = () => {
   const { user } = useAuth();
 
-  // Query for user's expenses
+  // Query for user's expenses (expenses they personally paid)
   const { data: myExpensesData, isLoading: myExpensesLoading } = useQuery({
     queryKey: ['my-expenses-summary', user?.id],
     queryFn: async () => {
@@ -30,35 +30,40 @@ export const DashboardSummary = () => {
     enabled: !!user?.id,
   });
 
-  // Query for all expenses the user is involved in
-  const { data: totalExpensesData, isLoading: totalExpensesLoading } = useQuery({
-    queryKey: ['all-expenses-summary', user?.id],
+  // Query for all expenses from groups the user is a member of
+  const { data: groupExpensesData, isLoading: groupExpensesLoading } = useQuery({
+    queryKey: ['group-expenses-summary', user?.id],
     queryFn: async () => {
-      if (!user?.id) return { count: 0, total: 0 };
+      if (!user?.id) return { count: 0, total: 0, groupCount: 0 };
       
-      // Get all expenses where user is a member
-      const { data: expenseMemberships, error } = await supabase
-        .from('expense_members')
-        .select('expense_id')
+      // First, get all groups the user is a member of
+      const { data: userGroups, error: groupsError } = await supabase
+        .from('group_members')
+        .select('group_id')
         .eq('user_id', user?.id);
       
-      if (error) throw error;
+      if (groupsError) throw groupsError;
       
-      if (expenseMemberships.length === 0) {
-        return { count: 0, total: 0 };
+      if (!userGroups || userGroups.length === 0) {
+        return { count: 0, total: 0, groupCount: 0 };
       }
       
-      // Get the actual expenses
-      const expenseIds = expenseMemberships.map(em => em.expense_id);
+      const groupIds = userGroups.map(g => g.group_id);
+      
+      // Get all expenses from these groups
       const { data: expenses, error: expensesError } = await supabase
         .from('expenses')
         .select('amount')
-        .in('id', expenseIds);
+        .in('group_id', groupIds);
       
       if (expensesError) throw expensesError;
       
-      const total = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
-      return { count: expenses.length, total };
+      const total = expenses?.reduce((sum, expense) => sum + Number(expense.amount), 0) || 0;
+      return { 
+        count: expenses?.length || 0, 
+        total, 
+        groupCount: groupIds.length 
+      };
     },
     enabled: !!user?.id,
   });
@@ -104,7 +109,7 @@ export const DashboardSummary = () => {
         </CardContent>
       </Card>
 
-      {/* Total Expenses Summary Card */}
+      {/* Total Group Expenses Summary Card */}
       <Card>
         <CardContent className="p-4">
           <div className="flex justify-between items-center">
@@ -114,20 +119,27 @@ export const DashboardSummary = () => {
               </div>
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground">Total Expenses</h3>
-                {totalExpensesLoading ? (
+                {groupExpensesLoading ? (
                   <Skeleton className="h-6 w-24" />
                 ) : (
                   <p className="text-2xl font-bold">
-                    {formatCurrency(totalExpensesData?.total || 0)}
+                    {formatCurrency(groupExpensesData?.total || 0)}
                   </p>
+                )}
+                {/* Display the group count */}
+                {!groupExpensesLoading && groupExpensesData?.groupCount > 0 && (
+                  <div className="flex items-center mt-1 text-xs text-muted-foreground">
+                    <UsersRound className="h-3 w-3 mr-1" />
+                    <span>across {groupExpensesData?.groupCount} {groupExpensesData?.groupCount === 1 ? 'group' : 'groups'}</span>
+                  </div>
                 )}
               </div>
             </div>
             <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
-              {totalExpensesLoading ? (
+              {groupExpensesLoading ? (
                 <Skeleton className="h-4 w-8" />
               ) : (
-                <span>{totalExpensesData?.count || 0} expenses</span>
+                <span>{groupExpensesData?.count || 0} expenses</span>
               )}
             </div>
           </div>
