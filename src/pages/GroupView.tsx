@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
@@ -9,9 +8,8 @@ import { InviteMemberDialog } from "@/components/groups/InviteMemberDialog";
 import { useGroupDetails } from "@/hooks/useGroupDetails";
 import { useAuth } from "@/contexts";
 import { toast } from "@/components/ui/sonner";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 import { GroupOverview } from "@/components/groups/GroupOverview";
 import { ExpensesList } from "@/components/ExpensesList";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
