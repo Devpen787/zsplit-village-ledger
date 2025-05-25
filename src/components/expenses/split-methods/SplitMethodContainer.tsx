@@ -3,12 +3,12 @@ import React from 'react';
 import { UserSplitData, ExpenseUser } from '@/types/expenses';
 import { useExpenseSplit } from '@/hooks/useExpenseSplit';
 import { useExpenseSplitMethods } from '@/hooks/useExpenseSplitMethods';
-import { SplitMethodSelector } from './SplitMethodSelector';
-import { ParticipantSection } from './ParticipantSection';
-import { SplitSummarySection } from './SplitSummarySection';
-import { ValidationAlert } from './ValidationAlert';
-import { GroupContext } from './GroupContext';
-import { EmptyParticipantsState } from './EmptyParticipantsState';
+import SplitMethodSelector from './SplitMethodSelector';
+import ParticipantSection from './ParticipantSection';
+import SplitSummarySection from './SplitSummarySection';
+import ValidationAlert from './ValidationAlert';
+import GroupContext from './GroupContext';
+import EmptyParticipantsState from './EmptyParticipantsState';
 
 interface SplitMethodContainerProps {
   users: ExpenseUser[];
@@ -98,7 +98,7 @@ export const SplitMethodContainer: React.FC<SplitMethodContainerProps> = ({
         
         {/* Validation Error */}
         {validationError && (
-          <ValidationAlert message={validationError} />
+          <ValidationAlert validationError={validationError} />
         )}
       </div>
       

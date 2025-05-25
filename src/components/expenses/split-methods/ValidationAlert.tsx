@@ -11,7 +11,7 @@ const ValidationAlert: React.FC<ValidationAlertProps> = ({ validationError }) =>
   if (!validationError) return null;
 
   return (
-    <Alert variant="warning">
+    <Alert variant="destructive">
       <AlertTriangle className="h-4 w-4" />
       <AlertDescription>{validationError}</AlertDescription>
     </Alert>
