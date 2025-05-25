@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { UserSplitData, ExpenseUser } from '@/types/expenses';
 import { useExpenseSplit } from '@/hooks/useExpenseSplit';
