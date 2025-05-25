@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Send, Bell } from "lucide-react";
+import { ArrowRight, Send, Bell, Users } from "lucide-react";
 import { BalanceData } from './BalancesTable';
 import { useAuth } from '@/contexts';
 import { formatCurrency } from '@/utils/money';
@@ -76,6 +75,8 @@ export const DebtRelationships = ({ balances, onSendReminder }: DebtRelationship
   }, [balances, user?.id]);
 
   const userRelationships = debtRelationships.filter(r => r.isUserInvolved);
+  const peopleWhoOweMe = debtRelationships.filter(r => r.isUserCreditor);
+  const peopleIOweTo = debtRelationships.filter(r => r.isUserDebtor);
   const otherRelationships = debtRelationships.filter(r => !r.isUserInvolved);
 
   const handleSendReminder = (relationship: DebtRelationship) => {
@@ -87,11 +88,14 @@ export const DebtRelationships = ({ balances, onSendReminder }: DebtRelationship
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Debt Relationships</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Debt Relationships
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-center text-muted-foreground py-4">
-            Everyone is settled up! No outstanding debts.
+            🎉 Everyone is settled up! No outstanding debts.
           </p>
         </CardContent>
       </Card>
@@ -101,48 +105,81 @@ export const DebtRelationships = ({ balances, onSendReminder }: DebtRelationship
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>Who Owes Who?</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Who Owes Who?
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {userRelationships.length > 0 && (
-          <div>
-            <h3 className="font-medium mb-3 text-sm text-muted-foreground">Your debts</h3>
-            <div className="space-y-2">
-              {userRelationships.map((relationship, index) => (
+      <CardContent className="space-y-6">
+        {/* People who owe ME money */}
+        {peopleWhoOweMe.length > 0 && (
+          <div className="bg-green-50/50 dark:bg-green-900/10 rounded-lg p-4 border border-green-200 dark:border-green-800">
+            <h3 className="font-semibold mb-3 text-green-700 dark:text-green-400 flex items-center gap-2">
+              💰 People who owe you money ({peopleWhoOweMe.length})
+            </h3>
+            <div className="space-y-3">
+              {peopleWhoOweMe.map((relationship, index) => (
                 <div 
-                  key={`user-${index}`}
-                  className="flex items-center justify-between p-3 bg-primary/5 rounded-md border"
+                  key={`owed-to-me-${index}`}
+                  className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-md border"
                 >
-                  <div className="flex items-center gap-2">
-                    {relationship.isUserDebtor ? (
-                      <>
-                        <span className="font-medium">You</span>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{relationship.creditorName}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="font-medium">{relationship.debtorName}</span>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">You</span>
-                      </>
-                    )}
-                    <Badge variant={relationship.isUserDebtor ? "destructive" : "success"}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                      <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                        {relationship.debtorName.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium">{relationship.debtorName}</p>
+                      <p className="text-sm text-muted-foreground">owes you</p>
+                    </div>
+                    <Badge variant="default" className="bg-green-600 hover:bg-green-700">
                       {formatCurrency(relationship.amount)}
                     </Badge>
                   </div>
-                  <div className="flex gap-2">
-                    {relationship.isUserCreditor && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleSendReminder(relationship)}
-                        className="flex items-center gap-1"
-                      >
-                        <Bell className="h-3 w-3" />
-                        Remind
-                      </Button>
-                    )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleSendReminder(relationship)}
+                    className="flex items-center gap-1 border-green-300 text-green-600 hover:bg-green-50"
+                  >
+                    <Bell className="h-3 w-3" />
+                    Send Reminder
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* People I OWE money to */}
+        {peopleIOweTo.length > 0 && (
+          <div className="bg-red-50/50 dark:bg-red-900/10 rounded-lg p-4 border border-red-200 dark:border-red-800">
+            <h3 className="font-semibold mb-3 text-red-700 dark:text-red-400 flex items-center gap-2">
+              💳 People you owe money to ({peopleIOweTo.length})
+            </h3>
+            <div className="space-y-3">
+              {peopleIOweTo.map((relationship, index) => (
+                <div 
+                  key={`i-owe-${index}`}
+                  className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-md border"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                      <span className="text-sm font-bold text-red-600 dark:text-red-400">
+                        {relationship.creditorName.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium">{relationship.creditorName}</p>
+                      <p className="text-sm text-muted-foreground">you owe them</p>
+                    </div>
+                    <Badge variant="destructive">
+                      {formatCurrency(relationship.amount)}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Time to settle up! 💸
                   </div>
                 </div>
               ))}
@@ -150,11 +187,12 @@ export const DebtRelationships = ({ balances, onSendReminder }: DebtRelationship
           </div>
         )}
 
+        {/* Other relationships in the group */}
         {otherRelationships.length > 0 && (
           <div>
             <h3 className="font-medium mb-3 text-sm text-muted-foreground">Other debts in group</h3>
             <div className="space-y-2">
-              {otherRelationships.slice(0, 5).map((relationship, index) => (
+              {otherRelationships.slice(0, 3).map((relationship, index) => (
                 <div 
                   key={`other-${index}`}
                   className="flex items-center justify-between p-3 bg-secondary/10 rounded-md"
@@ -169,9 +207,9 @@ export const DebtRelationships = ({ balances, onSendReminder }: DebtRelationship
                   </div>
                 </div>
               ))}
-              {otherRelationships.length > 5 && (
+              {otherRelationships.length > 3 && (
                 <p className="text-sm text-muted-foreground text-center">
-                  +{otherRelationships.length - 5} more relationships
+                  +{otherRelationships.length - 3} more relationships
                 </p>
               )}
             </div>
