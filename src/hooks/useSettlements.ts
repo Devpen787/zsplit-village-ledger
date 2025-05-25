@@ -4,8 +4,11 @@ import { BalanceData } from '@/components/balances/BalancesTable';
 import { toast } from '@/components/ui/sonner';
 import { 
   calculateOptimalSettlements, 
+  calculateSettlementsWithErrorHandling,
   hasUnsettledBalances as checkUnsettledBalances,
-  areAllSettlementsSettled 
+  areAllSettlementsSettled,
+  getTotalSettlementAmount,
+  getSettlementsForUser
 } from '@/utils/settlementUtils';
 
 export type Settlement = {
@@ -17,19 +20,41 @@ export type Settlement = {
   settled?: boolean;
 };
 
-export const useSettlements = (balances: BalanceData[]) => {
+interface UseSettlementsReturn {
+  settlements: Settlement[];
+  showSettlements: boolean;
+  hasUnsettledBalances: boolean;
+  allSettled: boolean;
+  totalAmount: number;
+  handleSettleUp: () => void;
+  markAsSettled: (index: number) => void;
+  hideSettlements: () => void;
+  calculateSettlements: () => Settlement[];
+  setShowSettlements: (show: boolean) => void;
+  getMySettlements: (userId: string) => Settlement[];
+}
+
+export const useSettlements = (balances: BalanceData[]): UseSettlementsReturn => {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [showSettlements, setShowSettlements] = useState(false);
   
   const hasUnsettledBalances = checkUnsettledBalances(balances);
   const allSettled = areAllSettlementsSettled(settlements);
+  const totalAmount = getTotalSettlementAmount(settlements);
   
   const calculateSettlements = useCallback(() => {
     try {
-      const payments = calculateOptimalSettlements(balances);
-      setSettlements(payments);
+      const result = calculateSettlementsWithErrorHandling(balances);
+      
+      if (result.hasError) {
+        console.error('Settlement calculation error:', result.errorMessage);
+        toast.error(result.errorMessage || 'Settlement calculation failed - please try again');
+        return [];
+      }
+      
+      setSettlements(result.settlements);
       setShowSettlements(true);
-      return payments;
+      return result.settlements;
     } catch (error) {
       console.error('Error calculating settlements:', error);
       toast.error('Settlement calculation failed - please try again');
@@ -49,6 +74,8 @@ export const useSettlements = (balances: BalanceData[]) => {
     
     if (payments.length === 0 && hasUnsettledBalances) {
       toast.info("No settlement suggestions could be calculated.");
+    } else if (payments.length > 0) {
+      toast.success(`${payments.length} settlement${payments.length > 1 ? 's' : ''} calculated.`);
     }
   }, [calculateSettlements, hasUnsettledBalances]);
   
@@ -65,6 +92,10 @@ export const useSettlements = (balances: BalanceData[]) => {
   const hideSettlements = useCallback(() => {
     setShowSettlements(false);
   }, []);
+
+  const getMySettlements = useCallback((userId: string) => {
+    return getSettlementsForUser(settlements, userId);
+  }, [settlements]);
   
   return {
     settlements,
@@ -72,9 +103,11 @@ export const useSettlements = (balances: BalanceData[]) => {
     setShowSettlements,
     hasUnsettledBalances,
     allSettled,
+    totalAmount,
     handleSettleUp,
     markAsSettled,
     hideSettlements,
-    calculateSettlements
+    calculateSettlements,
+    getMySettlements
   };
 };

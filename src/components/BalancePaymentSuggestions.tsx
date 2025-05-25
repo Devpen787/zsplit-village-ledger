@@ -2,78 +2,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight } from 'lucide-react';
 import { BalanceData } from '@/components/balances/BalancesTable';
-import { formatAmount } from '@/utils/money';
-
-type PaymentSuggestion = {
-  fromUserId: string;
-  fromUserName: string | null;
-  toUserId: string;
-  toUserName: string | null;
-  amount: number;
-};
+import { formatCurrency } from '@/utils/money';
+import { calculateOptimalSettlements } from '@/utils/settlementUtils';
+import { useMemo } from 'react';
 
 interface BalancePaymentSuggestionsProps {
   balances: BalanceData[];
 }
 
 export const BalancePaymentSuggestions = ({ balances }: BalancePaymentSuggestionsProps) => {
-  // Filter users who owe money and users who are owed money
-  const debtors = balances
-    .filter(balance => balance.netBalance < -0.01) // Small threshold to handle floating point errors
-    .sort((a, b) => a.netBalance - b.netBalance); // Sort from largest debt to smallest
-  
-  const creditors = balances
-    .filter(balance => balance.netBalance > 0.01) // Small threshold to handle floating point errors
-    .sort((a, b) => b.netBalance - a.netBalance); // Sort from largest credit to smallest
-
-  // Calculate the optimal payments to settle balances
-  const calculateOptimalPayments = (): PaymentSuggestion[] => {
-    const payments: PaymentSuggestion[] = [];
-    
-    // Create clones to work with
-    const remainingDebtors = [...debtors];
-    const remainingCreditors = [...creditors];
-    
-    while (remainingDebtors.length > 0 && remainingCreditors.length > 0) {
-      const debtor = remainingDebtors[0];
-      const creditor = remainingCreditors[0];
-      
-      // How much the debtor owes (make it positive for easier comparison)
-      const debtAmount = Math.abs(debtor.netBalance);
-      // How much the creditor is owed
-      const creditAmount = creditor.netBalance;
-      
-      // The payment is the minimum of what's owed and what's due
-      const paymentAmount = Math.min(debtAmount, creditAmount);
-      
-      if (paymentAmount > 0.01) { // Ignore tiny payments
-        payments.push({
-          fromUserId: debtor.userId,
-          fromUserName: debtor.userName,
-          toUserId: creditor.userId,
-          toUserName: creditor.userName,
-          amount: Number(paymentAmount.toFixed(2))
-        });
-      }
-      
-      // Update balances
-      debtor.netBalance += paymentAmount;
-      creditor.netBalance -= paymentAmount;
-      
-      // Remove users who have settled up
-      if (Math.abs(debtor.netBalance) < 0.01) {
-        remainingDebtors.shift();
-      }
-      
-      if (Math.abs(creditor.netBalance) < 0.01) {
-        remainingCreditors.shift();
-      }
+  // Memoize settlement calculations for performance
+  const suggestedPayments = useMemo(() => {
+    try {
+      return calculateOptimalSettlements(balances);
+    } catch (error) {
+      console.error('Error calculating payments:', error);
+      return [];
     }
-    
-    return payments;
-  };
-
-  const suggestedPayments = calculateOptimalPayments();
+  }, [balances]);
 
   return (
     <Card>
@@ -92,7 +38,7 @@ export const BalancePaymentSuggestions = ({ balances }: BalancePaymentSuggestion
                   <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">{payment.toUserName}</span>
                 </div>
-                <span className="font-mono font-semibold">{formatAmount(payment.amount)}</span>
+                <span className="font-mono font-semibold">{formatCurrency(payment.amount)}</span>
               </div>
             ))}
           </div>

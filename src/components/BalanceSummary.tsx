@@ -1,3 +1,4 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { useBalances } from "@/hooks/useBalances";
 import { useAuth } from "@/contexts";
@@ -5,30 +6,34 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/utils/money";
 import { LoadingCenter } from "@/components/ui/loading";
+import { useMemo } from "react";
 
 export const BalanceSummary = () => {
-  const { balances, loading, error, hasRecursionError, handleRefresh } = useBalances();
+  const { balances, loading, error, hasRecursionError, handleRefresh, isEmpty } = useBalances();
   const { user } = useAuth();
 
-  // Calculate summary data for the current user
-  const currentUserBalance = balances.find(balance => balance.user_id === user?.id);
-  
-  const summary = {
-    totalPositive: 0,
-    totalNegative: 0,
-    netBalance: 0,
-    currency: "CHF"
-  };
+  // Memoize summary calculation for performance
+  const summary = useMemo(() => {
+    const currentUserBalance = balances.find(balance => balance.user_id === user?.id);
+    
+    const defaultSummary = {
+      totalPositive: 0,
+      totalNegative: 0,
+      netBalance: 0,
+      currency: "CHF"
+    };
 
-  if (currentUserBalance) {
-    if (currentUserBalance.amount > 0) {
-      summary.totalPositive = currentUserBalance.amount;
-      summary.netBalance = currentUserBalance.amount;
-    } else if (currentUserBalance.amount < 0) {
-      summary.totalNegative = currentUserBalance.amount;
-      summary.netBalance = currentUserBalance.amount;
-    }
-  }
+    if (!currentUserBalance) return defaultSummary;
+
+    const amount = currentUserBalance.amount;
+    
+    return {
+      totalPositive: amount > 0 ? amount : 0,
+      totalNegative: amount < 0 ? amount : 0,
+      netBalance: amount,
+      currency: "CHF"
+    };
+  }, [balances, user?.id]);
 
   if (loading) {
     return (
@@ -78,6 +83,18 @@ export const BalanceSummary = () => {
             >
               <RefreshCw className="h-3 w-3" /> Try Again
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isEmpty) {
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-center text-muted-foreground">
+            <span className="text-sm">No balance data available</span>
           </div>
         </CardContent>
       </Card>
