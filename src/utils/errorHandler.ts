@@ -34,6 +34,13 @@ export class AuthenticationError extends AppError {
   }
 }
 
+export class SecurityError extends AppError {
+  constructor(message: string = 'Security violation detected') {
+    super(message, 'SECURITY_ERROR', 403, 'Access denied for security reasons.');
+    this.name = 'SecurityError';
+  }
+}
+
 export const handleError = (error: unknown, context?: string): void => {
   console.error(`Error in ${context || 'unknown context'}:`, error);
   
@@ -104,4 +111,33 @@ export const retryOperation = async <T>(
   }
   
   throw lastError!;
+};
+
+// Memory leak prevention utility
+export const createCancellablePromise = <T>(
+  promise: Promise<T>
+): { promise: Promise<T>; cancel: () => void } => {
+  let isCancelled = false;
+  
+  const cancellablePromise = new Promise<T>((resolve, reject) => {
+    promise.then(
+      value => {
+        if (!isCancelled) {
+          resolve(value);
+        }
+      },
+      error => {
+        if (!isCancelled) {
+          reject(error);
+        }
+      }
+    );
+  });
+  
+  return {
+    promise: cancellablePromise,
+    cancel: () => {
+      isCancelled = true;
+    }
+  };
 };

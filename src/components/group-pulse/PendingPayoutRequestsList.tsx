@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Check, X, Wallet } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth } from '@/contexts';
+import { toast } from '@/components/ui/sonner';
 
 interface PendingPayoutRequestsListProps {
   pendingRequests: PotActivity[];
@@ -20,11 +22,13 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
   onReject,
   isAdmin
 }) => {
-  // If no real requests exist, add demo entries
+  const { user } = useAuth();
+  
+  // If no real requests exist, add demo entries only in development
   let requests = pendingRequests;
   
-  if (requests.length === 0) {
-    // Demo data for testing purposes
+  if (requests.length === 0 && process.env.NODE_ENV === 'development') {
+    // Demo data for testing purposes - only in development
     const demoRequests: PotActivity[] = [
       {
         id: 'demo-request-1',
@@ -65,6 +69,23 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
   const shortenAddress = (address: string | null | undefined) => {
     if (!address) return null;
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  };
+
+  // Security check for self-approval
+  const handleApprove = async (request: PotActivity) => {
+    if (request.user_id === user?.id) {
+      toast.error("You cannot approve your own requests");
+      return;
+    }
+    await onApprove(request.id);
+  };
+
+  const handleReject = async (request: PotActivity) => {
+    if (request.user_id === user?.id) {
+      toast.error("You cannot reject your own requests");
+      return;
+    }
+    await onReject(request.id);
   };
 
   if (requests.length === 0) {
@@ -121,26 +142,32 @@ export const PendingPayoutRequestsList: React.FC<PendingPayoutRequestsListProps>
                   : 'Unknown'}
               </TableCell>
               <TableCell>
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex items-center gap-1 text-green-500 border-green-200 hover:bg-green-50 hover:text-green-600"
-                    onClick={() => onApprove(request.id)}
-                  >
-                    <Check size={16} />
-                    Approve
-                  </Button>
-                  <Button 
-                    size="sm"
-                    variant="outline"
-                    className="flex items-center gap-1 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-                    onClick={() => onReject(request.id)}
-                  >
-                    <X size={16} />
-                    Reject
-                  </Button>
-                </div>
+                {isAdmin && request.user_id !== user?.id ? (
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex items-center gap-1 text-green-500 border-green-200 hover:bg-green-50 hover:text-green-600"
+                      onClick={() => handleApprove(request)}
+                    >
+                      <Check size={16} />
+                      Approve
+                    </Button>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center gap-1 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                      onClick={() => handleReject(request)}
+                    >
+                      <X size={16} />
+                      Reject
+                    </Button>
+                  </div>
+                ) : request.user_id === user?.id ? (
+                  <span className="text-sm text-muted-foreground">Your request</span>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Admin only</span>
+                )}
               </TableCell>
             </TableRow>
           ))}

@@ -24,7 +24,7 @@ export const useSettlements = (balances: BalanceData[]) => {
   // Check if all suggested payments are marked as settled
   const allSettled = settlements.length > 0 && settlements.every(s => s.settled);
   
-  // Calculate optimal settlements
+  // Calculate optimal settlements with iteration limit to prevent infinite loops
   const calculateSettlements = useCallback(() => {
     // Filter users who owe money and users who are owed money
     const debtors = balances
@@ -44,7 +44,13 @@ export const useSettlements = (balances: BalanceData[]) => {
     const remainingDebtors = [...debtors];
     const remainingCreditors = [...creditors];
     
-    while (remainingDebtors.length > 0 && remainingCreditors.length > 0) {
+    // Add iteration limit to prevent infinite loops
+    const MAX_ITERATIONS = 100;
+    let iterations = 0;
+    
+    while (remainingDebtors.length > 0 && remainingCreditors.length > 0 && iterations < MAX_ITERATIONS) {
+      iterations++;
+      
       const debtor = remainingDebtors[0];
       const creditor = remainingCreditors[0];
       
@@ -79,6 +85,12 @@ export const useSettlements = (balances: BalanceData[]) => {
       if (Math.abs(creditor.netBalance) < 0.01) {
         remainingCreditors.shift();
       }
+    }
+    
+    if (iterations >= MAX_ITERATIONS) {
+      console.error('Settlement calculation exceeded maximum iterations');
+      toast.error('Settlement calculation failed - please try again');
+      return [];
     }
     
     console.log('Settlement payments calculated:', payments);

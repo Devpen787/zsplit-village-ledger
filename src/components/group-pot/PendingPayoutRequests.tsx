@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { CheckCircle, XCircle, Wallet } from 'lucide-react';
+import { useAuth } from '@/contexts';
+import { toast } from '@/components/ui/sonner';
 
 interface PendingPayoutRequestsProps {
   activities: PotActivity[];
@@ -19,14 +21,16 @@ export const PendingPayoutRequests = ({
   onReject,
   isAdmin
 }: PendingPayoutRequestsProps) => {
+  const { user } = useAuth();
+  
   // Filter only pending payout requests
   let pendingRequests = activities.filter(
     activity => activity.type === 'payout' && activity.status === 'pending'
   );
 
   // Add demo pending requests if none exist and we're in a development environment
-  if (pendingRequests.length === 0) {
-    // Demo data for testing purposes - these will always show
+  if (pendingRequests.length === 0 && process.env.NODE_ENV === 'development') {
+    // Demo data for testing purposes - these will only show in development
     const demoRequests: PotActivity[] = [
       {
         id: 'demo-request-1',
@@ -70,6 +74,23 @@ export const PendingPayoutRequests = ({
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
 
+  // Security check for self-approval
+  const handleApprove = async (request: PotActivity) => {
+    if (request.user_id === user?.id) {
+      toast.error("You cannot approve your own requests");
+      return;
+    }
+    await onApprove(request.id);
+  };
+
+  const handleReject = async (request: PotActivity) => {
+    if (request.user_id === user?.id) {
+      toast.error("You cannot reject your own requests");
+      return;
+    }
+    await onReject(request.id);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -102,27 +123,36 @@ export const PendingPayoutRequests = ({
                 {request.note && <p className="text-sm mt-1">{request.note}</p>}
               </div>
               
-              {/* Always show approve/reject buttons for demonstration */}
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => onReject(request.id)}
-                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                >
-                  <XCircle className="mr-1 h-4 w-4" />
-                  Reject
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => onApprove(request.id)}
-                  className="border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700"
-                >
-                  <CheckCircle className="mr-1 h-4 w-4" />
-                  Approve
-                </Button>
-              </div>
+              {/* Show approve/reject buttons only for admins and not for self-requests */}
+              {isAdmin && request.user_id !== user?.id && (
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleReject(request)}
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <XCircle className="mr-1 h-4 w-4" />
+                    Reject
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleApprove(request)}
+                    className="border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700"
+                  >
+                    <CheckCircle className="mr-1 h-4 w-4" />
+                    Approve
+                  </Button>
+                </div>
+              )}
+              
+              {/* Show message for own requests */}
+              {request.user_id === user?.id && (
+                <div className="text-sm text-muted-foreground">
+                  Your request - awaiting approval
+                </div>
+              )}
             </div>
           ))}
         </div>
