@@ -1,11 +1,10 @@
-
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { ExpenseUser, UserSplitData } from "@/types/expenses";
-import { formatUserName, getUserInitials } from "@/utils/userFormatUtils";
+import { getUserDisplayName, getUserInitials } from "@/utils/userUtils";
 import TableInputField from "./TableInputField";
 
 interface UserTableRowProps {
@@ -33,7 +32,7 @@ const UserTableRow: React.FC<UserTableRowProps> = ({
   adjustShares,
   getCalculatedAmount
 }) => {
-  const userName = formatUserName(user);
+  const userName = getUserDisplayName(user);
   const initials = getUserInitials(userName);
   const amount = userData ? getCalculatedAmount(userData) : 0;
   

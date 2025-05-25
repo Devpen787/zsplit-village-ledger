@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getUserInitials } from "@/utils/userFormatUtils";
+import { getUserInitials } from "@/utils/userUtils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatAmount } from "@/utils/money";
 

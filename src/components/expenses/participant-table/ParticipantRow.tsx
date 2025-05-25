@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ExpenseUser, UserSplitData } from '@/types/expenses';
-import { formatUserName } from '@/utils/userFormatUtils';
+import { getUserDisplayName, getUserInitials } from '@/utils/userUtils';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { CreditCard } from 'lucide-react';
@@ -113,7 +113,7 @@ export const ParticipantRow: React.FC<ParticipantRowProps> = ({
         <td className="p-3">
           <div className="flex items-center gap-2">
             <span className={isPayer ? "font-medium" : ""}>
-              {formatUserName(user)}
+              {getUserDisplayName(user)}
             </span>
             {isPayer && (
               <Tooltip>

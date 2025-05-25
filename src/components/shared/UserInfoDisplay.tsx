@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Wallet } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { formatUserWithWallet } from '@/utils/userDisplayUtils';
+import { formatUserWithWallet } from '@/utils/userUtils';
 
 interface UserInfoDisplayProps {
   user: {

@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { UserSplitData, ExpenseUser } from "@/types/expenses";
-import { formatSplitDataUserName } from "@/utils/userFormatUtils";
+import { getUserDisplayName } from "@/utils/userUtils";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { toast } from "@/components/ui/sonner";
 
@@ -132,7 +131,7 @@ export const useExpenseSplitMethods = ({
     handleDeselectAll,
     handleSelectGroup,
     sortedUsers,
-    formatUserName: formatSplitDataUserName,
+    formatUserName: getUserDisplayName,
     availableGroups,
     selectedGroup,
     setSelectedGroup
