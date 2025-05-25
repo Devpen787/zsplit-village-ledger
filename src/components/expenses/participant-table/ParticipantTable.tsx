@@ -1,14 +1,11 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { ExpenseUser, UserSplitData } from '@/types/expenses';
 import { ParticipantFilters } from './ParticipantFilters';
-import { ParticipantTableHeader } from './ParticipantTableHeader';
-import { ParticipantRow } from './ParticipantRow';
+import { SplitMethodHelpText } from './SplitMethodHelpText';
+import { ParticipantTableContainer } from './ParticipantTableContainer';
+import { ValidationSummary } from './ValidationSummary';
 import { useParticipantTable } from './useParticipantTable';
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Check, Info } from "lucide-react";
-import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ParticipantTableProps {
   users: ExpenseUser[];
@@ -52,42 +49,12 @@ export const ParticipantTable: React.FC<ParticipantTableProps> = ({
     paidBy
   );
 
-  // Add handlers for custom inputs
   const handleCustomInputChange = (userId: string, value: string, field: 'amount' | 'percentage') => {
     const numValue = parseFloat(value) || 0;
     if (field === 'amount') {
       handleAmountChange(userId, numValue);
     } else if (field === 'percentage') {
       handlePercentageChange(userId, numValue);
-    }
-  };
-
-  // Render the help text based on split method
-  const renderSplitMethodHelp = () => {
-    switch (splitMethod) {
-      case 'equal':
-        return (
-          <div className="text-sm text-muted-foreground flex items-center mb-2">
-            <Info size={14} className="mr-1" />
-            All selected participants will pay the same amount
-          </div>
-        );
-      case 'amount':
-        return (
-          <div className="text-sm text-muted-foreground flex items-center mb-2">
-            <Info size={14} className="mr-1" />
-            Specify exact amounts for each participant
-          </div>
-        );
-      case 'percentage':
-        return (
-          <div className="text-sm text-muted-foreground flex items-center mb-2">
-            <Info size={14} className="mr-1" />
-            Percentages must add up to 100%
-          </div>
-        );
-      default:
-        return null;
     }
   };
 
@@ -102,98 +69,27 @@ export const ParticipantTable: React.FC<ParticipantTableProps> = ({
         handleDeselectAll={handleDeselectAll}
       />
 
-      {renderSplitMethodHelp()}
+      <SplitMethodHelpText splitMethod={splitMethod} />
 
-      <div className="border rounded-md overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <ParticipantTableHeader splitMethod={splitMethod} />
-          </thead>
-          <tbody>
-            {filteredUsers.map((user) => {
-              const userData = splitData.find(data => data.userId === user.id) || { userId: user.id };
-              const isUserSelected = isSelected(user.id);
-              const isPayer = user.id === paidBy;
-              
-              return (
-                <ParticipantRow
-                  key={user.id}
-                  user={user}
-                  userData={userData}
-                  isUserSelected={isUserSelected}
-                  isPayer={isPayer}
-                  toggleSelection={toggleSelection}
-                  splitMethod={splitMethod}
-                  equalShareAmount={equalShareAmount}
-                  onCustomInputChange={handleCustomInputChange}
-                  getCalculatedAmount={getCalculatedAmount}
-                />
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <ParticipantTableContainer
+        users={users}
+        splitData={splitData}
+        splitMethod={splitMethod}
+        totalAmount={totalAmount}
+        paidBy={paidBy}
+        filteredUsers={filteredUsers}
+        isSelected={isSelected}
+        toggleSelection={toggleSelection}
+        equalShareAmount={equalShareAmount}
+        handleCustomInputChange={handleCustomInputChange}
+        getCalculatedAmount={getCalculatedAmount}
+      />
 
-      {/* Split method summary and validation */}
-      <TooltipProvider>
-        {splitMethod === 'amount' && (
-          <div className={cn(
-            "text-sm mb-4 flex items-center p-2 rounded-md",
-            validation.isValid ? "bg-green-50 text-green-600" : "bg-amber-50 text-amber-600"
-          )}>
-            {validation.isValid ? (
-              <Tooltip>
-                <TooltipTrigger className="flex items-center">
-                  <Check className="h-4 w-4 mr-2" />
-                  Amounts add up to {totalAmount.toFixed(2)}
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>All participant amounts total correctly</p>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger className="flex items-center">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  {validation.message}
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Adjust amounts to match the total expense amount</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-        )}
-
-        {splitMethod === 'percentage' && (
-          <div className={cn(
-            "text-sm mb-4 flex items-center p-2 rounded-md",
-            validation.isValid ? "bg-green-50 text-green-600" : "bg-amber-50 text-amber-600"
-          )}>
-            {validation.isValid ? (
-              <Tooltip>
-                <TooltipTrigger className="flex items-center">
-                  <Check className="h-4 w-4 mr-2" />
-                  Percentages add up to 100%
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>All percentages total to exactly 100%</p>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger className="flex items-center">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  {validation.message}
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Adjust percentages so they total 100%</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-        )}
-      </TooltipProvider>
+      <ValidationSummary
+        splitMethod={splitMethod}
+        totalAmount={totalAmount}
+        validation={validation}
+      />
 
       <div className="text-sm text-muted-foreground mt-2">
         Selected: {selectedCount} participant(s)
