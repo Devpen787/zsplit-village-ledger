@@ -30,3 +30,15 @@ export const compareMoney = (cents1: number, cents2: number): number => cents1 -
 export const isValidAmount = (amount: number): boolean => {
   return !isNaN(amount) && amount >= 0 && Number.isFinite(amount);
 };
+
+// Convert from display amount to cents for storage
+export const parseAmountToCents = (displayAmount: string | number): number | null => {
+  const num = typeof displayAmount === 'string' ? parseFloat(displayAmount) : displayAmount;
+  if (!isValidAmount(num)) return null;
+  return toCents(num);
+};
+
+// Safely add multiple money amounts in cents
+export const sumMoney = (...amounts: number[]): number => {
+  return amounts.reduce((sum, amount) => addMoney(sum, amount), 0);
+};

@@ -41,6 +41,32 @@ export class SecurityError extends AppError {
   }
 }
 
+// Enhanced validation utilities
+export const validateAmount = (amount: string | number): number => {
+  const numValue = typeof amount === 'string' ? parseFloat(amount) : amount;
+  
+  if (isNaN(numValue)) {
+    throw new ValidationError('Amount must be a valid number');
+  }
+  
+  if (numValue < 0) {
+    throw new ValidationError('Amount must be positive');
+  }
+  
+  if (!Number.isFinite(numValue)) {
+    throw new ValidationError('Amount must be a finite number');
+  }
+  
+  return numValue;
+};
+
+export const validateRequired = (value: any, fieldName: string): any => {
+  if (value === null || value === undefined || value === '') {
+    throw new ValidationError(`${fieldName} is required`);
+  }
+  return value;
+};
+
 export const handleError = (error: unknown, context?: string): void => {
   console.error(`Error in ${context || 'unknown context'}:`, error);
   
@@ -140,4 +166,23 @@ export const createCancellablePromise = <T>(
       isCancelled = true;
     }
   };
+};
+
+// Safe async operation wrapper with cleanup
+export const useSafeAsync = () => {
+  let isMounted = true;
+  
+  const safeSet = <T>(setter: (value: T) => void) => {
+    return (value: T) => {
+      if (isMounted) {
+        setter(value);
+      }
+    };
+  };
+  
+  const cleanup = () => {
+    isMounted = false;
+  };
+  
+  return { safeSet, cleanup };
 };
