@@ -9,142 +9,150 @@ import { performSignOut, getPrivyEmail } from './authUtils';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Auth state machine states
+type AuthState = 'initializing' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [loginAttempts, setLoginAttempts] = useState(0);
-  const { ready, authenticated, user: privyUser, logout } = usePrivy();
-  const isInitialized = useRef(false);
-  const refreshingRef = useRef(false); // Track if refresh is in progress
-  const lastPrivyIdRef = useRef<string | null>(null); // Track last Privy user ID
+  const [authState, setAuthState] = useState<AuthState>('initializing');
   
+  const { ready, authenticated, user: privyUser, logout } = usePrivy();
   const { fetchUser, createUser, authError, clearAuthError, setAuthError } = useUserData();
   
+  // Refs to prevent race conditions
+  const isProcessingRef = useRef(false);
+  const lastPrivyIdRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
+
   // Reset login attempts counter
   const resetLoginAttempts = useCallback(() => {
     setLoginAttempts(0);
   }, []);
 
-  // Refresh user data with improved error handling and retry logic
+  // Centralized user refresh with race condition protection
   const refreshUser = useCallback(async (): Promise<User | null> => {
-    console.log("refreshUser called, authenticated:", authenticated, "privyUser:", privyUser);
-    
-    if (!authenticated || !privyUser) {
-      clearAuthError();
-      setLoading(false);
-      return null;
-    }
-
-    // Skip refresh if already in progress with same user
-    if (refreshingRef.current && lastPrivyIdRef.current === privyUser.id) {
-      console.log("Skipping duplicate refresh for same user");
+    // Prevent concurrent refresh calls
+    if (isProcessingRef.current || !mountedRef.current) {
       return user;
     }
-    
-    // Set refreshing state and track user
-    refreshingRef.current = true;
+
+    if (!authenticated || !privyUser) {
+      if (mountedRef.current) {
+        setAuthState('unauthenticated');
+        setUser(null);
+        setLoading(false);
+      }
+      return null;
+    }
+
+    // Skip if same user and already processing
+    if (lastPrivyIdRef.current === privyUser.id && user) {
+      return user;
+    }
+
+    isProcessingRef.current = true;
     lastPrivyIdRef.current = privyUser.id;
-    
-    setLoading(true);
-    clearAuthError();
-    
+
     try {
-      // First set up Supabase auth with the Privy user ID
+      if (mountedRef.current) {
+        setAuthState('loading');
+        setLoading(true);
+        clearAuthError();
+      }
+
+      // Set up Supabase auth
       await setSupabaseAuth(privyUser.id);
       
-      // Then try to fetch the user
+      // Fetch or create user
       let userData = await fetchUser(privyUser.id);
       
-      // If user doesn't exist, create it
       if (!userData) {
-        console.log("User not found, creating new user");
         userData = await createUser(privyUser.id, privyUser);
       }
-      
-      if (userData) {
-        console.log("Setting user data:", userData);
+
+      if (userData && mountedRef.current) {
         setUser(userData);
-        setLoading(false);
-        resetLoginAttempts(); // Reset login attempts on successful login
-        return userData;
+        setAuthState('authenticated');
+        resetLoginAttempts();
       } else {
-        console.error("Failed to get or create user");
-        setLoading(false);
-        // Track failed attempts
-        setLoginAttempts(prev => prev + 1);
-        return null;
+        throw new Error('Failed to load user data');
       }
+
+      return userData;
     } catch (error: any) {
-      console.error("Error refreshing user:", error);
-      setLoading(false);
-      setAuthError(`Failed to load your profile: ${error?.message || 'Unknown error'}`);
-      // Track failed attempts
-      setLoginAttempts(prev => prev + 1);
+      console.error('Auth refresh error:', error);
+      
+      if (mountedRef.current) {
+        setAuthState('error');
+        setAuthError(`Authentication failed: ${error?.message || 'Unknown error'}`);
+        setLoginAttempts(prev => prev + 1);
+      }
+      
       return null;
     } finally {
-      refreshingRef.current = false;
-    }
-  }, [authenticated, privyUser, clearAuthError, fetchUser, createUser, resetLoginAttempts, setAuthError, user]);
-
-  // Initialize auth on component mount
-  useEffect(() => {
-    if (isInitialized.current || !ready) return;
-    
-    isInitialized.current = true;
-    
-    // If authenticated, attempt to refresh user data
-    if (authenticated && privyUser) {
-      refreshUser().catch(err => {
-        console.error("Error during initial user refresh:", err);
-      });
-    } else {
-      // Not authenticated, clear user state
-      setUser(null);
-      setLoading(false);
-    }
-  }, [ready, authenticated, privyUser, refreshUser]);
-
-  // Watch for auth state changes
-  useEffect(() => {
-    // Only respond to changes if already initialized
-    if (!isInitialized.current) return;
-    
-    if (authenticated && privyUser) {
-      // Skip refresh if user ID hasn't changed
-      if (lastPrivyIdRef.current === privyUser.id && user) {
-        console.log("Skipping auth change handler - same user ID");
-        return;
+      if (mountedRef.current) {
+        setLoading(false);
       }
-      
-      // Debounce refresh calls with a small delay
-      const timeoutId = setTimeout(() => {
-        refreshUser().catch(err => {
-          console.error("Error during user refresh after auth change:", err);
-        });
-      }, 300);
-      
-      return () => clearTimeout(timeoutId);
-    } else if (!authenticated) {
-      // Clear user state when no longer authenticated
-      clearAuthState();
-      setUser(null);
-      setLoading(false);
-      lastPrivyIdRef.current = null;
+      isProcessingRef.current = false;
     }
-  }, [authenticated, privyUser, refreshUser, user]);
+  }, [authenticated, privyUser, fetchUser, createUser, clearAuthError, setAuthError, resetLoginAttempts, user]);
+
+  // Single effect to manage auth state
+  useEffect(() => {
+    if (!ready) return;
+
+    // Handle auth state changes
+    const handleAuthChange = async () => {
+      if (authenticated && privyUser) {
+        // Only refresh if user ID changed or we don't have a user
+        if (lastPrivyIdRef.current !== privyUser.id || !user) {
+          await refreshUser();
+        }
+      } else {
+        // Clear auth state
+        if (mountedRef.current) {
+          clearAuthState();
+          setUser(null);
+          setAuthState('unauthenticated');
+          setLoading(false);
+          lastPrivyIdRef.current = null;
+        }
+      }
+    };
+
+    // Debounce auth changes to prevent rapid fire calls
+    const timeoutId = setTimeout(handleAuthChange, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [ready, authenticated, privyUser, refreshUser, user]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const signOut = async () => {
     try {
       setLoading(true);
       clearAuthError();
       await performSignOut(logout);
-      setUser(null);
-      resetLoginAttempts();
-      lastPrivyIdRef.current = null; // Reset the stored Privy user ID
+      
+      if (mountedRef.current) {
+        setUser(null);
+        setAuthState('unauthenticated');
+        resetLoginAttempts();
+        lastPrivyIdRef.current = null;
+      }
     } catch (error) {
       console.error("Error in signOut:", error);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -153,11 +161,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return user.role === role;
   };
 
-  const isAuthenticated = !!user;
+  const isAuthenticated = authState === 'authenticated' && !!user;
 
   const value: AuthContextType = {
     user,
-    loading,
+    loading: authState === 'loading' || authState === 'initializing' || loading,
     signOut,
     isAuthenticated,
     hasRole,
