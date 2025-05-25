@@ -1,3 +1,4 @@
+
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Info } from 'lucide-react';
 import { useBalances } from '@/hooks/useBalances';
@@ -5,8 +6,12 @@ import { BalancesHeader } from '@/components/balances/BalancesHeader';
 import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable';
 import { BalanceSummaryCards } from '@/components/balances/BalanceSummaryCards';
 import { SettlementActions } from '@/components/balances/settlements/SettlementActions';
+import { DebtRelationships } from '@/components/balances/DebtRelationships';
+import { PaymentTracker } from '@/components/balances/settlements/PaymentTracker';
+import { ReminderSystem } from '@/components/balances/ReminderSystem';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useSettlements } from '@/hooks/useSettlements';
 import AppLayout from '@/layouts/AppLayout';
 import { LoadingPage } from '@/components/ui/loading';
 
@@ -22,6 +27,17 @@ const Balances = () => {
     amountOwed: balance.amount < 0 ? Math.abs(balance.amount) : 0,
     netBalance: balance.amount
   }));
+
+  const { 
+    settlements,
+    markAsSettled,
+    undoSettlement
+  } = useSettlements(balanceData);
+
+  const handleSendReminder = (relationship: any) => {
+    // In a real app, this would send an actual notification
+    console.log('Sending reminder for relationship:', relationship);
+  };
 
   if (loading && !refreshing) {
     return (
@@ -74,6 +90,21 @@ const Balances = () => {
         ) : !hasRecursionError && (
           <>
             <BalanceSummaryCards balances={balanceData} />
+            
+            {/* Enhanced debt and settlement flow */}
+            <DebtRelationships 
+              balances={balanceData} 
+              onSendReminder={handleSendReminder}
+            />
+            
+            <PaymentTracker 
+              settlements={settlements}
+              onMarkAsSettled={markAsSettled}
+              onUndoSettlement={undoSettlement}
+            />
+            
+            <ReminderSystem balances={balanceData} />
+            
             <BalancesTable balances={balanceData} />
             <SettlementActions balances={balanceData} />
           </>

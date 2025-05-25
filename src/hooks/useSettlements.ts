@@ -28,6 +28,7 @@ interface UseSettlementsReturn {
   totalAmount: number;
   handleSettleUp: () => void;
   markAsSettled: (index: number) => void;
+  undoSettlement: (index: number) => void;
   hideSettlements: () => void;
   calculateSettlements: () => Settlement[];
   setShowSettlements: (show: boolean) => void;
@@ -88,6 +89,16 @@ export const useSettlements = (balances: BalanceData[]): UseSettlementsReturn =>
     
     toast.success("Payment marked as settled!");
   }, []);
+
+  const undoSettlement = useCallback((index: number) => {
+    setSettlements(prev => 
+      prev.map((settlement, i) => 
+        i === index ? { ...settlement, settled: false } : settlement
+      )
+    );
+    
+    toast.info("Settlement undone - payment marked as pending");
+  }, []);
   
   const hideSettlements = useCallback(() => {
     setShowSettlements(false);
@@ -106,6 +117,7 @@ export const useSettlements = (balances: BalanceData[]): UseSettlementsReturn =>
     totalAmount,
     handleSettleUp,
     markAsSettled,
+    undoSettlement,
     hideSettlements,
     calculateSettlements,
     getMySettlements

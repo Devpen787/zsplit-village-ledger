@@ -24,6 +24,7 @@ export const SettlementActions = ({ balances }: SettlementActionsProps) => {
     allSettled,
     handleSettleUp,
     markAsSettled,
+    undoSettlement,
     hideSettlements,
     setShowSettlements
   } = useSettlements(balances);
