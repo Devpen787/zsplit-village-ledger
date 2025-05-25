@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight } from 'lucide-react';
 import { BalanceData } from '@/components/balances/BalancesTable';
+import { formatAmount } from '@/utils/money';
 
 type PaymentSuggestion = {
   fromUserId: string;
@@ -91,7 +92,7 @@ export const BalancePaymentSuggestions = ({ balances }: BalancePaymentSuggestion
                   <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">{payment.toUserName}</span>
                 </div>
-                <span className="font-mono font-semibold">{payment.amount.toFixed(2)}</span>
+                <span className="font-mono font-semibold">{formatAmount(payment.amount)}</span>
               </div>
             ))}
           </div>

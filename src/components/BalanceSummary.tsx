@@ -4,6 +4,7 @@ import { useBalances } from "@/hooks/useBalances";
 import { useAuth } from "@/contexts";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/utils/money";
 
 export const BalanceSummary = () => {
   const { balances, loading, error, hasRecursionError, handleRefresh } = useBalances();
@@ -94,13 +95,13 @@ export const BalanceSummary = () => {
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">You are owed</span>
             <span className="font-medium text-green-600">
-              {summary.totalPositive.toFixed(2)} {summary.currency}
+              {formatCurrency(summary.totalPositive, summary.currency)}
             </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">You owe</span>
             <span className="font-medium text-red-600">
-              {Math.abs(summary.totalNegative).toFixed(2)} {summary.currency}
+              {formatCurrency(Math.abs(summary.totalNegative), summary.currency)}
             </span>
           </div>
           <div className="pt-2 border-t border-border flex justify-between items-center">
@@ -110,7 +111,7 @@ export const BalanceSummary = () => {
                 summary.netBalance >= 0 ? "text-green-600" : "text-red-600"
               }`}
             >
-              {summary.netBalance.toFixed(2)} {summary.currency}
+              {formatCurrency(summary.netBalance, summary.currency)}
             </span>
           </div>
         </div>

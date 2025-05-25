@@ -2,6 +2,7 @@
 import React from "react";
 import { Check } from "lucide-react";
 import { UserSplitData } from "@/types/expenses";
+import { formatAmount } from "@/utils/money";
 
 interface EqualSplitProps {
   splitData: UserSplitData[];
@@ -18,7 +19,7 @@ const EqualSplit: React.FC<EqualSplitProps> = ({ splitData, totalAmount, users }
   return (
     <div className="text-sm text-green-600 flex items-center">
       <Check className="h-4 w-4 mr-2" />
-      Each person will pay {calculateEqualSplit().toFixed(2)}
+      Each person will pay {formatAmount(calculateEqualSplit())}
     </div>
   );
 };

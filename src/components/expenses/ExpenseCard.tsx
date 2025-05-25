@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from 'date-fns';
+import { formatCurrency, formatAmount } from '@/utils/money';
 
 interface ExpenseCardProps {
   expense: Expense;
@@ -92,7 +93,7 @@ export const ExpenseCard = ({ expense }: ExpenseCardProps) => {
             </div>
             <div className="text-right">
               <p className="font-bold">
-                {Number(expense.amount).toFixed(2)} {expense.currency}
+                {formatCurrency(Number(expense.amount), expense.currency)}
               </p>
               
               {!isPayer && (
@@ -101,7 +102,7 @@ export const ExpenseCard = ({ expense }: ExpenseCardProps) => {
                     <Skeleton className="h-4 w-16 inline-block" />
                   ) : userShare ? (
                     <span className={userShare.paid_status ? "text-green-600" : "text-amber-600 font-medium"}>
-                      {userShare.paid_status ? "Paid" : `You owe ${Number(userShare.share).toFixed(2)}`}
+                      {userShare.paid_status ? "Paid" : `You owe ${formatAmount(Number(userShare.share))}`}
                     </span>
                   ) : null}
                 </div>

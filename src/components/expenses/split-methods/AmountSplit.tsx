@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Check, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserSplitData } from "@/types/expenses";
+import { formatAmount } from "@/utils/money";
 
 interface AmountSplitProps {
   splitData: UserSplitData[];
@@ -38,7 +39,7 @@ const AmountSplit: React.FC<AmountSplitProps> = ({
         ) : (
           <>
             <AlertTriangle className="h-4 w-4 mr-2" />
-            {amountDiff > 0 ? `${amountDiff.toFixed(2)} left to assign` : `Exceeds total by ${Math.abs(amountDiff).toFixed(2)}`}
+            {amountDiff > 0 ? `${formatAmount(amountDiff)} left to assign` : `Exceeds total by ${formatAmount(Math.abs(amountDiff))}`}
           </>
         )}
       </div>

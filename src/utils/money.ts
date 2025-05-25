@@ -15,6 +15,21 @@ export const formatMoney = (cents: number, currency: string = 'CHF'): string => 
   }).format(fromCents(cents));
 };
 
+// Format money amount as display string without currency symbol
+export const formatAmount = (amount: number, precision: number = 2): string => {
+  return amount.toFixed(precision);
+};
+
+// Format money with currency symbol for display
+export const formatCurrency = (amount: number, currency: string = 'CHF'): string => {
+  return `${formatAmount(amount)} ${currency}`;
+};
+
+// Format money amount in cents for display
+export const formatMoneyDisplay = (cents: number): string => {
+  return formatAmount(fromCents(cents));
+};
+
 export const addMoney = (cents1: number, cents2: number): number => cents1 + cents2;
 
 export const subtractMoney = (cents1: number, cents2: number): number => cents1 - cents2;

@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getUserInitials } from "@/utils/userFormatUtils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { formatAmount } from "@/utils/money";
 
 interface SplitSummaryProps {
   splitData: UserSplitData[];
@@ -175,7 +176,7 @@ const SplitSummary: React.FC<SplitSummaryProps> = ({
                 <TableCell>{renderInputField(userData)}</TableCell>
               ) : null}
               <TableCell className="text-right font-medium">
-                {isActive ? amount.toFixed(2) : "—"}
+                {isActive ? formatAmount(amount) : "—"}
               </TableCell>
             </TableRow>
           );

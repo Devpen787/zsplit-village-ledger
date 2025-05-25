@@ -8,6 +8,7 @@ import { formatUserName } from '@/utils/userFormatUtils';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { CreditCard } from 'lucide-react';
+import { formatAmount } from '@/utils/money';
 
 interface ParticipantRowProps {
   user: ExpenseUser;
@@ -45,7 +46,7 @@ export const ParticipantRow: React.FC<ParticipantRowProps> = ({
         return (
           <td className="p-3 text-right">
             <Badge variant="outline" className="bg-primary/5">
-              ${equalShareAmount.toFixed(2)}
+              ${formatAmount(equalShareAmount)}
             </Badge>
           </td>
         );
@@ -83,7 +84,7 @@ export const ParticipantRow: React.FC<ParticipantRowProps> = ({
             />
             <span className="w-4">%</span>
             <span className="text-sm text-muted-foreground ml-1">
-              (${calculatedAmount.toFixed(2)})
+              (${formatAmount(calculatedAmount)})
             </span>
           </td>
         );
@@ -136,7 +137,7 @@ export const ParticipantRow: React.FC<ParticipantRowProps> = ({
           <td className="p-3 text-right">
             {isUserSelected ? (
               <Badge variant="outline" className="bg-primary/5">
-                ${calculatedAmount.toFixed(2)}
+                ${formatAmount(calculatedAmount)}
               </Badge>
             ) : (
               '-'

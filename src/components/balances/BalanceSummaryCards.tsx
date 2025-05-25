@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowDown, ArrowUp, CreditCard } from "lucide-react";
 import { BalanceData } from './BalancesTable';
 import { useAuth } from '@/contexts';
+import { formatCurrency } from '@/utils/money';
 
 interface BalanceSummaryCardsProps {
   balances: BalanceData[];
@@ -39,7 +40,7 @@ export const BalanceSummaryCards = ({ balances, groupId }: BalanceSummaryCardsPr
           {currentUserBalance ? (
             <div className="space-y-1">
               <p className={`text-2xl font-bold ${isOwed ? 'text-green-600 dark:text-green-400' : hasNegativeBalance ? 'text-red-600 dark:text-red-400' : ''}`}>
-                {Math.abs(netBalance).toFixed(2)} CHF
+                {formatCurrency(Math.abs(netBalance))}
               </p>
               <p className="text-muted-foreground">
                 {isOwed 
@@ -69,7 +70,7 @@ export const BalanceSummaryCards = ({ balances, groupId }: BalanceSummaryCardsPr
           </div>
           
           <div className="space-y-1">
-            <p className="text-2xl font-bold">{totalGroupExpenses.toFixed(2)} CHF</p>
+            <p className="text-2xl font-bold">{formatCurrency(totalGroupExpenses)}</p>
             <p className="text-muted-foreground">
               Total amount spent in this group
             </p>

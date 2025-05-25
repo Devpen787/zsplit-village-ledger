@@ -4,6 +4,7 @@ import { Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Settlement } from '@/hooks/useSettlements';
 import { useAuth } from '@/contexts';
+import { formatCurrency } from '@/utils/money';
 
 interface SettlementListProps {
   settlements: Settlement[];
@@ -73,7 +74,7 @@ export const SettlementList = ({
               )}
             </div>
             <div className="flex items-center gap-3">
-              <span className="font-mono font-semibold">{settlement.amount.toFixed(2)} CHF</span>
+              <span className="font-mono font-semibold">{formatCurrency(settlement.amount)}</span>
               {!settlement.settled && (
                 <Button 
                   size="sm" 

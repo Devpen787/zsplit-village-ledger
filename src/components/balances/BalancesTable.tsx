@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowDown, ArrowUp, HelpCircle, Wallet } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts';
+import { formatAmount } from '@/utils/money';
 
 export interface BalanceData {
   userId: string;
@@ -118,11 +119,11 @@ export const BalancesTable = ({ balances }: BalancesTableProps) => {
                     <TableCell className="font-medium">
                       {isCurrentUser ? `${balance.userName} (You)` : balance.userName}
                     </TableCell>
-                    <TableCell className="text-right">{balance.amountPaid.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{balance.amountOwed.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{formatAmount(balance.amountPaid)}</TableCell>
+                    <TableCell className="text-right">{formatAmount(balance.amountOwed)}</TableCell>
                     <TableCell className="text-right">
                       <Badge variant={balance.netBalance > 0 ? "success" : balance.netBalance < 0 ? "destructive" : "outline"} className="font-mono">
-                        {balance.netBalance.toFixed(2)}
+                        {formatAmount(balance.netBalance)}
                       </Badge>
                     </TableCell>
                     <TableCell>

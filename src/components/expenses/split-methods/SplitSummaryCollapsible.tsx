@@ -4,6 +4,7 @@ import { UserSplitData } from "@/types/expenses";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatAmount } from "@/utils/money";
 
 interface SplitSummaryCollapsibleProps {
   isOpen: boolean;
@@ -52,7 +53,7 @@ const SplitSummaryCollapsible: React.FC<SplitSummaryCollapsibleProps> = ({
                     "font-medium", 
                     amount > 0 ? "text-green-600" : ""
                   )}>
-                    {amount.toFixed(2)}
+                    {formatAmount(amount)}
                   </span>
                 </li>
               );

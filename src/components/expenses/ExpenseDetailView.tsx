@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Copy, Loader2, Trash2, Edit, Users } from "lucide-react";
 import { Expense } from '@/types/expenses';
 import { useNavigate } from "react-router-dom";
+import { formatCurrency } from '@/utils/money';
 
 interface ExpenseDetailViewProps {
   expense: Expense;
@@ -53,7 +54,7 @@ export const ExpenseDetailView = ({
       <div className="space-y-2">
         <p className="text-lg font-semibold">Amount</p>
         <p className="text-muted-foreground">
-          {Number(expense.amount).toFixed(2)} {expense.currency}
+          {formatCurrency(Number(expense.amount), expense.currency)}
         </p>
       </div>
       

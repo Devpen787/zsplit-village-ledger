@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard } from 'lucide-react';
+import { formatCurrency } from '@/utils/money';
 
 interface PotBalanceCardProps {
   potBalance: number;
@@ -17,7 +18,7 @@ export const PotBalanceCard = ({ potBalance }: PotBalanceCardProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold">CHF {potBalance.toFixed(2)}</div>
+        <div className="text-3xl font-bold">{formatCurrency(potBalance)}</div>
         <p className="text-sm text-muted-foreground">Balance after approved payouts</p>
         {potBalance <= 0 && (
           <p className="text-sm text-destructive mt-2">

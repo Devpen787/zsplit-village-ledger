@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart } from 'lucide-react';
+import { formatAmount } from '@/utils/money';
 
 interface PotHealthCardProps {
   averagePayoutSize: number;
@@ -24,11 +25,11 @@ export const PotHealthCard = ({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">Average Payout</p>
-            <p className="text-2xl font-medium">${averagePayoutSize.toFixed(2)}</p>
+            <p className="text-2xl font-medium">${formatAmount(averagePayoutSize)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Payouts Remaining</p>
-            <p className="text-2xl font-medium">{estimatedPayoutsRemaining.toFixed(1)}</p>
+            <p className="text-2xl font-medium">{formatAmount(estimatedPayoutsRemaining, 1)}</p>
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
