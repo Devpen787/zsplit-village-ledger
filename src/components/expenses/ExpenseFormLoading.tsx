@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { Loader2 } from "lucide-react";
+import { LoadingCenter } from '@/components/ui/loading';
 
 const ExpenseFormLoading: React.FC = () => {
   return (
-    <div className="flex justify-center items-center h-64">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <div className="h-64">
+      <LoadingCenter />
     </div>
   );
 };

@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Loader2 } from 'lucide-react';
 import { useBalances } from '@/hooks/useBalances';
 import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable';
 import { SettlementActions } from '@/components/balances/settlements/SettlementActions';
 import { BalanceSummaryCards } from '@/components/balances/BalanceSummaryCards';
+import { LoadingCenter } from '@/components/ui/loading';
 
 interface BalancesTabProps {
   groupId: string;
@@ -33,8 +33,8 @@ export const BalancesTab = ({ groupId }: BalancesTabProps) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="py-12">
+        <LoadingCenter />
       </div>
     );
   }

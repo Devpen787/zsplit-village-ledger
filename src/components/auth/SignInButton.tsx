@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
 import { usePrivy } from '@privy-io/react-auth';
-import { Loader2, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
+import { LoadingButton } from '@/components/ui/loading';
 
 export default function SignInButton() {
   const { login } = usePrivy();
@@ -20,16 +20,13 @@ export default function SignInButton() {
   };
 
   return (
-    <Button 
+    <LoadingButton
       onClick={handleLogin}
-      disabled={isLoading}
+      loading={isLoading}
+      loadingText="Signing in..."
     >
-      {isLoading ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
-        <LogIn className="mr-2 h-4 w-4" />
-      )}
+      <LogIn className="mr-2 h-4 w-4" />
       Sign In
-    </Button>
+    </LoadingButton>
   );
 }

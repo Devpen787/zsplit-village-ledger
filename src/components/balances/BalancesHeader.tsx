@@ -1,7 +1,8 @@
 
 import { Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/loading';
 
 interface BalancesHeaderProps {
   refreshing: boolean;
@@ -27,7 +28,7 @@ export const BalancesHeader = ({ refreshing, onRefresh }: BalancesHeaderProps) =
         className="flex items-center gap-2"
       >
         {refreshing ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <LoadingSpinner size="sm" />
         ) : (
           <RefreshCw className="h-4 w-4" />
         )}

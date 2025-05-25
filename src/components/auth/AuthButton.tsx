@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
-import { Loader2, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
+import { LoadingButton } from '@/components/ui/loading';
 
 interface AuthButtonProps {
   onClick: () => void;
@@ -18,25 +18,19 @@ const AuthButton = ({
   actionText,
   loginAttempts = 0
 }: AuthButtonProps) => {
+  const displayText = loginAttempts > 0 ? `${loadingText} (${loginAttempts})` : loadingText;
+  
   return (
-    <Button 
-      onClick={onClick} 
+    <LoadingButton
+      onClick={onClick}
+      loading={isLoading}
+      loadingText={displayText}
       className="w-full"
       size="lg"
-      disabled={isLoading}
     >
-      {isLoading ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          {loginAttempts > 0 ? `${loadingText} (${loginAttempts})...` : `${loadingText}...`}
-        </>
-      ) : (
-        <>
-          <LogIn className="mr-2 h-4 w-4" />
-          {actionText}
-        </>
-      )}
-    </Button>
+      <LogIn className="mr-2 h-4 w-4" />
+      {actionText}
+    </LoadingButton>
   );
 };
 

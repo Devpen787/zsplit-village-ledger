@@ -1,10 +1,10 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { useBalances } from "@/hooks/useBalances";
 import { useAuth } from "@/contexts";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/utils/money";
+import { LoadingCenter } from "@/components/ui/loading";
 
 export const BalanceSummary = () => {
   const { balances, loading, error, hasRecursionError, handleRefresh } = useBalances();
@@ -34,11 +34,7 @@ export const BalanceSummary = () => {
     return (
       <Card>
         <CardContent className="p-4">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Loading balances...</span>
-            </div>
-          </div>
+          <LoadingCenter text="Loading balances..." />
         </CardContent>
       </Card>
     );

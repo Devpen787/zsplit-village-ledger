@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +12,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { LoadingButton } from '@/components/ui/loading';
 
 interface LoginFormProps {
   onSubmit: (values: LoginFormValues) => Promise<void>;
@@ -59,13 +59,14 @@ const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
           )}
         />
         
-        <Button 
-          type="submit" 
+        <LoadingButton
+          type="submit"
+          loading={isLoading}
+          loadingText="Logging in"
           className="w-full"
-          disabled={isLoading}
         >
-          {isLoading ? "Logging in..." : "Log In"}
-        </Button>
+          Log In
+        </LoadingButton>
       </form>
     </Form>
   );

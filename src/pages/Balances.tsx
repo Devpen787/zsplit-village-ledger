@@ -1,6 +1,5 @@
-
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Loader2, Info } from 'lucide-react';
+import { AlertCircle, Info } from 'lucide-react';
 import { useBalances } from '@/hooks/useBalances';
 import { BalancesHeader } from '@/components/balances/BalancesHeader';
 import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable';
@@ -9,6 +8,7 @@ import { SettlementActions } from '@/components/balances/settlements/SettlementA
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/layouts/AppLayout';
+import { LoadingPage } from '@/components/ui/loading';
 
 const Balances = () => {
   const { balances, loading, error, hasRecursionError, refreshing, handleRefresh } = useBalances();
@@ -26,9 +26,7 @@ const Balances = () => {
   if (loading && !refreshing) {
     return (
       <AppLayout>
-        <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <LoadingPage />
       </AppLayout>
     );
   }
