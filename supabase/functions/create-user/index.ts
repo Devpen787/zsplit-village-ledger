@@ -1,0 +1,90 @@
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    // Get the service role key from environment variables
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!serviceRoleKey) {
+      throw new Error('Service role key not configured')
+    }
+
+    // Create admin client with service role key
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      serviceRoleKey,
+      {
+        auth: {
+          persistSession: false
+        }
+      }
+    )
+
+    const { user_id, user_email, user_name, user_role = 'participant' } = await req.json()
+
+    if (!user_id || !user_email) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: user_id and user_email' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Use the admin client to insert the user (bypasses RLS)
+    const { data: userData, error: insertError } = await supabaseAdmin
+      .from('users')
+      .upsert({
+        id: user_id,
+        email: user_email,
+        name: user_name,
+        role: user_role
+      }, { 
+        onConflict: 'id',
+        ignoreDuplicates: false 
+      })
+      .select()
+      .single()
+
+    if (insertError) {
+      console.error('Error creating user:', insertError)
+      return new Response(
+        JSON.stringify({ error: `Failed to create user: ${insertError.message}` }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    return new Response(
+      JSON.stringify({ data: userData }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
+
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    return new Response(
+      JSON.stringify({ error: `Server error: ${error.message}` }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
+  }
+})

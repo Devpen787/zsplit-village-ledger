@@ -1,11 +1,12 @@
 
 import { useState, useCallback } from 'react';
 import { User } from '@/types/auth';
-import { supabase, setSupabaseAuth, getServiceClient } from '@/integrations/supabase/client';
+import { supabase, setSupabaseAuth, createUserSecurely } from '@/integrations/supabase/client';
 import { getPrivyEmail } from './authUtils';
+import { validatePrivyToken, validatePrivyUserId } from '@/utils/privyTokenValidation';
 
 /**
- * Hook to handle fetching and creating user data
+ * Hook to handle fetching and creating user data with enhanced security
  */
 export const useUserData = () => {
   const [authError, setAuthError] = useState<string | null>(null);
@@ -15,7 +16,14 @@ export const useUserData = () => {
     try {
       console.log("Attempting to fetch user with ID:", privyUserId);
       
-      // Set Supabase auth with the Privy user ID
+      // Validate Privy user ID format
+      if (!validatePrivyUserId(privyUserId)) {
+        console.error("Invalid Privy user ID format:", privyUserId);
+        setAuthError("Invalid user ID format");
+        return null;
+      }
+      
+      // Set Supabase auth with the validated Privy user ID
       await setSupabaseAuth(privyUserId);
       
       // Using maybeSingle() to handle case where user might not exist yet
@@ -27,7 +35,13 @@ export const useUserData = () => {
 
       if (fetchError) {
         console.error("Error fetching user:", fetchError);
-        setAuthError(`Database error: ${fetchError.message}`);
+        
+        // Handle specific RLS errors more gracefully
+        if (fetchError.message?.includes('row-level security')) {
+          setAuthError("Access denied: User not found or insufficient permissions");
+        } else {
+          setAuthError(`Database error: ${fetchError.message}`);
+        }
         return null;
       }
 
@@ -45,10 +59,28 @@ export const useUserData = () => {
     }
   }, []);
 
-  // Create a user directly in the database
+  // Create a user using the secure Edge Function
   const createUser = useCallback(async (privyUserId: string, privyUser: any): Promise<User | null> => {
     try {
       console.log("Attempting to create new user with ID:", privyUserId);
+      
+      // Validate Privy user ID format
+      if (!validatePrivyUserId(privyUserId)) {
+        console.error("Invalid Privy user ID format:", privyUserId);
+        setAuthError("Invalid user ID format");
+        return null;
+      }
+
+      // If privyUser contains a token, validate it
+      if (privyUser.token) {
+        const tokenValidation = validatePrivyToken(privyUser.token);
+        if (!tokenValidation.isValid) {
+          console.error("Invalid Privy token:", tokenValidation.error);
+          setAuthError(`Token validation failed: ${tokenValidation.error}`);
+          return null;
+        }
+        console.log("Privy token validated successfully");
+      }
       
       // Get email from Privy user
       const email = getPrivyEmail(privyUser);
@@ -59,40 +91,21 @@ export const useUserData = () => {
         return null;
       }
       
-      // First set up Supabase auth with the Privy user ID for future operations
+      // First set up Supabase auth with the validated Privy user ID for future operations
       await setSupabaseAuth(privyUserId);
       
-      // Create a new user
-      const newUser: User = {
-        id: privyUserId,
-        email: email,
-        role: 'participant', // Default role
+      // Prepare user data
+      const userData = {
+        user_id: privyUserId,
+        user_email: email,
+        user_name: privyUser.name || null,
+        user_role: 'participant' // Default role
       };
       
-      console.log("Creating user with data:", newUser);
+      console.log("Creating user with data:", userData);
       
-      // Get the service client for admin operations that bypass RLS
-      const adminClient = getServiceClient();
-      
-      // Using the service client to bypass RLS
-      const { data: insertedUser, error: insertError } = await adminClient
-        .from('users')
-        .upsert(newUser, { 
-          onConflict: 'id',
-          ignoreDuplicates: false 
-        })
-        .select()
-        .maybeSingle();
-      
-      if (insertError) {
-        console.error("Error creating user:", insertError);
-        console.log("Error code:", insertError.code);
-        console.log("Error message:", insertError.message);
-        console.log("Error details:", insertError.details);
-        
-        setAuthError(`Could not create user profile: ${insertError.message}`);
-        return null;
-      }
+      // Use the secure Edge Function to create the user
+      const insertedUser = await createUserSecurely(userData);
       
       if (!insertedUser) {
         console.error("No user data returned after insert");
@@ -100,11 +113,19 @@ export const useUserData = () => {
         return null;
       }
       
-      console.log("User created or updated successfully:", insertedUser);
+      console.log("User created successfully:", insertedUser);
       return insertedUser as User;
     } catch (error: any) {
       console.error("Error in createUser:", error);
-      setAuthError(`Failed to create your profile: ${error?.message || 'Unknown error'}`);
+      
+      // Provide more specific error messages
+      if (error.message?.includes('Failed to create user')) {
+        setAuthError(error.message);
+      } else if (error.message?.includes('row-level security')) {
+        setAuthError("Permission denied: Unable to create user profile");
+      } else {
+        setAuthError(`Failed to create your profile: ${error?.message || 'Unknown error'}`);
+      }
       return null;
     }
   }, []);

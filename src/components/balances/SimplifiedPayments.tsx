@@ -24,18 +24,6 @@ export const SimplifiedPayments = ({ balances, onMarkAsPaid }: SimplifiedPayment
   const originalTransactions = balances.filter(b => Math.abs(b.netBalance) > 0.01).length;
   const savings = calculateSavings(originalTransactions, paymentSuggestion.totalTransactions);
 
-  // Debug logging to understand what's happening
-  console.log('SimplifiedPayments Debug:', {
-    userId: user?.id,
-    totalDebts: paymentSuggestion.debts.length,
-    iOweCount: iOwe.length,
-    owedToMeCount: owedToMe.length,
-    canSimplify: paymentSuggestion.canSimplify,
-    allDebts: paymentSuggestion.debts,
-    iOwe,
-    owedToMe
-  });
-
   const handlePayment = (debt: SimplifiedDebt) => {
     toast.success(`Payment of ${formatCurrency(debt.amount)} to ${debt.toUserName} marked as sent!`);
     onMarkAsPaid?.(debt);
@@ -98,22 +86,6 @@ export const SimplifiedPayments = ({ balances, onMarkAsPaid }: SimplifiedPayment
           )}
         </CardContent>
       </Card>
-
-      {/* Debug Information - Remove this after testing */}
-      {user && (
-        <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10">
-          <CardHeader>
-            <CardTitle className="text-sm text-yellow-800 dark:text-yellow-200">Debug Info</CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs text-yellow-700 dark:text-yellow-300">
-            <p>User ID: {user.id}</p>
-            <p>Total debts found: {paymentSuggestion.debts.length}</p>
-            <p>Debts I owe: {iOwe.length}</p>
-            <p>Debts owed to me: {owedToMe.length}</p>
-            <p>Can simplify: {paymentSuggestion.canSimplify ? 'Yes' : 'No'}</p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* My Payments - What I Need to Pay */}
       {iOwe.length > 0 && (
