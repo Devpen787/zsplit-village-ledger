@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Wallet, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWallet } from '@/contexts/WalletContext';
-import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useSendTransaction, useWaitForTransaction } from 'wagmi';
 import { parseEther } from 'viem';
 import { toast } from "@/components/ui/sonner";
 import { formatCurrency } from '@/utils/money';
@@ -37,7 +37,7 @@ export const WalletPaymentSection = ({
   const { 
     isLoading: isConfirming,
     isSuccess: isConfirmed 
-  } = useWaitForTransactionReceipt({
+  } = useWaitForTransaction({
     hash: transactionHash,
   });
 
