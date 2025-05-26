@@ -76,6 +76,7 @@ export const SettlementItem = ({ settlement, onMarkAsSettled }: SettlementItemPr
               settlement={settlement}
               onSettled={handleOnChainSettled}
               txHash={onChainData?.tx_hash}
+              txChain={onChainData?.tx_chain}
             />
           </div>
         )}
@@ -90,6 +91,7 @@ export const SettlementItem = ({ settlement, onMarkAsSettled }: SettlementItemPr
                 settlement={settlement}
                 onSettled={handleOnChainSettled}
                 txHash={onChainData?.tx_hash}
+                txChain={onChainData?.tx_chain}
               />
             )}
           </div>

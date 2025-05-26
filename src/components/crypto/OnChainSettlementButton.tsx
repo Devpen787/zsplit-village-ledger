@@ -10,12 +10,14 @@ interface OnChainSettlementButtonProps {
   settlement: Settlement;
   onSettled: () => void;
   txHash?: string | null;
+  txChain?: string | null;
 }
 
 export const OnChainSettlementButton = ({ 
   settlement, 
   onSettled,
-  txHash 
+  txHash,
+  txChain 
 }: OnChainSettlementButtonProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
@@ -27,8 +29,31 @@ export const OnChainSettlementButton = ({
     return null;
   }
 
-  const getExplorerUrl = (hash: string) => {
-    return `https://etherscan.io/tx/${hash}`;
+  const getExplorerUrl = (hash: string, chain?: string | null) => {
+    switch (chain) {
+      case 'ethereum':
+        return `https://etherscan.io/tx/${hash}`;
+      case 'polygon':
+        return `https://polygonscan.com/tx/${hash}`;
+      case 'polkadot':
+        return `https://subscan.io/extrinsic/${hash}`;
+      default:
+        // Default to Etherscan if chain is null or unknown
+        return `https://etherscan.io/tx/${hash}`;
+    }
+  };
+
+  const getChainDisplayName = (chain?: string | null) => {
+    switch (chain) {
+      case 'ethereum':
+        return 'Ethereum';
+      case 'polygon':
+        return 'Polygon';
+      case 'polkadot':
+        return 'Polkadot';
+      default:
+        return 'Ethereum'; // Default display name
+    }
   };
 
   const shortenHash = (hash: string) => {
@@ -39,9 +64,11 @@ export const OnChainSettlementButton = ({
   if (txHash) {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">On-chain:</span>
+        <span className="text-xs text-muted-foreground">
+          {getChainDisplayName(txChain)}:
+        </span>
         <a
-          href={getExplorerUrl(txHash)}
+          href={getExplorerUrl(txHash, txChain)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 text-primary hover:underline text-xs"

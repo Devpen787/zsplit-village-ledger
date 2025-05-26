@@ -8,6 +8,7 @@ interface OnChainSettlement {
   to_user_id: string;
   amount: number;
   tx_hash: string | null;
+  tx_chain: string | null;
   settled: boolean;
 }
 
@@ -23,7 +24,7 @@ export const useOnChainSettlements = (settlements: Settlement[]) => {
       try {
         const { data, error } = await supabase
           .from('settlements')
-          .select('from_user_id, to_user_id, amount, tx_hash, settled');
+          .select('from_user_id, to_user_id, amount, tx_hash, tx_chain, settled');
 
         if (error) {
           console.error('Error fetching on-chain settlements:', error);
@@ -54,7 +55,7 @@ export const useOnChainSettlements = (settlements: Settlement[]) => {
     try {
       const { data, error } = await supabase
         .from('settlements')
-        .select('from_user_id, to_user_id, amount, tx_hash, settled');
+        .select('from_user_id, to_user_id, amount, tx_hash, tx_chain, settled');
 
       if (error) {
         console.error('Error refreshing settlements:', error);

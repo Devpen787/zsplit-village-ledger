@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +25,12 @@ interface SettleOnChainModalProps {
   onSettled: () => void;
 }
 
+const BLOCKCHAIN_OPTIONS = [
+  { value: 'ethereum', label: 'Ethereum' },
+  { value: 'polygon', label: 'Polygon' },
+  { value: 'polkadot', label: 'Polkadot' }
+];
+
 export const SettleOnChainModal = ({ 
   isOpen, 
   onClose, 
@@ -31,6 +38,7 @@ export const SettleOnChainModal = ({
   onSettled 
 }: SettleOnChainModalProps) => {
   const [txHash, setTxHash] = useState('');
+  const [selectedChain, setSelectedChain] = useState('ethereum');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -42,7 +50,7 @@ export const SettleOnChainModal = ({
     setIsSubmitting(true);
     
     try {
-      // Insert or update settlement record with tx_hash
+      // Insert or update settlement record with tx_hash and tx_chain
       const { error } = await supabase
         .from('settlements')
         .upsert({
@@ -51,6 +59,7 @@ export const SettleOnChainModal = ({
           amount: settlement.amount,
           settled: true,
           tx_hash: txHash.trim(),
+          tx_chain: selectedChain,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'from_user_id,to_user_id'
@@ -66,6 +75,7 @@ export const SettleOnChainModal = ({
       onSettled();
       onClose();
       setTxHash('');
+      setSelectedChain('ethereum');
     } catch (error) {
       console.error('Error in handleSubmit:', error);
       toast.error('Failed to record settlement');
@@ -74,9 +84,17 @@ export const SettleOnChainModal = ({
     }
   };
 
-  const getExplorerUrl = (hash: string) => {
-    // Default to Ethereum mainnet, could be enhanced with chain detection
-    return `https://etherscan.io/tx/${hash}`;
+  const getExplorerUrl = (hash: string, chain: string) => {
+    switch (chain) {
+      case 'ethereum':
+        return `https://etherscan.io/tx/${hash}`;
+      case 'polygon':
+        return `https://polygonscan.com/tx/${hash}`;
+      case 'polkadot':
+        return `https://subscan.io/extrinsic/${hash}`;
+      default:
+        return `https://etherscan.io/tx/${hash}`;
+    }
   };
 
   return (
@@ -106,6 +124,22 @@ export const SettleOnChainModal = ({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="blockchain">Blockchain Network</Label>
+            <Select value={selectedChain} onValueChange={setSelectedChain}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select blockchain" />
+              </SelectTrigger>
+              <SelectContent>
+                {BLOCKCHAIN_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="txHash">Transaction Hash</Label>
             <Input
               id="txHash"
@@ -123,7 +157,7 @@ export const SettleOnChainModal = ({
             <div className="flex items-center gap-2 text-sm">
               <span>Preview:</span>
               <a
-                href={getExplorerUrl(txHash)}
+                href={getExplorerUrl(txHash, selectedChain)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-primary hover:underline"

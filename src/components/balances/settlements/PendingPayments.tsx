@@ -103,6 +103,7 @@ export const PendingPayments = ({
                       settlement={settlement}
                       onSettled={() => handleOnChainSettled(actualIndex)}
                       txHash={onChainData?.tx_hash}
+                      txChain={onChainData?.tx_chain}
                     />
                   </>
                 )}
