@@ -28,12 +28,14 @@ export const useOnChainSettlements = (settlements: Settlement[]) => {
 
         if (error) {
           console.error('Error fetching on-chain settlements:', error);
+          setOnChainData([]);
           return;
         }
 
         setOnChainData(data || []);
       } catch (error) {
         console.error('Error in fetchOnChainSettlements:', error);
+        setOnChainData([]);
       } finally {
         setLoading(false);
       }
@@ -59,12 +61,14 @@ export const useOnChainSettlements = (settlements: Settlement[]) => {
 
       if (error) {
         console.error('Error refreshing settlements:', error);
+        setOnChainData([]);
         return;
       }
 
       setOnChainData(data || []);
     } catch (error) {
       console.error('Error refreshing settlements:', error);
+      setOnChainData([]);
     } finally {
       setLoading(false);
     }
