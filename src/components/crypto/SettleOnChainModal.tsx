@@ -141,7 +141,7 @@ export const SettleOnChainModal = ({
     }
   };
 
-  const handleTransactionSuccess = async (hash: string) => {
+  const handleTransactionSuccess = async (hash: `0x${string}`) => {
     try {
       // Get current chain ID to determine the chain
       const chainId = await window.ethereum?.request({ method: 'eth_chainId' });
