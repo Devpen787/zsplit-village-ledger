@@ -64,7 +64,18 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
         
         console.log("👥 Group membership check result:", memberCheck);
         
-        toast.error("Group not found or you don't have access to it");
+        if (memberCheck.error) {
+          console.error("❌ Error checking membership:", memberCheck.error);
+        }
+        
+        if (!memberCheck.data) {
+          console.log("❌ User is not a member of this group");
+          toast.error("You are not a member of this group");
+        } else {
+          console.log("✅ User is a member, but group data is not accessible - possible RLS issue");
+          toast.error("Group access issue - please try refreshing the page");
+        }
+        
         navigate('/group');
         return;
       }
@@ -75,8 +86,22 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
     } catch (error: any) {
       console.error("💥 Error fetching group:", error);
       console.error("Error stack:", error.stack);
-      toast.error(`Error loading group: ${error.message}`);
-      // Don't navigate away immediately, let user try again
+      
+      // More specific error handling
+      if (error.message?.includes('JWT')) {
+        console.error("🔐 Authentication issue detected");
+        toast.error("Authentication issue - please sign in again");
+      } else if (error.code === 'PGRST116') {
+        console.error("🚫 RLS policy blocking access");
+        toast.error("Access denied - you may not be a member of this group");
+      } else {
+        toast.error(`Error loading group: ${error.message}`);
+      }
+      
+      // Don't navigate away immediately for authentication issues
+      if (!error.message?.includes('JWT')) {
+        setTimeout(() => navigate('/group'), 2000);
+      }
     } finally {
       setLoading(false);
     }
@@ -84,7 +109,11 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
   
   useEffect(() => {
     console.log("🎯 useGroupData useEffect triggered:", { id, userId: user?.id });
-    fetchGroupDetails();
+    
+    // Add a small delay for newly created groups to ensure database consistency
+    const timeoutId = setTimeout(() => {
+      fetchGroupDetails();
+    }, 100);
     
     // Set up real-time subscription for groups
     if (id) {
@@ -102,10 +131,13 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
         .subscribe();
         
       return () => {
+        clearTimeout(timeoutId);
         console.log("🔌 Unsubscribing from real-time channel for group:", id);
         supabase.removeChannel(groupsChannel);
       };
     }
+    
+    return () => clearTimeout(timeoutId);
   }, [id, user]);
 
   return {

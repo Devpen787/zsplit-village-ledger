@@ -83,22 +83,40 @@ serve(async (req) => {
 
     console.log('Group created successfully:', groupData);
 
-    // Add the creator as a member with admin role
-    const { error: memberError } = await supabaseAdmin
+    // CRITICAL: Add the creator as a member with admin role IMMEDIATELY
+    const { data: memberData, error: memberError } = await supabaseAdmin
       .from('group_members')
       .insert({
         group_id: groupData.id,
         user_id: created_by,
         role: 'admin'
-      });
+      })
+      .select()
+      .single();
 
     if (memberError) {
-      console.error('Member creation error:', memberError);
-      // Don't fail the entire operation, just log the error
-      console.warn('Failed to add creator as member, but group was created');
-    } else {
-      console.log('Creator added as admin member successfully');
+      console.error('CRITICAL: Member creation error:', memberError);
+      
+      // If member creation fails, we should clean up the group to maintain consistency
+      console.log('Cleaning up group due to member creation failure...');
+      await supabaseAdmin
+        .from('groups')
+        .delete()
+        .eq('id', groupData.id);
+        
+      return new Response(
+        JSON.stringify({ error: `Failed to add creator as member: ${memberError.message}` }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500 
+        }
+      );
     }
+
+    console.log('Creator added as admin member successfully:', memberData);
+
+    // Add a small delay to ensure all database operations are committed
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     return new Response(
       JSON.stringify({ data: groupData }),

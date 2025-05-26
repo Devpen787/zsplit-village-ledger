@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -51,7 +52,7 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
 
     setLoading(true);
     try {
-      console.log("Creating group with user ID:", user.id);
+      console.log("🚀 Creating group with user ID:", user.id);
       
       // Use the secure Edge Function to create the group (bypasses RLS)
       const groupData = await createGroupSecurely({
@@ -60,27 +61,38 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
         created_by: user.id
       });
       
-      console.log("Group created successfully:", groupData);
+      console.log("✅ Group created successfully:", groupData);
       
-      onGroupCreated(groupData);
+      // Close modal first
+      onOpenChange(false);
+      
+      // Reset form
       setName("");
       setSelectedEmoji("🏠");
+      
+      // Show success message
       toast.success(`Group "${groupData.name}" created successfully!`);
       
-      // If this is the user's first group (or only group), navigate directly to it
-      if (groups.length === 0) {
-        setTimeout(() => {
-          navigate(`/group/${groupData.id}`);
-        }, 300);
-      }
+      // Call the callback to refresh data
+      onGroupCreated(groupData);
+      
+      // Wait a bit longer before navigation to ensure all data is properly committed
+      console.log("⏳ Waiting before navigation to ensure data consistency...");
+      setTimeout(() => {
+        console.log("🧭 Navigating to group:", groupData.id);
+        navigate(`/group/${groupData.id}`);
+      }, 500); // Increased delay to ensure database consistency
+      
     } catch (error: any) {
-      console.error("Error creating group:", error);
+      console.error("❌ Error creating group:", error);
       
       // Provide more specific error messages
       if (error.message?.includes('User not found')) {
         toast.error("Unable to create group: User profile not found. Please try refreshing the page.");
       } else if (error.message?.includes('duplicate key')) {
         toast.error("A group with this name already exists. Please choose a different name.");
+      } else if (error.message?.includes('Failed to add creator as member')) {
+        toast.error("Group created but failed to add you as a member. Please contact support.");
       } else {
         toast.error(`Failed to create group: ${error.message || 'Unknown error'}`);
       }
