@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, makeAuthenticatedRequest } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
@@ -54,16 +54,20 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
     try {
       console.log("Creating group with user ID:", user.id);
       
-      // Create a new group using direct database query
-      const { data: groupData, error: groupError } = await supabase
-        .from('groups')
-        .insert({
-          name: name.trim(),
-          icon: selectedEmoji,
-          created_by: user.id
-        })
-        .select()
-        .single();
+      // Use the authenticated request helper to ensure proper auth context
+      const groupResponse = await makeAuthenticatedRequest(user.id, async () => {
+        return await supabase
+          .from('groups')
+          .insert({
+            name: name.trim(),
+            icon: selectedEmoji,
+            created_by: user.id
+          })
+          .select()
+          .single();
+      });
+
+      const { data: groupData, error: groupError } = groupResponse;
 
       if (groupError) {
         console.error("Group creation error:", groupError);
@@ -72,14 +76,18 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
       
       console.log("Group created successfully:", groupData);
       
-      // Add the creator as a member with admin role
-      const { error: memberError } = await supabase
-        .from('group_members')
-        .insert({
-          group_id: groupData.id,
-          user_id: user.id,
-          role: 'admin'
-        });
+      // Add the creator as a member with admin role using authenticated request
+      const memberResponse = await makeAuthenticatedRequest(user.id, async () => {
+        return await supabase
+          .from('group_members')
+          .insert({
+            group_id: groupData.id,
+            user_id: user.id,
+            role: 'admin'
+          });
+      });
+
+      const { error: memberError } = memberResponse;
 
       if (memberError) {
         console.error("Member creation error:", memberError);

@@ -20,20 +20,43 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10
     }
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'privy-auth'
+    }
   }
 });
 
-// Function to set a custom JWT token for authenticated requests
+// Function to create a temporary session for RLS context
 export const setSupabaseAuth = async (privyUserId: string) => {
   console.log("[Auth] Setting Supabase auth context for user:", privyUserId);
   
   try {
-    // For RLS purposes, we need to create a minimal session
-    // The Edge Function will handle user creation with service role
-    // We just need to establish the user context for RLS policies
-    
-    // Set a custom header that can be used by RLS policies
-    supabase.realtime.setAuth(privyUserId);
+    // Create a minimal session object that RLS can use
+    // This doesn't give full Supabase auth capabilities but provides the user context for RLS
+    const mockSession = {
+      access_token: `privy-${privyUserId}`,
+      refresh_token: `privy-refresh-${privyUserId}`,
+      expires_in: 3600,
+      token_type: 'bearer',
+      user: {
+        id: privyUserId,
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: '',
+        app_metadata: {},
+        user_metadata: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    };
+
+    // Set the session manually for RLS context
+    await supabase.auth.setSession({
+      access_token: mockSession.access_token,
+      refresh_token: mockSession.refresh_token
+    });
     
     console.log("Supabase auth context set successfully for user:", privyUserId);
     return true;
@@ -92,10 +115,10 @@ export const createUserSecurely = async (userData: {
 // Helper function to make authenticated requests with Privy user context
 export const makeAuthenticatedRequest = async (privyUserId: string, requestFn: () => Promise<any>) => {
   try {
-    // Set headers to include the Privy user ID for RLS context
-    const originalAuth = supabase.auth.getSession();
+    // Ensure auth context is set before making the request
+    await setSupabaseAuth(privyUserId);
     
-    // Create a custom header for the request
+    // Execute the request function
     const response = await requestFn();
     
     return response;
