@@ -65,12 +65,6 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
         
       if (response.error) {
         console.error("❌ Error fetching group:", response.error);
-        console.error("Error details:", {
-          code: response.error.code,
-          message: response.error.message,
-          details: response.error.details,
-          hint: response.error.hint
-        });
         throw response.error;
       }
       
@@ -86,7 +80,6 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
       
     } catch (error: any) {
       console.error("💥 Error in fetchGroupDetails:", error);
-      console.error("Error stack:", error.stack);
       
       // More specific error handling
       if (error.message?.includes('JWT')) {
@@ -114,10 +107,10 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
   useEffect(() => {
     console.log("🎯 useGroupData useEffect triggered:", { id, userId: user?.id });
     
-    // For newly created groups, add a small delay to ensure database consistency
+    // For newly created groups, add a delay to ensure database consistency
     const timeoutId = setTimeout(() => {
       fetchGroupDetails();
-    }, 50); // Reduced delay since Edge Function now confirms membership
+    }, 100);
     
     // Set up real-time subscription for groups
     if (id) {

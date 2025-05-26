@@ -1,6 +1,5 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -12,10 +11,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createGroupSecurely } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
+import { useCreateGroup } from "@/hooks/useCreateGroup";
 
 const emojiOptions = ["🏠", "🏖️", "🏕️", "🚗", "🏔️", "🌮", "🍕", "🍻", "💼", "🎮"];
 
@@ -34,12 +33,12 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
 }) => {
   const [name, setName] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("🏠");
-  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { createGroupWithMembership, isCreating } = useCreateGroup();
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!user) {
       toast.error("Please sign in to create a group");
       return;
@@ -50,59 +49,20 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
       return;
     }
 
-    setLoading(true);
-    try {
-      console.log("🚀 Creating group with user ID:", user.id);
-      
-      // Use the secure Edge Function to create the group AND add membership
-      const groupData = await createGroupSecurely({
-        name: name.trim(),
-        icon: selectedEmoji,
-        created_by: user.id
-      });
-      
-      console.log("✅ Group and membership created successfully:", groupData);
-      
-      // Verify that membership was created
-      if (!groupData.membershipCreated) {
-        throw new Error("Group created but membership was not established");
-      }
-      
+    const result = await createGroupWithMembership({
+      name: name.trim(),
+      icon: selectedEmoji,
+      created_by: user.id
+    });
+    
+    if (result) {
       // Close modal and reset form
       onOpenChange(false);
       setName("");
       setSelectedEmoji("🏠");
       
-      // Show success message
-      toast.success(`Group "${groupData.name}" created successfully!`);
-      
       // Call the callback to refresh data
-      onGroupCreated(groupData);
-      
-      // Wait a moment to ensure all database operations are fully committed
-      console.log("⏳ Waiting for database consistency before navigation...");
-      setTimeout(() => {
-        console.log("🧭 Navigating to group:", groupData.id);
-        navigate(`/group/${groupData.id}`);
-      }, 200); // Reduced delay since we now confirm membership creation
-      
-    } catch (error: any) {
-      console.error("❌ Error creating group:", error);
-      
-      // Provide more specific error messages
-      if (error.message?.includes('User not found')) {
-        toast.error("Unable to create group: User profile not found. Please try refreshing the page.");
-      } else if (error.message?.includes('duplicate key')) {
-        toast.error("A group with this name already exists. Please choose a different name.");
-      } else if (error.message?.includes('Failed to add creator as member')) {
-        toast.error("Group creation failed: Unable to establish membership. Please try again.");
-      } else if (error.message?.includes('membership was not established')) {
-        toast.error("Group created but access setup failed. Please try refreshing the page.");
-      } else {
-        toast.error(`Failed to create group: ${error.message || 'Unknown error'}`);
-      }
-    } finally {
-      setLoading(false);
+      onGroupCreated(result);
     }
   };
 
@@ -155,8 +115,8 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !name.trim()}>
-              {loading ? (
+            <Button type="submit" disabled={isCreating || !name.trim()}>
+              {isCreating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating...
