@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase, makeAuthenticatedRequest } from "@/integrations/supabase/client";
+import { createGroupSecurely } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
@@ -54,47 +53,14 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
     try {
       console.log("Creating group with user ID:", user.id);
       
-      // Use the authenticated request helper to ensure proper auth context
-      const groupResponse = await makeAuthenticatedRequest(user.id, async () => {
-        return await supabase
-          .from('groups')
-          .insert({
-            name: name.trim(),
-            icon: selectedEmoji,
-            created_by: user.id
-          })
-          .select()
-          .single();
+      // Use the secure Edge Function to create the group (bypasses RLS)
+      const groupData = await createGroupSecurely({
+        name: name.trim(),
+        icon: selectedEmoji,
+        created_by: user.id
       });
-
-      const { data: groupData, error: groupError } = groupResponse;
-
-      if (groupError) {
-        console.error("Group creation error:", groupError);
-        throw groupError;
-      }
       
       console.log("Group created successfully:", groupData);
-      
-      // Add the creator as a member with admin role using authenticated request
-      const memberResponse = await makeAuthenticatedRequest(user.id, async () => {
-        return await supabase
-          .from('group_members')
-          .insert({
-            group_id: groupData.id,
-            user_id: user.id,
-            role: 'admin'
-          });
-      });
-
-      const { error: memberError } = memberResponse;
-
-      if (memberError) {
-        console.error("Member creation error:", memberError);
-        throw memberError;
-      }
-
-      console.log("Creator added as admin member successfully");
       
       onGroupCreated(groupData);
       setName("");
@@ -111,8 +77,8 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
       console.error("Error creating group:", error);
       
       // Provide more specific error messages
-      if (error.message?.includes('row-level security')) {
-        toast.error("Unable to create group due to permissions. Please try again or contact support.");
+      if (error.message?.includes('User not found')) {
+        toast.error("Unable to create group: User profile not found. Please try refreshing the page.");
       } else if (error.message?.includes('duplicate key')) {
         toast.error("A group with this name already exists. Please choose a different name.");
       } else {

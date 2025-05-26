@@ -112,6 +112,32 @@ export const createUserSecurely = async (userData: {
   }
 };
 
+// Service for creating groups securely via Edge Function
+export const createGroupSecurely = async (groupData: {
+  name: string;
+  icon: string;
+  created_by: string;
+}) => {
+  try {
+    console.log('Calling create-group function with data:', groupData);
+    
+    const { data, error } = await supabase.functions.invoke('create-group', {
+      body: groupData
+    });
+
+    if (error) {
+      console.error('Error calling create-group function:', error);
+      throw new Error(`Failed to create group: ${error.message}`);
+    }
+
+    console.log('Create-group function response:', data);
+    return data.data;
+  } catch (error) {
+    console.error('Error in createGroupSecurely:', error);
+    throw error;
+  }
+};
+
 // Helper function to make authenticated requests with Privy user context
 export const makeAuthenticatedRequest = async (privyUserId: string, requestFn: () => Promise<any>) => {
   try {
