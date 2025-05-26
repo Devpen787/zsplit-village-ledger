@@ -275,6 +275,39 @@ export type Database = {
           },
         ]
       }
+      settlements: {
+        Row: {
+          amount: number
+          created_at: string | null
+          from_user_id: string
+          id: string
+          settled: boolean | null
+          to_user_id: string
+          tx_hash: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          from_user_id: string
+          id?: string
+          settled?: boolean | null
+          to_user_id: string
+          tx_hash?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          from_user_id?: string
+          id?: string
+          settled?: boolean | null
+          to_user_id?: string
+          tx_hash?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           avatar_emoji: string | null

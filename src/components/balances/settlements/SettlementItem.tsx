@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Settlement } from '@/hooks/useSettlements';
 import { useAuth } from '@/contexts';
 import { formatCurrency } from '@/utils/money';
+import { OnChainSettlementButton } from '@/components/crypto/OnChainSettlementButton';
+import { useOnChainSettlements } from '@/hooks/useOnChainSettlements';
 
 interface SettlementItemProps {
   settlement: Settlement;
@@ -13,10 +15,19 @@ interface SettlementItemProps {
 
 export const SettlementItem = ({ settlement, onMarkAsSettled }: SettlementItemProps) => {
   const { user } = useAuth();
+  const { getSettlementData, refreshSettlements } = useOnChainSettlements([settlement]);
   
   const isUserDebtor = settlement.fromUserId === user?.id;
   const isUserCreditor = settlement.toUserId === user?.id;
   const isUserInvolved = isUserDebtor || isUserCreditor;
+  
+  const onChainData = getSettlementData(settlement);
+  const hasOnChainSettlement = onChainData?.tx_hash;
+  
+  const handleOnChainSettled = () => {
+    refreshSettlements();
+    onMarkAsSettled();
+  };
   
   return (
     <div 
@@ -51,19 +62,37 @@ export const SettlementItem = ({ settlement, onMarkAsSettled }: SettlementItemPr
       </div>
       <div className="flex items-center gap-3">
         <span className="font-mono font-semibold">{formatCurrency(settlement.amount)}</span>
+        
         {!settlement.settled && (
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={onMarkAsSettled}
-          >
-            Mark as Paid
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={onMarkAsSettled}
+            >
+              Mark as Paid
+            </Button>
+            <OnChainSettlementButton
+              settlement={settlement}
+              onSettled={handleOnChainSettled}
+              txHash={onChainData?.tx_hash}
+            />
+          </div>
         )}
+        
         {settlement.settled && (
-          <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
-            <Check className="h-4 w-4" /> Marked as settled
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+              <Check className="h-4 w-4" /> Marked as settled
+            </span>
+            {hasOnChainSettlement && (
+              <OnChainSettlementButton
+                settlement={settlement}
+                onSettled={handleOnChainSettled}
+                txHash={onChainData?.tx_hash}
+              />
+            )}
+          </div>
         )}
       </div>
     </div>

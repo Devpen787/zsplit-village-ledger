@@ -6,6 +6,8 @@ import { Clock, CreditCard, ArrowRight } from "lucide-react";
 import { Settlement } from '@/hooks/useSettlements';
 import { useAuth } from '@/contexts';
 import { formatCurrency } from '@/utils/money';
+import { OnChainSettlementButton } from '@/components/crypto/OnChainSettlementButton';
+import { useOnChainSettlements } from '@/hooks/useOnChainSettlements';
 
 interface PendingPaymentsProps {
   settlements: Settlement[];
@@ -19,6 +21,7 @@ export const PendingPayments = ({
   payingIndex 
 }: PendingPaymentsProps) => {
   const { user } = useAuth();
+  const { getSettlementData, refreshSettlements } = useOnChainSettlements(settlements);
 
   const userSettlements = settlements.filter(s => 
     s.fromUserId === user?.id || s.toUserId === user?.id
@@ -28,6 +31,11 @@ export const PendingPayments = ({
   if (pendingSettlements.length === 0) {
     return null;
   }
+
+  const handleOnChainSettled = (index: number) => {
+    refreshSettlements();
+    onMarkAsPaid(index);
+  };
 
   return (
     <div>
@@ -44,6 +52,7 @@ export const PendingPayments = ({
           );
           const isUserDebtor = settlement.fromUserId === user?.id;
           const isPaying = payingIndex === actualIndex;
+          const onChainData = getSettlementData(settlement);
           
           return (
             <div 
@@ -71,24 +80,31 @@ export const PendingPayments = ({
               
               <div className="flex items-center gap-2">
                 {isUserDebtor && (
-                  <Button
-                    size="sm"
-                    onClick={() => onMarkAsPaid(actualIndex)}
-                    disabled={isPaying}
-                    className="flex items-center gap-1"
-                  >
-                    {isPaying ? (
-                      <>
-                        <Clock className="h-3 w-3 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="h-3 w-3" />
-                        Mark as Paid
-                      </>
-                    )}
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={() => onMarkAsPaid(actualIndex)}
+                      disabled={isPaying}
+                      className="flex items-center gap-1"
+                    >
+                      {isPaying ? (
+                        <>
+                          <Clock className="h-3 w-3 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-3 w-3" />
+                          Mark as Paid
+                        </>
+                      )}
+                    </Button>
+                    <OnChainSettlementButton
+                      settlement={settlement}
+                      onSettled={() => handleOnChainSettled(actualIndex)}
+                      txHash={onChainData?.tx_hash}
+                    />
+                  </>
                 )}
                 {!isUserDebtor && (
                   <Badge variant="outline">Waiting for payment</Badge>
