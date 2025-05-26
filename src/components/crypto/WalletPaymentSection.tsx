@@ -29,7 +29,7 @@ export const WalletPaymentSection = ({
   
   const { 
     sendTransaction, 
-    data: hash,
+    data: txHash,
     isLoading: isSending,
     error: sendError 
   } = useSendTransaction();
@@ -38,15 +38,15 @@ export const WalletPaymentSection = ({
     isLoading: isConfirming,
     isSuccess: isConfirmed 
   } = useWaitForTransaction({
-    hash: hash,
+    hash: txHash,
   });
 
   // Handle successful transaction
   React.useEffect(() => {
-    if (isConfirmed && hash) {
-      onTransactionSuccess(hash);
+    if (isConfirmed && txHash) {
+      onTransactionSuccess(txHash);
     }
-  }, [isConfirmed, hash, onTransactionSuccess]);
+  }, [isConfirmed, txHash, onTransactionSuccess]);
 
   const handleWalletPayment = async () => {
     if (!isConnected) {

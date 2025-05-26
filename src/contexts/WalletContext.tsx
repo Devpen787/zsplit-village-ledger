@@ -31,7 +31,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { user, refreshUser } = useAuth();
   const { address: wagmiAddress, isConnected: wagmiIsConnected } = useAccount();
   const { disconnect: wagmiDisconnect } = useDisconnect();
-  const { connectAsync: wagmiConnect, isLoading: isConnectLoading } = useConnect();
+  const { isLoading: isConnectLoading } = useConnect();
   const [isConnecting, setIsConnecting] = useState(false);
   const [savedAddress, setSavedAddress] = useState<string | null>(null);
   
@@ -131,11 +131,15 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [user]);
   
+  // Use live wagmi connection state for isConnected and address
+  const currentAddress = wagmiIsConnected ? wagmiAddress : user?.wallet_address;
+  const currentIsConnected = wagmiIsConnected || !!user?.wallet_address;
+  
   return (
     <WalletContext.Provider 
       value={{
-        address: user?.wallet_address || null,
-        isConnected: !!user?.wallet_address,
+        address: currentAddress || null,
+        isConnected: currentIsConnected,
         isConnecting: isConnecting || isConnectLoading,
         connect,
         disconnect,
