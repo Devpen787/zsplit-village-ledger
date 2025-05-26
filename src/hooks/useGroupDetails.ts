@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, makeAuthenticatedRequest } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
 import { Group } from '@/types/supabase';
@@ -195,30 +195,34 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
     try {
       console.log("Fetching group details for:", id);
       
-      // Fetch group details
-      const { data: groupData, error: groupError } = await (supabase
-        .from('groups') as any)
-        .select('*')
-        .eq('id', id)
-        .single();
+      // Use authenticated request wrapper to ensure proper auth context
+      const response = await makeAuthenticatedRequest(user.id, async () => {
+        return await supabase
+          .from('groups')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle(); // Use maybeSingle instead of single to handle no results gracefully
+      });
         
-      if (groupError) {
-        console.error("Error fetching group:", groupError);
-        throw groupError;
+      if (response.error) {
+        console.error("Error fetching group:", response.error);
+        throw response.error;
       }
       
-      if (!groupData) {
-        toast.error("Group not found");
-        navigate('/');
+      if (!response.data) {
+        console.log("No group found with ID:", id);
+        toast.error("Group not found or you don't have access to it");
+        navigate('/group');
         return;
       }
       
-      console.log("Group data:", groupData);
-      setGroup(groupData);
+      console.log("Group data:", response.data);
+      setGroup(response.data);
       
     } catch (error: any) {
       console.error("Error fetching group:", error);
       toast.error(`Error loading group: ${error.message}`);
+      // Don't navigate away immediately, let user try again
     } finally {
       setLoading(false);
     }
