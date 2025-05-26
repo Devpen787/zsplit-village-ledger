@@ -30,7 +30,7 @@ export const WalletPaymentSection = ({
   const { 
     sendTransaction, 
     data: transactionHash,
-    isPending: isSending,
+    isLoading: isSending,
     error: sendError 
   } = useSendTransaction();
   
