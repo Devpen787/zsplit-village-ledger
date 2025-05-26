@@ -54,19 +54,22 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
     try {
       console.log("🚀 Creating group with user ID:", user.id);
       
-      // Use the secure Edge Function to create the group (bypasses RLS)
+      // Use the secure Edge Function to create the group AND add membership
       const groupData = await createGroupSecurely({
         name: name.trim(),
         icon: selectedEmoji,
         created_by: user.id
       });
       
-      console.log("✅ Group created successfully:", groupData);
+      console.log("✅ Group and membership created successfully:", groupData);
       
-      // Close modal first
+      // Verify that membership was created
+      if (!groupData.membershipCreated) {
+        throw new Error("Group created but membership was not established");
+      }
+      
+      // Close modal and reset form
       onOpenChange(false);
-      
-      // Reset form
       setName("");
       setSelectedEmoji("🏠");
       
@@ -76,12 +79,12 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
       // Call the callback to refresh data
       onGroupCreated(groupData);
       
-      // Wait a bit longer before navigation to ensure all data is properly committed
-      console.log("⏳ Waiting before navigation to ensure data consistency...");
+      // Wait a moment to ensure all database operations are fully committed
+      console.log("⏳ Waiting for database consistency before navigation...");
       setTimeout(() => {
         console.log("🧭 Navigating to group:", groupData.id);
         navigate(`/group/${groupData.id}`);
-      }, 500); // Increased delay to ensure database consistency
+      }, 200); // Reduced delay since we now confirm membership creation
       
     } catch (error: any) {
       console.error("❌ Error creating group:", error);
@@ -92,7 +95,9 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
       } else if (error.message?.includes('duplicate key')) {
         toast.error("A group with this name already exists. Please choose a different name.");
       } else if (error.message?.includes('Failed to add creator as member')) {
-        toast.error("Group created but failed to add you as a member. Please contact support.");
+        toast.error("Group creation failed: Unable to establish membership. Please try again.");
+      } else if (error.message?.includes('membership was not established')) {
+        toast.error("Group created but access setup failed. Please try refreshing the page.");
       } else {
         toast.error(`Failed to create group: ${error.message || 'Unknown error'}`);
       }

@@ -24,17 +24,44 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
     try {
       console.log("🔄 Fetching group details for:", id);
       
-      // Use authenticated request wrapper to ensure proper auth context
+      // First, verify user membership before trying to fetch group data
+      console.log("👥 Checking user membership first...");
+      const membershipCheck = await makeAuthenticatedRequest(user.id, async () => {
+        return await supabase
+          .from('group_members')
+          .select('role')
+          .eq('group_id', id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+      });
+      
+      console.log("👥 Membership check result:", membershipCheck);
+      
+      if (membershipCheck.error) {
+        console.error("❌ Error checking membership:", membershipCheck.error);
+        throw new Error(`Membership check failed: ${membershipCheck.error.message}`);
+      }
+      
+      if (!membershipCheck.data) {
+        console.log("❌ User is not a member of this group");
+        toast.error("You are not a member of this group");
+        navigate('/group');
+        return;
+      }
+      
+      console.log("✅ User is a member with role:", membershipCheck.data.role);
+      
+      // Now fetch the group data since we confirmed membership
+      console.log("📡 Fetching group data...");
       const response = await makeAuthenticatedRequest(user.id, async () => {
-        console.log("📡 Making Supabase request for group:", id);
         return await supabase
           .from('groups')
           .select('*')
           .eq('id', id)
-          .maybeSingle();
+          .single();
       });
       
-      console.log("📥 Supabase response:", response);
+      console.log("📥 Group data response:", response);
         
       if (response.error) {
         console.error("❌ Error fetching group:", response.error);
@@ -49,33 +76,7 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
       
       if (!response.data) {
         console.log("⚠️ No group found with ID:", id);
-        console.log("This means the group exists but RLS is blocking access");
-        
-        // Let's also check if the user is a member of this group
-        const memberCheck = await makeAuthenticatedRequest(user.id, async () => {
-          console.log("🔍 Checking group membership for user:", user.id, "in group:", id);
-          return await supabase
-            .from('group_members')
-            .select('*')
-            .eq('group_id', id)
-            .eq('user_id', user.id)
-            .maybeSingle();
-        });
-        
-        console.log("👥 Group membership check result:", memberCheck);
-        
-        if (memberCheck.error) {
-          console.error("❌ Error checking membership:", memberCheck.error);
-        }
-        
-        if (!memberCheck.data) {
-          console.log("❌ User is not a member of this group");
-          toast.error("You are not a member of this group");
-        } else {
-          console.log("✅ User is a member, but group data is not accessible - possible RLS issue");
-          toast.error("Group access issue - please try refreshing the page");
-        }
-        
+        toast.error("Group not found");
         navigate('/group');
         return;
       }
@@ -84,7 +85,7 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
       setGroup(response.data);
       
     } catch (error: any) {
-      console.error("💥 Error fetching group:", error);
+      console.error("💥 Error in fetchGroupDetails:", error);
       console.error("Error stack:", error.stack);
       
       // More specific error handling
@@ -94,6 +95,9 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
       } else if (error.code === 'PGRST116') {
         console.error("🚫 RLS policy blocking access");
         toast.error("Access denied - you may not be a member of this group");
+      } else if (error.message?.includes('Membership check failed')) {
+        console.error("👥 Membership verification failed");
+        toast.error("Unable to verify group membership");
       } else {
         toast.error(`Error loading group: ${error.message}`);
       }
@@ -110,10 +114,10 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
   useEffect(() => {
     console.log("🎯 useGroupData useEffect triggered:", { id, userId: user?.id });
     
-    // Add a small delay for newly created groups to ensure database consistency
+    // For newly created groups, add a small delay to ensure database consistency
     const timeoutId = setTimeout(() => {
       fetchGroupDetails();
-    }, 100);
+    }, 50); // Reduced delay since Edge Function now confirms membership
     
     // Set up real-time subscription for groups
     if (id) {

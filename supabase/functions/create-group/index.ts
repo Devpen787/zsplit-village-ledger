@@ -59,7 +59,8 @@ serve(async (req) => {
       );
     }
 
-    // Create the group using service role (bypasses RLS)
+    // Use a transaction-like approach: create group first, then member
+    console.log('Step 1: Creating group...');
     const { data: groupData, error: groupError } = await supabaseAdmin
       .from('groups')
       .insert({
@@ -83,7 +84,8 @@ serve(async (req) => {
 
     console.log('Group created successfully:', groupData);
 
-    // CRITICAL: Add the creator as a member with admin role IMMEDIATELY
+    // Step 2: IMMEDIATELY add the creator as an admin member
+    console.log('Step 2: Adding creator as admin member...');
     const { data: memberData, error: memberError } = await supabaseAdmin
       .from('group_members')
       .insert({
@@ -97,7 +99,7 @@ serve(async (req) => {
     if (memberError) {
       console.error('CRITICAL: Member creation error:', memberError);
       
-      // If member creation fails, we should clean up the group to maintain consistency
+      // If member creation fails, we MUST clean up the group to maintain consistency
       console.log('Cleaning up group due to member creation failure...');
       await supabaseAdmin
         .from('groups')
@@ -115,11 +117,17 @@ serve(async (req) => {
 
     console.log('Creator added as admin member successfully:', memberData);
 
-    // Add a small delay to ensure all database operations are committed
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Step 3: Return the complete group data with confirmation that membership was created
+    const responseData = {
+      ...groupData,
+      membershipCreated: true,
+      memberData: memberData
+    };
+
+    console.log('Returning complete group data:', responseData);
 
     return new Response(
-      JSON.stringify({ data: groupData }),
+      JSON.stringify({ data: responseData }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
