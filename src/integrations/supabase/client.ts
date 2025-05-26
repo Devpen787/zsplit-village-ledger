@@ -33,8 +33,7 @@ export const setSupabaseAuth = async (privyUserId: string) => {
   console.log("[Auth] Setting Supabase auth context for user:", privyUserId);
   
   try {
-    // Create a minimal session object that RLS can use
-    // This doesn't give full Supabase auth capabilities but provides the user context for RLS
+    // Create a simple session that maps the Privy user ID to Supabase auth context
     const mockSession = {
       access_token: `privy-${privyUserId}`,
       refresh_token: `privy-refresh-${privyUserId}`,
@@ -52,7 +51,7 @@ export const setSupabaseAuth = async (privyUserId: string) => {
       }
     };
 
-    // Set the session manually for RLS context
+    // Set the session for RLS context
     await supabase.auth.setSession({
       access_token: mockSession.access_token,
       refresh_token: mockSession.refresh_token
@@ -138,15 +137,12 @@ export const createGroupSecurely = async (groupData: {
   }
 };
 
-// Helper function to make authenticated requests with Privy user context
+// Simplified authenticated request wrapper
 export const makeAuthenticatedRequest = async (privyUserId: string, requestFn: () => Promise<any>) => {
   try {
-    // Ensure auth context is set before making the request
+    // Set auth context and execute request
     await setSupabaseAuth(privyUserId);
-    
-    // Execute the request function
     const response = await requestFn();
-    
     return response;
   } catch (error) {
     console.error('Error making authenticated request:', error);

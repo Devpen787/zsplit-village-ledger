@@ -12,7 +12,10 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
   const [loading, setLoading] = useState(true);
   
   const fetchGroupDetails = async () => {
-    if (!id || !user) return;
+    if (!id || !user) {
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     try {
@@ -24,7 +27,7 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
           .from('groups')
           .select('*')
           .eq('id', id)
-          .maybeSingle(); // Use maybeSingle instead of single to handle no results gracefully
+          .maybeSingle();
       });
         
       if (response.error) {
@@ -52,22 +55,23 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
   };
   
   useEffect(() => {
-    if (!id) return;
-    
     fetchGroupDetails();
     
-    const groupsChannel = supabase
-      .channel(`group-${id}-changes`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'groups', filter: `id=eq.${id}` },
-        () => fetchGroupDetails()
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(groupsChannel);
-    };
+    // Set up real-time subscription for groups
+    if (id) {
+      const groupsChannel = supabase
+        .channel(`group-${id}-changes`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'groups', filter: `id=eq.${id}` },
+          () => fetchGroupDetails()
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(groupsChannel);
+      };
+    }
   }, [id, user]);
 
   return {
