@@ -7,7 +7,7 @@ import { toast } from '@/components/ui/sonner';
 import { initializeWeb3Modal } from '@/utils/walletConfig';
 
 // Initialize web3modal during app startup
-initializeWeb3Modal();
+const web3modal = initializeWeb3Modal();
 
 type WalletContextType = {
   address: string | null;
@@ -51,8 +51,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsConnecting(true);
     
     try {
-      // This triggers the Web3Modal to open
-      document.dispatchEvent(new Event('wallet-connect'));
+      // Open Web3Modal directly
+      await web3modal.open();
     } catch (error) {
       console.error('Error opening Web3Modal:', error);
       setIsConnecting(false);
@@ -121,25 +121,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     
     saveWalletAddress();
   }, [wagmiIsConnected, wagmiAddress, user, refreshUser, savedAddress]);
-  
-  // Handle external wallet connect trigger
-  useEffect(() => {
-    const handleWalletConnect = () => {
-      if (isConnectLoading || !user) return;
-      
-      setIsConnecting(true);
-      
-      // We don't need to do anything else here - wagmi's useConnect hook will handle the actual connection
-      // and the address will be picked up by the other effect
-    };
-    
-    // Listen for the custom event that triggers wallet connection
-    document.addEventListener('wallet-connect', handleWalletConnect);
-    
-    return () => {
-      document.removeEventListener('wallet-connect', handleWalletConnect);
-    };
-  }, [isConnectLoading, user]);
   
   // When component mounts, initialize the saved address from the user object
   useEffect(() => {
