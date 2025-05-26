@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Wallet, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWallet } from '@/contexts/WalletContext';
-import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useSendTransaction, useWaitForTransaction } from 'wagmi';
 import { parseEther } from 'viem';
 import { toast } from "@/components/ui/sonner";
 import { formatCurrency } from '@/utils/money';
@@ -29,7 +29,7 @@ export const WalletPaymentSection = ({
   
   const { 
     sendTransaction, 
-    data: txHash,
+    data: txData,
     isLoading: isSending,
     error: sendError 
   } = useSendTransaction();
@@ -37,16 +37,16 @@ export const WalletPaymentSection = ({
   const { 
     isLoading: isConfirming,
     isSuccess: isConfirmed 
-  } = useWaitForTransactionReceipt({
-    hash: txHash,
+  } = useWaitForTransaction({
+    hash: txData?.hash,
   });
 
   // Handle successful transaction
   React.useEffect(() => {
-    if (isConfirmed && txHash) {
-      onTransactionSuccess(txHash);
+    if (isConfirmed && txData?.hash) {
+      onTransactionSuccess(txData.hash);
     }
-  }, [isConfirmed, txHash, onTransactionSuccess]);
+  }, [isConfirmed, txData?.hash, onTransactionSuccess]);
 
   const handleWalletPayment = async () => {
     if (!isConnected) {
