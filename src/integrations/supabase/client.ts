@@ -30,7 +30,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 // Function to create a temporary session for RLS context
 export const setSupabaseAuth = async (privyUserId: string) => {
-  console.log("[Auth] Setting Supabase auth context for user:", privyUserId);
+  console.log("[Auth] 🔐 Setting Supabase auth context for user:", privyUserId);
   
   try {
     // Create a simple session that maps the Privy user ID to Supabase auth context
@@ -51,16 +51,23 @@ export const setSupabaseAuth = async (privyUserId: string) => {
       }
     };
 
+    console.log("[Auth] 📝 Setting session with user ID:", privyUserId);
+    
     // Set the session for RLS context
     await supabase.auth.setSession({
       access_token: mockSession.access_token,
       refresh_token: mockSession.refresh_token
     });
     
+    // Verify the session was set
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log("[Auth] ✅ Session verification:", session ? "Session set" : "No session");
+    console.log("[Auth] 👤 Current auth user:", session?.user?.id);
+    
     console.log("Supabase auth context set successfully for user:", privyUserId);
     return true;
   } catch (error) {
-    console.error("Failed to set Supabase auth context:", error);
+    console.error("❌ Failed to set Supabase auth context:", error);
     return false;
   }
 };
@@ -140,12 +147,21 @@ export const createGroupSecurely = async (groupData: {
 // Simplified authenticated request wrapper
 export const makeAuthenticatedRequest = async (privyUserId: string, requestFn: () => Promise<any>) => {
   try {
+    console.log("[Request] 🚀 Making authenticated request for user:", privyUserId);
+    
     // Set auth context and execute request
-    await setSupabaseAuth(privyUserId);
+    const authSuccess = await setSupabaseAuth(privyUserId);
+    if (!authSuccess) {
+      throw new Error("Failed to set authentication context");
+    }
+    
+    console.log("[Request] 📡 Executing request function...");
     const response = await requestFn();
+    console.log("[Request] ✅ Request completed successfully");
+    
     return response;
   } catch (error) {
-    console.error('Error making authenticated request:', error);
+    console.error('[Request] ❌ Error making authenticated request:', error);
     throw error;
   }
 };
