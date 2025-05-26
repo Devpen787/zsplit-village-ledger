@@ -328,25 +328,13 @@ export type Database = {
           amount: number
         }[]
       }
-      get_user_groups: {
-        Args: { user_id_param: string }
+      user_expenses: {
+        Args: { user_id_param?: string }
         Returns: string[]
       }
-      is_expense_member: {
-        Args: { expense_id: string; user_id: string }
-        Returns: boolean
-      }
-      is_group_member: {
-        Args: { group_id_param: string; user_id_param: string }
-        Returns: boolean
-      }
-      is_user_expense_member: {
-        Args: { expense_id_param: string; user_id_param?: string }
-        Returns: boolean
-      }
-      is_user_in_group: {
-        Args: { group_id_param: string; user_id_param?: string }
-        Returns: boolean
+      user_groups: {
+        Args: { user_id_param?: string }
+        Returns: string[]
       }
     }
     Enums: {

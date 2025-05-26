@@ -22,9 +22,9 @@ export const useGroupsList = () => {
     try {
       console.log("Fetching groups for user:", user.id);
       
-      // Use the get_user_groups function to fetch group IDs securely
+      // Use the new user_groups function to fetch group IDs securely
       const { data: groupIds, error: functionError } = await supabase
-        .rpc('get_user_groups', { user_id_param: user.id });
+        .rpc('user_groups', { user_id_param: user.id });
         
       if (functionError) {
         console.error("Error fetching group IDs:", functionError);

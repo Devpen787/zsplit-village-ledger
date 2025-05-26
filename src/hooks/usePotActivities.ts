@@ -32,7 +32,7 @@ export const usePotActivities = (groupId: string): PotActivitiesData => {
       try {
         setLoading(true);
         
-        // Fetch group pot activities
+        // Fetch group pot activities - this should now work without RLS issues
         const typedActivities = await fetchGroupPotActivities(groupId);
         
         // Calculate total contributions, remaining balance, and extract contributors
