@@ -283,6 +283,7 @@ export type Database = {
           id: string
           settled: boolean | null
           to_user_id: string
+          tx_chain: string | null
           tx_hash: string | null
           updated_at: string | null
         }
@@ -293,6 +294,7 @@ export type Database = {
           id?: string
           settled?: boolean | null
           to_user_id: string
+          tx_chain?: string | null
           tx_hash?: string | null
           updated_at?: string | null
         }
@@ -303,6 +305,7 @@ export type Database = {
           id?: string
           settled?: boolean | null
           to_user_id?: string
+          tx_chain?: string | null
           tx_hash?: string | null
           updated_at?: string | null
         }
