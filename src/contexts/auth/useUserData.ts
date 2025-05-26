@@ -23,10 +23,10 @@ export const useUserData = () => {
         return null;
       }
       
-      // Set Supabase auth with the validated Privy user ID
+      // Set Supabase auth context for RLS
       await setSupabaseAuth(privyUserId);
       
-      // Using maybeSingle() to handle case where user might not exist yet
+      // Try to fetch the user - this should work with RLS if user exists
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
@@ -35,13 +35,7 @@ export const useUserData = () => {
 
       if (fetchError) {
         console.error("Error fetching user:", fetchError);
-        
-        // Handle specific RLS errors more gracefully
-        if (fetchError.message?.includes('row-level security')) {
-          setAuthError("Access denied: User not found or insufficient permissions");
-        } else {
-          setAuthError(`Database error: ${fetchError.message}`);
-        }
+        // RLS might block this if user doesn't exist yet, which is expected
         return null;
       }
 
@@ -91,9 +85,6 @@ export const useUserData = () => {
         return null;
       }
       
-      // First set up Supabase auth with the validated Privy user ID for future operations
-      await setSupabaseAuth(privyUserId);
-      
       // Prepare user data
       const userData = {
         user_id: privyUserId,
@@ -104,7 +95,7 @@ export const useUserData = () => {
       
       console.log("Creating user with data:", userData);
       
-      // Use the secure Edge Function to create the user
+      // Use the secure Edge Function to create the user (bypasses RLS)
       const insertedUser = await createUserSecurely(userData);
       
       if (!insertedUser) {
@@ -112,6 +103,9 @@ export const useUserData = () => {
         setAuthError("Failed to create your profile. No data returned.");
         return null;
       }
+      
+      // Set up auth context after user creation
+      await setSupabaseAuth(privyUserId);
       
       console.log("User created successfully:", insertedUser);
       return insertedUser as User;

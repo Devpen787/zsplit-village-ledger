@@ -14,13 +14,16 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Create user function called')
+
     // Get the service role key from environment variables
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!serviceRoleKey) {
+      console.error('Service role key not configured')
       throw new Error('Service role key not configured')
     }
 
-    // Create admin client with service role key
+    // Create admin client with service role key (bypasses RLS)
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       serviceRoleKey,
@@ -32,12 +35,43 @@ serve(async (req) => {
     )
 
     const { user_id, user_email, user_name, user_role = 'participant' } = await req.json()
+    console.log('Request data:', { user_id, user_email, user_name, user_role })
 
     if (!user_id || !user_email) {
+      console.error('Missing required fields')
       return new Response(
         JSON.stringify({ error: 'Missing required fields: user_id and user_email' }),
         { 
           status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Check if user already exists
+    const { data: existingUser, error: checkError } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('id', user_id)
+      .maybeSingle()
+
+    if (checkError) {
+      console.error('Error checking existing user:', checkError)
+      return new Response(
+        JSON.stringify({ error: `Failed to check existing user: ${checkError.message}` }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    if (existingUser) {
+      console.log('User already exists, returning existing user')
+      return new Response(
+        JSON.stringify({ data: existingUser }),
+        { 
+          status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       )
@@ -69,6 +103,7 @@ serve(async (req) => {
       )
     }
 
+    console.log('User created successfully:', userData)
     return new Response(
       JSON.stringify({ data: userData }),
       { 

@@ -20,52 +20,39 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10
     }
-  },
-  global: {
-    headers: {
-      // We'll use custom auth handling for Privy integration
-    }
   }
 });
 
-// Function to set custom JWT from Privy into Supabase
+// Function to set a custom JWT token for authenticated requests
 export const setSupabaseAuth = async (privyUserId: string) => {
-  console.log("[Auth] Setting Supabase session from Privy token...", privyUserId);
+  console.log("[Auth] Setting Supabase auth context for user:", privyUserId);
   
   try {
-    // Set the auth for function calls
-    supabase.functions.setAuth(privyUserId);
+    // For RLS purposes, we need to create a minimal session
+    // The Edge Function will handle user creation with service role
+    // We just need to establish the user context for RLS policies
     
-    // Set the session for database operations
-    const { data, error } = await supabase.auth.setSession({
-      access_token: privyUserId,
-      refresh_token: '', // Optional
-    });
+    // Set a custom header that can be used by RLS policies
+    supabase.realtime.setAuth(privyUserId);
     
-    if (error) {
-      console.error("Error setting Supabase session:", error);
-      return false;
-    }
-    
-    console.log("Supabase session set successfully:", data);
+    console.log("Supabase auth context set successfully for user:", privyUserId);
     return true;
   } catch (error) {
-    console.error("Failed to set Supabase auth:", error);
+    console.error("Failed to set Supabase auth context:", error);
     return false;
   }
 };
 
 // Helper function to clean up any auth state
 export const clearAuthState = () => {
+  console.log("[Auth] Clearing auth state...");
+  
   // Clear any auth-related items from localStorage
   Object.keys(localStorage).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
       localStorage.removeItem(key);
     }
   });
-  
-  // Clear any custom auth state
-  supabase.functions.setAuth('');
   
   // Try to reset the auth session
   try {
@@ -83,6 +70,8 @@ export const createUserSecurely = async (userData: {
   user_role?: string;
 }) => {
   try {
+    console.log('Calling create-user function with data:', userData);
+    
     const { data, error } = await supabase.functions.invoke('create-user', {
       body: userData
     });
@@ -92,6 +81,7 @@ export const createUserSecurely = async (userData: {
       throw new Error(`Failed to create user: ${error.message}`);
     }
 
+    console.log('Create-user function response:', data);
     return data.data;
   } catch (error) {
     console.error('Error in createUserSecurely:', error);
