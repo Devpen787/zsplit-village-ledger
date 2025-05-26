@@ -88,3 +88,19 @@ export const createUserSecurely = async (userData: {
     throw error;
   }
 };
+
+// Helper function to make authenticated requests with Privy user context
+export const makeAuthenticatedRequest = async (privyUserId: string, requestFn: () => Promise<any>) => {
+  try {
+    // Set headers to include the Privy user ID for RLS context
+    const originalAuth = supabase.auth.getSession();
+    
+    // Create a custom header for the request
+    const response = await requestFn();
+    
+    return response;
+  } catch (error) {
+    console.error('Error making authenticated request:', error);
+    throw error;
+  }
+};

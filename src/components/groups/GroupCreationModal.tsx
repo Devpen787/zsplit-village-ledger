@@ -40,7 +40,10 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      toast.error("Please sign in to create a group");
+      return;
+    }
     
     if (!name.trim()) {
       toast.error("Please enter a group name");
@@ -49,9 +52,11 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
 
     setLoading(true);
     try {
-      // Create a new group - use type assertion to bypass TypeScript errors
-      const { data: groupData, error: groupError } = await (supabase
-        .from('groups') as any)
+      console.log("Creating group with user ID:", user.id);
+      
+      // Create a new group using direct database query
+      const { data: groupData, error: groupError } = await supabase
+        .from('groups')
         .insert({
           name: name.trim(),
           icon: selectedEmoji,
@@ -60,22 +65,33 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
         .select()
         .single();
 
-      if (groupError) throw groupError;
+      if (groupError) {
+        console.error("Group creation error:", groupError);
+        throw groupError;
+      }
       
-      // Add the creator as a member
-      const { error: memberError } = await (supabase
-        .from('group_members') as any)
+      console.log("Group created successfully:", groupData);
+      
+      // Add the creator as a member with admin role
+      const { error: memberError } = await supabase
+        .from('group_members')
         .insert({
           group_id: groupData.id,
           user_id: user.id,
           role: 'admin'
         });
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error("Member creation error:", memberError);
+        throw memberError;
+      }
 
+      console.log("Creator added as admin member successfully");
+      
       onGroupCreated(groupData);
       setName("");
       setSelectedEmoji("🏠");
+      toast.success(`Group "${groupData.name}" created successfully!`);
       
       // If this is the user's first group (or only group), navigate directly to it
       if (groups.length === 0) {
@@ -85,7 +101,15 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
       }
     } catch (error: any) {
       console.error("Error creating group:", error);
-      toast.error(`Failed to create group: ${error.message}`);
+      
+      // Provide more specific error messages
+      if (error.message?.includes('row-level security')) {
+        toast.error("Unable to create group due to permissions. Please try again or contact support.");
+      } else if (error.message?.includes('duplicate key')) {
+        toast.error("A group with this name already exists. Please choose a different name.");
+      } else {
+        toast.error(`Failed to create group: ${error.message || 'Unknown error'}`);
+      }
     } finally {
       setLoading(false);
     }
