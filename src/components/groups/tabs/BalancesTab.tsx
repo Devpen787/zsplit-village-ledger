@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { useBalances } from '@/hooks/useBalances';
 import { BalancesTable, BalanceData } from '@/components/balances/BalancesTable';
-import { SettlementActions } from '@/components/balances/settlements/SettlementActions';
 import { BalanceSummaryCards } from '@/components/balances/BalanceSummaryCards';
+import { SimplifiedPayments } from '@/components/balances/SimplifiedPayments';
 import { LoadingCenter } from '@/components/ui/loading';
 
 interface BalancesTabProps {
@@ -12,10 +11,8 @@ interface BalancesTabProps {
 }
 
 export const BalancesTab = ({ groupId }: BalancesTabProps) => {
-  // Get balance data
   const { balances, loading, error, refreshing, handleRefresh } = useBalances();
   
-  // Transform Balance[] to BalanceData[]
   const balanceData: BalanceData[] = balances.map(balance => ({
     userId: balance.user_id,
     userName: balance.user_name || balance.user_email,
@@ -24,7 +21,6 @@ export const BalancesTab = ({ groupId }: BalancesTabProps) => {
     netBalance: balance.amount
   }));
 
-  // Auto-refresh balances when component mounts
   React.useEffect(() => {
     if (!refreshing && !loading) {
       handleRefresh();
@@ -72,8 +68,8 @@ export const BalancesTab = ({ groupId }: BalancesTabProps) => {
   return (
     <>
       <BalanceSummaryCards balances={balanceData} groupId={groupId} />
+      <SimplifiedPayments balances={balanceData} />
       <BalancesTable balances={balanceData} />
-      <SettlementActions balances={balanceData} />
     </>
   );
 };
