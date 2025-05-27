@@ -11,6 +11,50 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
   
+  // Helper function to check membership with retries
+  const checkMembershipWithRetry = async (groupId: string, userId: string, maxRetries = 5): Promise<boolean> => {
+    console.log(`🔄 Checking membership for group ${groupId}, attempt 1 of ${maxRetries}`);
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const membershipCheck = await makeAuthenticatedRequest(userId, async () => {
+          return await supabase
+            .from('group_members')
+            .select('role')
+            .eq('group_id', groupId)
+            .eq('user_id', userId)
+            .maybeSingle();
+        });
+        
+        if (membershipCheck.error) {
+          console.error(`❌ Membership check error (attempt ${attempt}):`, membershipCheck.error);
+          if (attempt === maxRetries) {
+            throw new Error(`Membership check failed: ${membershipCheck.error.message}`);
+          }
+        } else if (membershipCheck.data) {
+          console.log(`✅ Membership confirmed on attempt ${attempt}:`, membershipCheck.data.role);
+          return true;
+        } else {
+          console.log(`⏳ No membership found on attempt ${attempt}, retrying...`);
+        }
+        
+        // Wait before retrying (except on last attempt)
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      } catch (error) {
+        console.error(`💥 Error during membership check attempt ${attempt}:`, error);
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+    
+    console.log(`❌ Membership not found after ${maxRetries} attempts`);
+    return false;
+  };
+  
   const fetchGroupDetails = async () => {
     console.log("🔍 fetchGroupDetails called with:", { id, user: user?.id });
     
@@ -22,34 +66,20 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
     
     setLoading(true);
     try {
-      console.log("🔄 Fetching group details for:", id);
+      console.log("🔄 Starting group data fetch for:", id);
       
-      // First, verify user membership before trying to fetch group data
-      console.log("👥 Checking user membership first...");
-      const membershipCheck = await makeAuthenticatedRequest(user.id, async () => {
-        return await supabase
-          .from('group_members')
-          .select('role')
-          .eq('group_id', id)
-          .eq('user_id', user.id)
-          .maybeSingle();
-      });
+      // First, check membership with retry mechanism
+      console.log("👥 Checking user membership with retry logic...");
+      const isMember = await checkMembershipWithRetry(id, user.id);
       
-      console.log("👥 Membership check result:", membershipCheck);
-      
-      if (membershipCheck.error) {
-        console.error("❌ Error checking membership:", membershipCheck.error);
-        throw new Error(`Membership check failed: ${membershipCheck.error.message}`);
-      }
-      
-      if (!membershipCheck.data) {
-        console.log("❌ User is not a member of this group");
+      if (!isMember) {
+        console.log("❌ User is not a member of this group after retries");
         toast.error("You are not a member of this group");
         navigate('/group');
         return;
       }
       
-      console.log("✅ User is a member with role:", membershipCheck.data.role);
+      console.log("✅ User membership confirmed, fetching group data...");
       
       // Now fetch the group data since we confirmed membership
       console.log("📡 Fetching group data...");
