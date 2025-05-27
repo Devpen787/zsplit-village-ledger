@@ -144,6 +144,28 @@ export const createGroupSecurely = async (groupData: {
   }
 };
 
+// Service for verifying group membership via Edge Function (bypasses RLS)
+export const verifyGroupMembership = async (groupId: string, userId: string) => {
+  try {
+    console.log('Verifying group membership via Edge Function:', { groupId, userId });
+    
+    const { data, error } = await supabase.functions.invoke('verify-group-membership', {
+      body: { groupId, userId }
+    });
+
+    if (error) {
+      console.error('Error calling verify-group-membership function:', error);
+      throw new Error(`Failed to verify membership: ${error.message}`);
+    }
+
+    console.log('Membership verification response:', data);
+    return data.data;
+  } catch (error) {
+    console.error('Error in verifyGroupMembership:', error);
+    throw error;
+  }
+};
+
 // Simplified authenticated request wrapper
 export const makeAuthenticatedRequest = async (privyUserId: string, requestFn: () => Promise<any>) => {
   try {

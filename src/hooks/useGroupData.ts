@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase, makeAuthenticatedRequest } from '@/integrations/supabase/client';
+import { supabase, makeAuthenticatedRequest, verifyGroupMembership } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
 import { Group } from '@/types/supabase';
@@ -10,50 +10,6 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
   const navigate = useNavigate();
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Helper function to check membership with retries
-  const checkMembershipWithRetry = async (groupId: string, userId: string, maxRetries = 5): Promise<boolean> => {
-    console.log(`🔄 Checking membership for group ${groupId}, attempt 1 of ${maxRetries}`);
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const membershipCheck = await makeAuthenticatedRequest(userId, async () => {
-          return await supabase
-            .from('group_members')
-            .select('role')
-            .eq('group_id', groupId)
-            .eq('user_id', userId)
-            .maybeSingle();
-        });
-        
-        if (membershipCheck.error) {
-          console.error(`❌ Membership check error (attempt ${attempt}):`, membershipCheck.error);
-          if (attempt === maxRetries) {
-            throw new Error(`Membership check failed: ${membershipCheck.error.message}`);
-          }
-        } else if (membershipCheck.data) {
-          console.log(`✅ Membership confirmed on attempt ${attempt}:`, membershipCheck.data.role);
-          return true;
-        } else {
-          console.log(`⏳ No membership found on attempt ${attempt}, retrying...`);
-        }
-        
-        // Wait before retrying (except on last attempt)
-        if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      } catch (error) {
-        console.error(`💥 Error during membership check attempt ${attempt}:`, error);
-        if (attempt === maxRetries) {
-          throw error;
-        }
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-    }
-    
-    console.log(`❌ Membership not found after ${maxRetries} attempts`);
-    return false;
-  };
   
   const fetchGroupDetails = async () => {
     console.log("🔍 fetchGroupDetails called with:", { id, user: user?.id });
@@ -68,18 +24,18 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
     try {
       console.log("🔄 Starting group data fetch for:", id);
       
-      // First, check membership with retry mechanism
-      console.log("👥 Checking user membership with retry logic...");
-      const isMember = await checkMembershipWithRetry(id, user.id);
+      // First, verify membership using the Edge Function (bypasses RLS/auth issues)
+      console.log("👥 Verifying membership via Edge Function...");
+      const membershipResult = await verifyGroupMembership(id, user.id);
       
-      if (!isMember) {
-        console.log("❌ User is not a member of this group after retries");
+      if (!membershipResult.isMember) {
+        console.log("❌ User is not a member of this group");
         toast.error("You are not a member of this group");
         navigate('/group');
         return;
       }
       
-      console.log("✅ User membership confirmed, fetching group data...");
+      console.log("✅ Membership confirmed via Edge Function, role:", membershipResult.role);
       
       // Now fetch the group data since we confirmed membership
       console.log("📡 Fetching group data...");
@@ -118,7 +74,7 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
       } else if (error.code === 'PGRST116') {
         console.error("🚫 RLS policy blocking access");
         toast.error("Access denied - you may not be a member of this group");
-      } else if (error.message?.includes('Membership check failed')) {
+      } else if (error.message?.includes('Failed to verify membership')) {
         console.error("👥 Membership verification failed");
         toast.error("Unable to verify group membership");
       } else {
