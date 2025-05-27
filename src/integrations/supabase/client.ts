@@ -197,6 +197,38 @@ export const verifyGroupMembership = async (groupId: string, userId: string) => 
   }
 };
 
+// Service for fetching group data via Edge Function (bypasses RLS)
+export const getGroupData = async (groupId: string, userId: string) => {
+  try {
+    console.log('Fetching group data via Edge Function:', { groupId, userId });
+    
+    const { data, error } = await supabase.functions.invoke('get-group-data', {
+      body: { groupId, userId }
+    });
+
+    if (error) {
+      console.error('Error calling get-group-data function:', error);
+      throw new Error(`Failed to fetch group data: ${error.message}`);
+    }
+
+    console.log('Group data Edge Function response:', data);
+
+    // Validate the response structure
+    if (!data || !data.data) {
+      throw new Error('Invalid group data response');
+    }
+
+    return {
+      group: data.data,
+      membership: data.membership
+    };
+    
+  } catch (error) {
+    console.error('Error in getGroupData:', error);
+    throw error;
+  }
+};
+
 // Simplified authenticated request wrapper
 export const makeAuthenticatedRequest = async (privyUserId: string, requestFn: () => Promise<any>) => {
   try {

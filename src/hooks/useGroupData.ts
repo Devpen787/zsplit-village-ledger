@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase, makeAuthenticatedRequest, verifyGroupMembership } from '@/integrations/supabase/client';
+import { supabase, getGroupData } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
 import { Group } from '@/types/supabase';
@@ -24,84 +24,29 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
     try {
       console.log("🔄 Starting group data fetch for:", id);
       
-      // First, verify membership using the Edge Function (bypasses RLS/auth issues)
-      console.log("👥 Verifying membership via Edge Function...");
+      // Use the new Edge Function to fetch group data (bypasses all RLS issues)
+      console.log("📡 Fetching group data via Edge Function...");
       
-      let membershipResult;
-      try {
-        membershipResult = await verifyGroupMembership(id, user.id);
-        console.log("✅ Membership verification completed:", membershipResult);
-      } catch (membershipError: any) {
-        console.error("❌ Membership verification failed:", membershipError);
-        
-        // Show specific error messages
-        if (membershipError.message?.includes('Failed to parse')) {
-          toast.error("Technical error verifying group access. Please try refreshing the page.");
-        } else if (membershipError.message?.includes('Invalid response')) {
-          toast.error("Server error verifying group membership. Please try again.");
-        } else {
-          toast.error("Unable to verify group membership. Please try again.");
-        }
-        
-        setTimeout(() => navigate('/group'), 2000);
-        return;
-      }
+      const result = await getGroupData(id, user.id);
       
-      // Check if user is actually a member
-      if (!membershipResult?.isMember) {
-        console.log("❌ User is not a member of this group");
-        toast.error("You are not a member of this group");
-        navigate('/group');
-        return;
-      }
-      
-      console.log("✅ Membership confirmed via Edge Function, role:", membershipResult.role || 'unknown');
-      
-      // Now fetch the group data since we confirmed membership
-      console.log("📡 Fetching group data...");
-      const response = await makeAuthenticatedRequest(user.id, async () => {
-        return await supabase
-          .from('groups')
-          .select('*')
-          .eq('id', id)
-          .single();
-      });
-      
-      console.log("📥 Group data response:", response);
-        
-      if (response.error) {
-        console.error("❌ Error fetching group:", response.error);
-        throw response.error;
-      }
-      
-      if (!response.data) {
-        console.log("⚠️ No group found with ID:", id);
-        toast.error("Group not found");
-        navigate('/group');
-        return;
-      }
-      
-      console.log("✅ Group data found:", response.data);
-      setGroup(response.data);
+      console.log("✅ Group data fetched successfully:", result);
+      setGroup(result.group);
       
     } catch (error: any) {
       console.error("💥 Error in fetchGroupDetails:", error);
       
       // More specific error handling
-      if (error.message?.includes('JWT')) {
-        console.error("🔐 Authentication issue detected");
-        toast.error("Authentication issue - please sign in again");
-      } else if (error.code === 'PGRST116') {
-        console.error("🚫 RLS policy blocking access");
-        toast.error("Access denied - you may not be a member of this group");
+      if (error.message?.includes('Not a member of this group')) {
+        console.error("🚫 User is not a member");
+        toast.error("You are not a member of this group");
+      } else if (error.message?.includes('Failed to fetch group data')) {
+        console.error("📡 Group data fetch failed");
+        toast.error("Unable to load group data. Please try again.");
       } else {
         toast.error(`Error loading group: ${error.message}`);
       }
       
-      // Don't navigate away immediately for authentication issues
-      if (!error.message?.includes('JWT')) {
-        setTimeout(() => navigate('/group'), 2000);
-      }
+      setTimeout(() => navigate('/group'), 2000);
     } finally {
       setLoading(false);
     }
