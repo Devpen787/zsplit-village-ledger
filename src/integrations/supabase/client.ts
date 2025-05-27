@@ -158,8 +158,39 @@ export const verifyGroupMembership = async (groupId: string, userId: string) => 
       throw new Error(`Failed to verify membership: ${error.message}`);
     }
 
-    console.log('Membership verification response:', data);
-    return data.data;
+    console.log('Raw Edge Function response:', data);
+
+    // Safely extract the membership data from the response
+    let membershipData;
+    try {
+      // The Edge Function returns { data: { isMember: boolean, role?: string } }
+      if (data && typeof data === 'object') {
+        if (data.data && typeof data.data === 'object') {
+          membershipData = data.data;
+        } else if (data.isMember !== undefined) {
+          // Direct response format
+          membershipData = data;
+        } else {
+          console.warn('Unexpected response structure:', data);
+          throw new Error('Invalid response structure from membership verification');
+        }
+      } else {
+        throw new Error('No data received from membership verification');
+      }
+    } catch (parseError) {
+      console.error('Error parsing membership response:', parseError);
+      throw new Error('Failed to parse membership verification response');
+    }
+
+    // Validate the response structure
+    if (!membershipData || typeof membershipData.isMember !== 'boolean') {
+      console.error('Invalid membership data structure:', membershipData);
+      throw new Error('Invalid membership data received');
+    }
+
+    console.log('Parsed membership verification response:', membershipData);
+    return membershipData;
+    
   } catch (error) {
     console.error('Error in verifyGroupMembership:', error);
     throw error;

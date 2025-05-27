@@ -26,16 +26,36 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
       
       // First, verify membership using the Edge Function (bypasses RLS/auth issues)
       console.log("👥 Verifying membership via Edge Function...");
-      const membershipResult = await verifyGroupMembership(id, user.id);
       
-      if (!membershipResult.isMember) {
+      let membershipResult;
+      try {
+        membershipResult = await verifyGroupMembership(id, user.id);
+        console.log("✅ Membership verification completed:", membershipResult);
+      } catch (membershipError: any) {
+        console.error("❌ Membership verification failed:", membershipError);
+        
+        // Show specific error messages
+        if (membershipError.message?.includes('Failed to parse')) {
+          toast.error("Technical error verifying group access. Please try refreshing the page.");
+        } else if (membershipError.message?.includes('Invalid response')) {
+          toast.error("Server error verifying group membership. Please try again.");
+        } else {
+          toast.error("Unable to verify group membership. Please try again.");
+        }
+        
+        setTimeout(() => navigate('/group'), 2000);
+        return;
+      }
+      
+      // Check if user is actually a member
+      if (!membershipResult?.isMember) {
         console.log("❌ User is not a member of this group");
         toast.error("You are not a member of this group");
         navigate('/group');
         return;
       }
       
-      console.log("✅ Membership confirmed via Edge Function, role:", membershipResult.role);
+      console.log("✅ Membership confirmed via Edge Function, role:", membershipResult.role || 'unknown');
       
       // Now fetch the group data since we confirmed membership
       console.log("📡 Fetching group data...");
@@ -74,9 +94,6 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
       } else if (error.code === 'PGRST116') {
         console.error("🚫 RLS policy blocking access");
         toast.error("Access denied - you may not be a member of this group");
-      } else if (error.message?.includes('Failed to verify membership')) {
-        console.error("👥 Membership verification failed");
-        toast.error("Unable to verify group membership");
       } else {
         toast.error(`Error loading group: ${error.message}`);
       }
