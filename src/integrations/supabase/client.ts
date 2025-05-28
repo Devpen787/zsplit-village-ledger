@@ -144,6 +144,37 @@ export const createGroupSecurely = async (groupData: {
   }
 };
 
+// Service for creating expenses securely via Edge Function
+export const createExpenseSecurely = async (expenseData: {
+  title: string;
+  amount: number;
+  currency: string;
+  date: string;
+  leftover_notes?: string;
+  paid_by: string;
+  group_id?: string;
+  created_by: string;
+}) => {
+  try {
+    console.log('Calling create-expense function with data:', expenseData);
+    
+    const { data, error } = await supabase.functions.invoke('create-expense', {
+      body: expenseData
+    });
+
+    if (error) {
+      console.error('Error calling create-expense function:', error);
+      throw new Error(`Failed to create expense: ${error.message}`);
+    }
+
+    console.log('Create-expense function response:', data);
+    return data.data;
+  } catch (error) {
+    console.error('Error in createExpenseSecurely:', error);
+    throw error;
+  }
+};
+
 // Service for verifying group membership via Edge Function (bypasses RLS)
 export const verifyGroupMembership = async (groupId: string, userId: string) => {
   try {

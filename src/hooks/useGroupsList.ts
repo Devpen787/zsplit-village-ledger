@@ -22,47 +22,42 @@ export const useGroupsList = () => {
     try {
       console.log("Fetching groups for user:", user.id);
       
-      // Use the new user_groups function to fetch group IDs securely
+      // First, get the group IDs the user belongs to
       const { data: groupIds, error: functionError } = await supabase
         .rpc('user_groups', { user_id_param: user.id });
         
       if (functionError) {
         console.error("Error fetching group IDs:", functionError);
-        
-        // Special handling for recursive RLS policy errors
-        if (functionError.message?.includes('infinite recursion') || functionError.code === '42P17') {
-          setHasRecursionError(true);
-          setError("Database policy configuration issue");
-          return;
-        }
-        
         throw functionError;
       }
       
       console.log("Group IDs:", groupIds);
       
       if (groupIds && groupIds.length > 0) {
-        // Fetch group details
-        const { data: groupsData, error: groupsError } = await supabase
-          .from('groups')
-          .select('*')
-          .in('id', groupIds);
-
-        if (groupsError) {
-          console.error("Error fetching groups:", groupsError);
-          
-          // Special handling for recursive RLS policy errors
-          if (groupsError.message?.includes('infinite recursion') || groupsError.code === '42P17') {
-            setHasRecursionError(true);
-            setError("Database policy configuration issue");
-            return;
+        // Fetch group details using the Edge Function to bypass RLS issues
+        const groupDetailsPromises = groupIds.map(async (groupId: string) => {
+          try {
+            const { data, error } = await supabase.functions.invoke('get-group-data', {
+              body: { groupId, userId: user.id }
+            });
+            
+            if (error) {
+              console.error(`Error fetching group ${groupId}:`, error);
+              return null;
+            }
+            
+            return data.data;
+          } catch (err) {
+            console.error(`Error fetching group ${groupId}:`, err);
+            return null;
           }
-          
-          throw groupsError;
-        }
+        });
         
-        console.log("Groups data:", groupsData);
-        setGroups(groupsData || []);
+        const groupsData = await Promise.all(groupDetailsPromises);
+        const validGroups = groupsData.filter(group => group !== null);
+        
+        console.log("Groups data:", validGroups);
+        setGroups(validGroups || []);
       } else {
         console.log("No groups found for user");
         setGroups([]);

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Expense } from '@/types/expenses';
@@ -68,6 +69,13 @@ export const saveExpense = async (values: ExpenseFormValues, id: string | undefi
       return null;
     }
 
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("You must be logged in to create expenses.");
+      return null;
+    }
+
     const expenseData = {
       title: values.title,
       amount: amountNumber,
@@ -129,7 +137,7 @@ export const fetchGroupDetails = async (groupId: string) => {
       .from('groups')
       .select('*')
       .eq('id', groupId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching group details:", error);
