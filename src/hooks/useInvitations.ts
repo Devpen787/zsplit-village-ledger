@@ -38,7 +38,14 @@ export const useInvitations = () => {
         .eq('status', 'pending');
 
       if (error) throw error;
-      setInvitations(data || []);
+      
+      // Type assertion to ensure the status field matches our union type
+      const typedInvitations = (data || []).map(invitation => ({
+        ...invitation,
+        status: invitation.status as 'pending' | 'accepted' | 'declined'
+      }));
+      
+      setInvitations(typedInvitations);
     } catch (error: any) {
       console.error('Error fetching invitations:', error);
       toast.error('Failed to load invitations');

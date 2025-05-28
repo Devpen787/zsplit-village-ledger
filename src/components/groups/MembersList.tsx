@@ -65,7 +65,7 @@ export const MembersList = ({
                 <div className="text-center">
                   <p className="font-medium">{member.user?.name || 'Unknown User'}</p>
                   <p className="text-xs text-muted-foreground">{member.user?.email}</p>
-                  <Badge size="sm" variant={getRoleBadgeVariant(member.role)} className="mt-1">
+                  <Badge variant={getRoleBadgeVariant(member.role)} className="mt-1 text-xs">
                     {getRoleLabel(member.role)}
                   </Badge>
                 </div>
