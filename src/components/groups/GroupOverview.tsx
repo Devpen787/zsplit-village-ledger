@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { MembersList } from "./MembersList";
 import { Badge } from "@/components/ui/badge";
 import { GroupMember } from '@/types/supabase';
-import { CreditCard, AlertCircle, Wallet, Users, Calendar, ChevronRight } from 'lucide-react';
+import { CreditCard, AlertCircle, Wallet, Users, Calendar, ChevronRight, Settings } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { GroupManagementPanel } from './GroupManagementPanel';
 
 interface GroupOverviewProps {
   groupId: string;
@@ -25,6 +26,7 @@ interface GroupOverviewProps {
   totalExpenses?: number;
   pendingPayoutsCount?: number;
   connectedWalletsCount?: number;
+  onMemberUpdate?: () => void;
 }
 
 export const GroupOverview: React.FC<GroupOverviewProps> = ({
@@ -37,7 +39,8 @@ export const GroupOverview: React.FC<GroupOverviewProps> = ({
   potBalance = 0,
   totalExpenses = 0,
   pendingPayoutsCount = 0,
-  connectedWalletsCount = 0
+  connectedWalletsCount = 0,
+  onMemberUpdate
 }) => {
   const navigate = useNavigate();
   
@@ -203,7 +206,7 @@ export const GroupOverview: React.FC<GroupOverviewProps> = ({
               </Badge>
               <Badge variant="outline" className="bg-primary/5">
                 <Users className="h-3 w-3 mr-1" />
-                {members.filter(m => m.role === 'member').length} Participants
+                {members.filter(m => m.role === 'member' || m.role === 'participant').length} Participants
               </Badge>
             </div>
           </CardHeader>
@@ -219,6 +222,19 @@ export const GroupOverview: React.FC<GroupOverviewProps> = ({
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Group Management Panel - Only visible to admins */}
+      {isAdmin && onMemberUpdate && (
+        <motion.div variants={item}>
+          <GroupManagementPanel
+            groupId={groupId}
+            members={members}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+            onMemberUpdate={onMemberUpdate}
+          />
+        </motion.div>
+      )}
     </motion.div>
   );
 };

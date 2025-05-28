@@ -13,6 +13,7 @@ import { UserWelcomeCard } from '@/components/dashboard/UserWelcomeCard';
 import { GroupsList } from '@/components/dashboard/GroupsList';
 import { DashboardSection } from '@/components/dashboard/DashboardSection';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
+import { InvitationsPanel } from '@/components/groups/InvitationsPanel';
 import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { PlusIcon, Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -98,6 +99,11 @@ const Index = () => {
             
             <motion.div variants={itemVariants}>
               <UserWelcomeCard user={user} />
+            </motion.div>
+
+            {/* Group Invitations Panel */}
+            <motion.div variants={itemVariants}>
+              <InvitationsPanel />
             </motion.div>
           </>
         )}
