@@ -1,10 +1,19 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, AlertCircle, RefreshCw, UserPlus } from "lucide-react";
+import { Plus, AlertCircle, RefreshCw, UserPlus, MoreVertical, Trash2 } from "lucide-react";
 import { Group } from '@/types/supabase';
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { GroupDeleteDialog } from '@/components/groups/GroupDeleteDialog';
+import { useGroupDeletion } from '@/hooks/useGroupDeletion';
+import { useAuth } from '@/contexts';
 
 export interface GroupsListProps {
   groups: Group[];
@@ -25,6 +34,32 @@ export const GroupsList = ({
   onRefresh,
   onGroupSelect
 }: GroupsListProps) => {
+  const { user } = useAuth();
+  const { deleteGroup, loading: deleteLoading } = useGroupDeletion();
+  const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const handleDeleteClick = (group: Group, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setGroupToDelete(group);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!groupToDelete) return;
+    
+    const success = await deleteGroup(groupToDelete.id);
+    if (success) {
+      setDeleteDialogOpen(false);
+      setGroupToDelete(null);
+      onRefresh();
+    }
+  };
+
+  const canDeleteGroup = (group: Group) => {
+    return user && group.created_by === user.id;
+  };
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -102,33 +137,68 @@ export const GroupsList = ({
   }
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {groups.map((group) => (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {groups.map((group) => (
+          <Card 
+            key={group.id} 
+            className="cursor-pointer hover:bg-accent/20 transition-colors relative"
+            onClick={() => onGroupSelect && onGroupSelect(group.id)}
+            role="button"
+            aria-label={`View details for group ${group.name}`}
+          >
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div className="text-3xl">{group.icon}</div>
+                {canDeleteGroup(group) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={(e) => handleDeleteClick(group, e)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Group
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+              <h3 className="font-medium text-lg mb-1">{group.name}</h3>
+              <p className="text-sm text-muted-foreground">
+                Created {new Date(group.created_at).toLocaleDateString()}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
         <Card 
-          key={group.id} 
-          className="cursor-pointer hover:bg-accent/20 transition-colors"
-          onClick={() => onGroupSelect && onGroupSelect(group.id)}
-          role="button"
-          aria-label={`View details for group ${group.name}`}
+          className="cursor-pointer hover:bg-accent/20 transition-colors border-dashed border-2 border-muted"
+          onClick={onCreateGroup}
         >
-          <CardContent className="p-6">
-            <div className="text-3xl mb-4">{group.icon}</div>
-            <h3 className="font-medium text-lg mb-1">{group.name}</h3>
-            <p className="text-sm text-muted-foreground">
-              Created {new Date(group.created_at).toLocaleDateString()}
-            </p>
+          <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
+            <Plus className="h-10 w-10 text-muted-foreground mb-4" />
+            <h3 className="font-medium">Create New Group</h3>
           </CardContent>
         </Card>
-      ))}
-      <Card 
-        className="cursor-pointer hover:bg-accent/20 transition-colors border-dashed border-2 border-muted"
-        onClick={onCreateGroup}
-      >
-        <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
-          <Plus className="h-10 w-10 text-muted-foreground mb-4" />
-          <h3 className="font-medium">Create New Group</h3>
-        </CardContent>
-      </Card>
-    </div>
+      </div>
+
+      <GroupDeleteDialog
+        group={groupToDelete}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        loading={deleteLoading}
+      />
+    </>
   );
 };
