@@ -34,7 +34,11 @@ serve(async (req) => {
       }
     )
 
-    const { user_id, user_email, user_name, user_role = 'participant' } = await req.json()
+    const { user_id, user_email, user_name } = await req.json();
+    const user_role = 'participant';
+
+    console.log('Request data:', { user_id, user_email, user_name, user_role });
+
     console.log('Request data:', { user_id, user_email, user_name, user_role })
 
     if (!user_id || !user_email) {
