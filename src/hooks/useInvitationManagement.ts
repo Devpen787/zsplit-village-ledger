@@ -27,7 +27,13 @@ export const useInvitationManagement = (groupId: string | undefined) => {
 
       if (error) throw error;
       
-      setSentInvitations(data || []);
+      // Type cast the status field to match our union type
+      const typedInvitations = (data || []).map(invitation => ({
+        ...invitation,
+        status: invitation.status as 'pending' | 'accepted' | 'declined'
+      }));
+      
+      setSentInvitations(typedInvitations);
     } catch (error: any) {
       console.error('Error fetching sent invitations:', error);
       toast.error('Failed to load sent invitations');

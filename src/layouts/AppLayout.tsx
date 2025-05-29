@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts';
-import { UserProfileDropdown } from '@/components/auth/UserProfileDropdown';
+import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Home, Users, DollarSign, BarChart3, Settings, Mail } from 'lucide-react';
