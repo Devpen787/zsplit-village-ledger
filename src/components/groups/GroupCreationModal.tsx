@@ -49,20 +49,53 @@ export const GroupCreationModal: React.FC<GroupCreationModalProps> = ({
       return;
     }
 
-    const result = await createGroupWithMembership({
-      name: name.trim(),
-      icon: selectedEmoji,
-      created_by: user.id
-    });
+    // Check if user already has a group with the same name
+    const duplicateGroup = groups.find(group => 
+      group.name.toLowerCase() === name.trim().toLowerCase()
+    );
     
-    if (result) {
-      // Close modal and reset form
-      onOpenChange(false);
-      setName("");
-      setSelectedEmoji("🏠");
+    if (duplicateGroup) {
+      toast.error("You already have a group with that name.");
+      return;
+    }
+
+    try {
+      const result = await createGroupWithMembership({
+        name: name.trim(),
+        icon: selectedEmoji,
+        created_by: user.id
+      });
       
-      // Call the callback to refresh data
-      onGroupCreated(result);
+      if (result) {
+        // Close modal and reset form
+        onOpenChange(false);
+        setName("");
+        setSelectedEmoji("🏠");
+        
+        // Call the callback to refresh data
+        onGroupCreated(result);
+      }
+    } catch (error: any) {
+      console.error('Error creating group:', error);
+      
+      // Handle database constraint error
+      if (error.message && error.message.includes('unique_group_name_per_user')) {
+        toast.error("You already have a group with this name.");
+        return;
+      }
+      
+      // Handle other Supabase errors
+      if (error.message) {
+        // Check if it's a Supabase error
+        if (error.code || error.details || error.hint) {
+          toast.error("Failed to create group. Please try again.");
+        } else {
+          // Unexpected error
+          toast.error(`Unexpected error: ${error.message}`);
+        }
+      } else {
+        toast.error("Failed to create group. Please try again.");
+      }
     }
   };
 
