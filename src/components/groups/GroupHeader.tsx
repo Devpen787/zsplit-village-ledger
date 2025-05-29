@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, PlusCircle, Settings, Wallet, ChartPie, UserPlus } from "lucide-react";
+import { ArrowLeft, PlusCircle, Settings, Wallet, ChartPie } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -11,23 +11,16 @@ interface GroupHeaderProps {
   groupIcon: string;
   isAdmin: boolean;
   onCreateExpense: () => void;
-  onInviteMembers?: () => void;
 }
 
-export const GroupHeader = ({ 
-  groupName, 
-  groupIcon, 
-  isAdmin, 
-  onCreateExpense,
-  onInviteMembers 
-}: GroupHeaderProps) => {
+export const GroupHeader = ({ groupName, groupIcon, isAdmin, onCreateExpense }: GroupHeaderProps) => {
   const navigate = useNavigate();
   const groupId = window.location.pathname.split('/').pop();
 
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/group')} className="mr-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="mr-2">
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
         <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-2xl shadow-sm">
@@ -39,25 +32,6 @@ export const GroupHeader = ({
       <div className="flex space-x-2 w-full sm:w-auto justify-end">
         <TooltipProvider>
           <div className="hidden sm:flex space-x-2">
-            {isAdmin && onInviteMembers && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={onInviteMembers}
-                    className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Invite Members
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Invite new members to this group</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-            
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
@@ -114,12 +88,6 @@ export const GroupHeader = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {isAdmin && onInviteMembers && (
-                  <DropdownMenuItem onClick={onInviteMembers}>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Invite Members
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuItem onClick={() => navigate(`/group-pot/${groupId}`)}>
                   <Wallet className="h-4 w-4 mr-2" />
                   Group Pot

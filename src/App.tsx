@@ -20,7 +20,6 @@ import GroupView from "./pages/GroupView";
 import GroupPot from "./pages/GroupPot";
 import GroupPulse from "./pages/GroupPulse";
 import Settings from "./pages/Settings";
-import Invitations from "./pages/Invitations";
 import { PrivyProvider } from '@privy-io/react-auth';
 import { WagmiConfig } from 'wagmi';
 import { wagmiConfig, queryClient } from '@/utils/walletConfig';
@@ -52,7 +51,6 @@ const AppWrapper = () => {
         <Route path="/group-pot/:id" element={<GroupPot />} />
         <Route path="/group-pulse" element={<GroupPulse />} />
         <Route path="/group-pulse/:id" element={<GroupPulse />} />
-        <Route path="/invitations" element={<Invitations />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
       
