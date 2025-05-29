@@ -4,7 +4,7 @@ import AppLayout from "@/layouts/AppLayout";
 import { GroupHeader } from "@/components/groups/GroupHeader";
 import { MembersCard } from "@/components/groups/MembersCard";
 import { GroupTabs } from "@/components/groups/GroupTabs";
-import { InviteMemberDialog } from "@/components/groups/InviteMemberDialog";
+import { ImprovedInviteMemberDialog } from "@/components/groups/ImprovedInviteMemberDialog";
 import { useGroupDetails } from "@/hooks/useGroupDetails";
 import { useAuth } from "@/contexts";
 import { toast } from "@/components/ui/sonner";
@@ -27,7 +27,7 @@ const GroupView = () => {
     members, 
     loading, 
     isAdmin, 
-    inviteMember,
+    refreshData,
     potBalance = 0,
     totalExpenses = 0,
     pendingPayoutsCount = 0,
@@ -37,14 +37,9 @@ const GroupView = () => {
   const handleCreateExpense = () => {
     navigate(`/expenses/new?groupId=${id}`);
   };
-  
-  const handleInviteMember = async (email: string) => {
-    try {
-      await inviteMember(email);
-    } catch (error: any) {
-      // Error is already handled in useGroupDetails
-      console.error("Error in invitation flow:", error);
-    }
+
+  const handleInviteMembers = () => {
+    setInviteDialogOpen(true);
   };
   
   // If no group ID is provided, redirect to the groups list
@@ -117,6 +112,7 @@ const GroupView = () => {
           groupIcon={group.icon}
           isAdmin={isAdmin}
           onCreateExpense={handleCreateExpense}
+          onInviteMembers={handleInviteMembers}
         />
 
         {activeTab === "overview" ? (
@@ -126,12 +122,13 @@ const GroupView = () => {
               group={group}
               members={members}
               isAdmin={isAdmin}
-              onInviteClick={() => setInviteDialogOpen(true)}
+              onInviteClick={handleInviteMembers}
               currentUserId={user?.id}
               potBalance={potBalance}
               totalExpenses={totalExpenses}
               pendingPayoutsCount={pendingPayoutsCount}
               connectedWalletsCount={connectedWalletsCount}
+              onMemberUpdate={refreshData}
             />
 
             {/* Group Expenses List */}
@@ -166,7 +163,7 @@ const GroupView = () => {
             groupId={id!}
             members={members}
             isAdmin={isAdmin}
-            onInviteClick={() => setInviteDialogOpen(true)}
+            onInviteClick={handleInviteMembers}
             currentUser={user}
             group={group}
             activeTab={activeTab}
@@ -174,10 +171,11 @@ const GroupView = () => {
           />
         )}
         
-        <InviteMemberDialog
+        <ImprovedInviteMemberDialog
           open={inviteDialogOpen}
           onOpenChange={setInviteDialogOpen}
-          onInvite={handleInviteMember}
+          groupId={id!}
+          invitedBy={user?.id || ''}
         />
       </motion.div>
     </AppLayout>
