@@ -31,7 +31,7 @@ export const useInvitationManagement = (groupId: string | undefined) => {
       const typedInvitations = (data || []).map(invitation => ({
         ...invitation,
         status: invitation.status as 'pending' | 'accepted' | 'declined'
-      }));
+      })) as SentInvitation[];
       
       setSentInvitations(typedInvitations);
     } catch (error: any) {
