@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -27,11 +26,14 @@ export const useInvitationManagement = (groupId: string | undefined) => {
 
       if (error) throw error;
       
-      // Type cast the status field to match our union type
-      const typedInvitations = (data || []).map(invitation => ({
-        ...invitation,
-        status: invitation.status as 'pending' | 'accepted' | 'declined'
-      })) as SentInvitation[];
+      // Properly type the invitations with explicit mapping
+      const typedInvitations: SentInvitation[] = (data || []).map(invitation => ({
+        id: invitation.id,
+        email: invitation.email,
+        status: invitation.status as 'pending' | 'accepted' | 'declined',
+        created_at: invitation.created_at,
+        invited_by: invitation.invited_by
+      }));
       
       setSentInvitations(typedInvitations);
     } catch (error: any) {
