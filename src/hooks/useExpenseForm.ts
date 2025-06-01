@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts';
 import { toast } from '@/components/ui/sonner';
 import { ExpenseFormValues } from '@/schemas/expenseFormSchema';
-import { fetchExpenseById, fetchUsers, saveExpense, fetchGroupDetails } from '@/services/expenseService';
+import { fetchExpenseById, fetchUsers, saveExpense, fetchGroupDetails } from '@/services/expense';
 import { Expense } from '@/types/expenses';
 import { expenseToFormValues } from '@/utils/expenseFormUtils';
 
