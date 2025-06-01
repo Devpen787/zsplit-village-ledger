@@ -9,7 +9,27 @@ export const useGroupDeletion = () => {
   const deleteGroup = async (groupId: string) => {
     setLoading(true);
     try {
-      // Delete group members first
+      console.log('Starting group deletion for:', groupId);
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('You must be logged in to delete groups');
+        return false;
+      }
+
+      // First, delete all expenses associated with this group
+      const { error: expensesError } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('group_id', groupId);
+
+      if (expensesError) {
+        console.error('Error deleting group expenses:', expensesError);
+        // Don't fail completely, continue with group deletion
+      }
+
+      // Delete group members
       const { error: membersError } = await supabase
         .from('group_members')
         .delete()
@@ -21,7 +41,18 @@ export const useGroupDeletion = () => {
         return false;
       }
 
-      // Delete the group
+      // Delete any pending invitations
+      const { error: invitationsError } = await supabase
+        .from('invitations')
+        .delete()
+        .eq('group_id', groupId);
+
+      if (invitationsError) {
+        console.error('Error deleting invitations:', invitationsError);
+        // Don't fail completely, continue with group deletion
+      }
+
+      // Finally, delete the group itself
       const { error: groupError } = await supabase
         .from('groups')
         .delete()
@@ -33,6 +64,7 @@ export const useGroupDeletion = () => {
         return false;
       }
 
+      console.log('Group deleted successfully');
       toast.success('Group deleted successfully');
       return true;
     } catch (error: any) {

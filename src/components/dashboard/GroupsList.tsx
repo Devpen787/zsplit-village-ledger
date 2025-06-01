@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,16 +47,25 @@ export const GroupsList = ({
   const handleDeleteConfirm = async () => {
     if (!groupToDelete) return;
     
+    console.log('Attempting to delete group:', groupToDelete);
     const success = await deleteGroup(groupToDelete.id);
     if (success) {
       setDeleteDialogOpen(false);
       setGroupToDelete(null);
-      onRefresh();
+      await onRefresh();
     }
   };
 
   const canDeleteGroup = (group: Group) => {
-    return user && group.created_by === user.id;
+    // Allow deletion if:
+    // 1. User is the creator of the group, OR
+    // 2. Group has no created_by (demo groups), OR  
+    // 3. User is authenticated (for demo groups)
+    return user && (
+      group.created_by === user.id || 
+      !group.created_by || 
+      group.created_by === null
+    );
   };
 
   if (loading) {
