@@ -60,26 +60,37 @@ export const fetchUsers = async (groupId: string | null) => {
   }
 };
 
-export const saveExpense = async (values: ExpenseFormValues, id: string | undefined, groupId: string | null) => {
+export const saveExpense = async (
+  values: ExpenseFormValues, 
+  id: string | undefined, 
+  groupId: string | null,
+  currentUserId: string
+) => {
   try {
-    console.log('Saving expense with values:', values);
-    console.log('Group ID:', groupId);
-    
+    console.log('[EXPENSE SERVICE] Starting saveExpense with:', {
+      values: values,
+      id: id,
+      groupId: groupId,
+      currentUserId: currentUserId,
+      hasCurrentUser: !!currentUserId
+    });
+
+    // Validate current user is provided
+    if (!currentUserId) {
+      console.error('[EXPENSE SERVICE] No current user ID provided');
+      toast.error("Authentication required. Please log in again.");
+      return null;
+    }
+
     const amountNumber = parseFloat(values.amount.toString());
 
     if (isNaN(amountNumber)) {
+      console.error('[EXPENSE SERVICE] Invalid amount:', values.amount);
       toast.error("Invalid amount entered.");
       return null;
     }
 
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("You must be logged in to create expenses.");
-      return null;
-    }
-
-    console.log('Current user:', user.id);
+    console.log('[EXPENSE SERVICE] Current user authenticated:', currentUserId);
 
     const expenseData = {
       title: values.title,
@@ -91,12 +102,13 @@ export const saveExpense = async (values: ExpenseFormValues, id: string | undefi
       group_id: groupId,
     };
 
-    console.log('Expense data to save:', expenseData);
+    console.log('[EXPENSE SERVICE] Expense data to save:', expenseData);
 
     let expenseId = id;
     let response;
     
     if (id) {
+      console.log('[EXPENSE SERVICE] Updating existing expense:', id);
       // Update existing expense
       response = await supabase
         .from('expenses')
@@ -105,28 +117,32 @@ export const saveExpense = async (values: ExpenseFormValues, id: string | undefi
         .select()
         .single();
     } else {
+      console.log('[EXPENSE SERVICE] Creating new expense with edge function');
       // Create new expense using the edge function
       try {
         const { data: functionData, error: functionError } = await supabase.functions.invoke('create-expense', {
           body: {
             ...expenseData,
-            created_by: user.id
+            created_by: currentUserId
           }
         });
 
+        console.log('[EXPENSE SERVICE] Edge function response:', { functionData, functionError });
+
         if (functionError) {
-          console.error("Error from create-expense function:", functionError);
+          console.error("[EXPENSE SERVICE] Error from create-expense function:", functionError);
           throw functionError;
         }
 
         if (functionData?.data) {
           expenseId = functionData.data.id;
           response = { data: functionData.data, error: null };
+          console.log('[EXPENSE SERVICE] Edge function created expense:', expenseId);
         } else {
           throw new Error("No data returned from create-expense function");
         }
       } catch (functionError) {
-        console.error("Function call failed, falling back to direct insert:", functionError);
+        console.error("[EXPENSE SERVICE] Function call failed, falling back to direct insert:", functionError);
         
         // Fallback to direct insert
         response = await supabase
@@ -137,33 +153,34 @@ export const saveExpense = async (values: ExpenseFormValues, id: string | undefi
           
         if (response.data) {
           expenseId = response.data.id;
+          console.log('[EXPENSE SERVICE] Direct insert created expense:', expenseId);
         }
       }
     }
 
     if (response.error) {
-      console.error("Error saving expense:", response.error);
+      console.error("[EXPENSE SERVICE] Error saving expense:", response.error);
       toast.error("Failed to save expense.");
       return null;
     }
     
-    console.log('Expense saved successfully:', response.data);
+    console.log('[EXPENSE SERVICE] Expense saved successfully:', response.data);
     
     // Determine which split method is being used
     const splitMethod = values.splitEqually ? 'equal' : 
                        values.splitData && values.splitData[0]?.percentage ? 'percentage' : 
                        values.splitData && values.splitData[0]?.shares ? 'shares' : 'amount';
     
-    console.log('Split method:', splitMethod);
-    console.log('Split data:', values.splitData);
+    console.log('[EXPENSE SERVICE] Split method:', splitMethod);
+    console.log('[EXPENSE SERVICE] Split data:', values.splitData);
     
     // Process and save split data
     if (expenseId && values.splitData && values.splitData.length > 0) {
       try {
         await processSplitData(expenseId, values, splitMethod);
-        console.log('Split data processed successfully');
+        console.log('[EXPENSE SERVICE] Split data processed successfully');
       } catch (splitError) {
-        console.error('Error processing split data:', splitError);
+        console.error('[EXPENSE SERVICE] Error processing split data:', splitError);
         // Don't fail the whole operation for split data issues
       }
     }
@@ -171,7 +188,7 @@ export const saveExpense = async (values: ExpenseFormValues, id: string | undefi
     toast.success("Expense saved successfully!");
     return expenseId;
   } catch (error) {
-    console.error("Error saving expense:", error);
+    console.error("[EXPENSE SERVICE] Error saving expense:", error);
     toast.error("Failed to save expense.");
     return null;
   }
