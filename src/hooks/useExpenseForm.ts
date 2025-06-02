@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts';
@@ -6,6 +7,7 @@ import { ExpenseFormValues } from '@/schemas/expenseFormSchema';
 import { fetchExpenseById, fetchUsers, saveExpense, fetchGroupDetails } from '@/services/expense';
 import { Expense } from '@/types/expenses';
 import { expenseToFormValues } from '@/utils/expenseFormUtils';
+import { useExpenseUsers } from '@/hooks/useExpenseUsers';
 
 // Re-export the schema for convenience
 export { expenseFormSchema, splitDataSchema } from '@/schemas/expenseFormSchema';
@@ -17,9 +19,11 @@ export const useExpenseForm = (groupId: string | null) => {
   const { user } = useAuth();
   const [expense, setExpense] = useState<Expense | null>(null);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<any[]>([]);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [groupName, setGroupName] = useState<string | null>(null);
+
+  // Use the updated useExpenseUsers hook with groupId
+  const { users, loading: usersLoading, error: usersError } = useExpenseUsers(groupId);
 
   useEffect(() => {
     const loadData = async () => {
@@ -41,15 +45,6 @@ export const useExpenseForm = (groupId: string | null) => {
             })
           );
         }
-        
-        // Load users
-        console.log('[EXPENSE FORM] Loading users for group:', groupId);
-        promises.push(
-          fetchUsers(groupId).then(usersData => {
-            console.log('[EXPENSE FORM] Loaded users:', usersData);
-            setUsers(usersData);
-          })
-        );
         
         // Load group name if groupId is provided
         if (groupId) {
@@ -110,7 +105,7 @@ export const useExpenseForm = (groupId: string | null) => {
 
   return {
     expense,
-    loading,
+    loading: loading || usersLoading,
     users,
     submitLoading,
     getDefaultValues,

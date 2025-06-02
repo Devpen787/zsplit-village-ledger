@@ -10,7 +10,7 @@ type User = {
   email: string;
 };
 
-export const useExpenseUsers = () => {
+export const useExpenseUsers = (groupId?: string | null) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +29,45 @@ export const useExpenseUsers = () => {
         return;
       }
 
-      console.log("Fetching users for expense selection");
+      console.log("Fetching users for expense selection, groupId:", groupId);
       
-      // Wrap the query in a timeout to ensure we don't trigger recursive RLS issues
-      const { data, error: supabaseError } = await supabase
-        .from('users')
-        .select('id, name, email');
+      let data;
+      let supabaseError;
+
+      if (groupId) {
+        // Fetch group members for group expenses
+        console.log("Fetching group members for group:", groupId);
+        const { data: membersData, error: membersError } = await supabase
+          .from('group_members')
+          .select(`
+            user_id,
+            users:user_id (
+              id,
+              name,
+              email
+            )
+          `)
+          .eq('group_id', groupId);
+
+        supabaseError = membersError;
+        
+        if (membersData) {
+          // Transform the data to match our User type
+          data = membersData.map(member => ({
+            id: member.users?.id || member.user_id,
+            name: member.users?.name || null,
+            email: member.users?.email || ''
+          })).filter(user => user.email); // Filter out any invalid users
+        }
+      } else {
+        // Fetch all users for non-group expenses (fallback)
+        const { data: allUsersData, error: allUsersError } = await supabase
+          .from('users')
+          .select('id, name, email');
+
+        supabaseError = allUsersError;
+        data = allUsersData;
+      }
 
       if (supabaseError) {
         console.error("Error fetching users:", supabaseError);
@@ -69,7 +102,7 @@ export const useExpenseUsers = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, groupId]);
 
   useEffect(() => {
     if (user) {
