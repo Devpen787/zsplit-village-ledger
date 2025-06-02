@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
@@ -21,7 +20,7 @@ const GroupView = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview"); // Set "overview" as the default tab
+  const [activeTab, setActiveTab] = useState("overview");
   
   const { 
     group, 

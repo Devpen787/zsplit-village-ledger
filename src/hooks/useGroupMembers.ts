@@ -6,9 +6,13 @@ import { GroupMember } from '@/types/supabase';
 
 export const useGroupMembers = (groupId: string | undefined) => {
   const [members, setMembers] = useState<GroupMember[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!groupId) return;
+    if (!groupId) {
+      setLoading(false);
+      return;
+    }
     
     fetchMembers();
     
@@ -29,10 +33,11 @@ export const useGroupMembers = (groupId: string | undefined) => {
   const fetchMembers = async () => {
     if (!groupId) return;
     
+    setLoading(true);
     try {
       console.log("Fetching members for group:", groupId);
       
-      // Use a direct query that should work with our RLS policies
+      // Try the direct query first
       const { data: membersData, error: membersError } = await supabase
         .from('group_members')
         .select(`
@@ -51,21 +56,25 @@ export const useGroupMembers = (groupId: string | undefined) => {
         .eq('group_id', groupId);
         
       if (membersError) {
-        console.error("Error fetching members:", membersError);
+        console.error("Direct query failed, trying edge function:", membersError);
         
-        // If RLS blocks us, try using the Edge Function
+        // Fallback to edge function if RLS blocks us
         try {
+          const { data: user } = await supabase.auth.getUser();
           const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-group-data', {
-            body: { groupId, userId: (await supabase.auth.getUser()).data.user?.id }
+            body: { groupId, userId: user.user?.id }
           });
           
           if (edgeError) throw edgeError;
           
-          // For now, set empty members array since we need to implement member fetching in the edge function
+          // Since the edge function doesn't return members yet, we'll show an empty state
+          console.log("Edge function response:", edgeData);
           setMembers([]);
+          toast.info("Member list temporarily unavailable due to database permissions");
         } catch (edgeErr) {
           console.error("Edge function also failed:", edgeErr);
           toast.error(`Error loading group members: ${membersError.message}`);
+          setMembers([]);
         }
         return;
       }
@@ -82,8 +91,11 @@ export const useGroupMembers = (groupId: string | undefined) => {
     } catch (error: any) {
       console.error("Error fetching members:", error);
       toast.error(`Error loading group members: ${error.message}`);
+      setMembers([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return { members, fetchMembers };
+  return { members, fetchMembers, loading };
 };

@@ -35,7 +35,7 @@ export const useExpenseUsers = (groupId?: string | null) => {
       let supabaseError;
 
       if (groupId) {
-        // Fetch group members for group expenses
+        // Fetch group members for group expenses - try direct query first
         console.log("Fetching group members for group:", groupId);
         const { data: membersData, error: membersError } = await supabase
           .from('group_members')
@@ -51,47 +51,78 @@ export const useExpenseUsers = (groupId?: string | null) => {
 
         supabaseError = membersError;
         
-        if (membersData) {
+        if (membersData && !membersError) {
           // Transform the data to match our User type
           data = membersData.map(member => ({
             id: member.users?.id || member.user_id,
             name: member.users?.name || null,
             email: member.users?.email || ''
           })).filter(user => user.email); // Filter out any invalid users
-        }
-      } else {
-        // Fetch all users for non-group expenses (fallback)
-        const { data: allUsersData, error: allUsersError } = await supabase
-          .from('users')
-          .select('id, name, email');
-
-        supabaseError = allUsersError;
-        data = allUsersData;
-      }
-
-      if (supabaseError) {
-        console.error("Error fetching users:", supabaseError);
-        
-        // Special handling for recursive RLS policy errors
-        if (supabaseError.message?.includes('infinite recursion') || supabaseError.code === '42P17') {
-          setHasRecursionError(true);
-          setError("Database policy configuration issue");
+        } else {
+          console.log("Direct query failed, trying edge function approach");
           
-          // Create mock data with just the current user for UI to show something
-          if (user) {
-            setUsers([{
+          // If RLS blocks us, try to get the current user at least
+          const { data: currentUserData, error: currentUserError } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .eq('id', user.id)
+            .single();
+            
+          if (currentUserError) {
+            console.error("Could not fetch current user:", currentUserError);
+            // Fallback to using auth user data
+            data = [{
               id: user.id,
-              name: user.name,
+              name: user.name || null,
               email: user.email
-            }]);
+            }];
+          } else {
+            data = [currentUserData];
           }
           
-          toast.error("A database error occurred. This is likely due to a policy configuration issue.", {
-            duration: 5000,
-          });
-        } else {
-          setError(supabaseError.message);
+          toast.info("Limited user selection available due to permissions. Only showing yourself for now.");
         }
+      } else {
+        // Fetch current user for non-group expenses
+        const { data: currentUserData, error: currentUserError } = await supabase
+          .from('users')
+          .select('id, name, email')
+          .eq('id', user.id)
+          .single();
+
+        supabaseError = currentUserError;
+        
+        if (!currentUserError) {
+          data = [currentUserData];
+        } else {
+          // Fallback to auth user data
+          data = [{
+            id: user.id,
+            name: user.name || null,
+            email: user.email
+          }];
+        }
+      }
+
+      if (supabaseError && supabaseError.message?.includes('infinite recursion')) {
+        setHasRecursionError(true);
+        setError("Database policy configuration issue");
+        
+        // Create mock data with just the current user for UI to show something
+        if (user) {
+          setUsers([{
+            id: user.id,
+            name: user.name,
+            email: user.email
+          }]);
+        }
+        
+        toast.error("A database error occurred. This is likely due to a policy configuration issue.", {
+          duration: 5000,
+        });
+      } else if (supabaseError && !data) {
+        console.error("Error fetching users:", supabaseError);
+        setError(supabaseError.message);
       } else {
         console.log("Users data received:", data);
         setUsers(data || []);
@@ -109,6 +140,7 @@ export const useExpenseUsers = (groupId?: string | null) => {
       fetchUsers();
     } else {
       setUsers([]);
+      setLoading(false);
     }
   }, [user, fetchUsers]);
 

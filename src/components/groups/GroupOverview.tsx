@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +55,19 @@ export const GroupOverview = ({
       <motion.div variants={itemVariants}>
         <Card className="bg-muted/50">
           <CardContent className="p-4 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            {/* Members Count */}
+            <div className="flex items-center space-x-4">
+              <div className="rounded-full p-2 bg-blue-100 text-blue-600">
+                <Users className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-semibold">{members.length}</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                  {members.length === 1 ? 'Member' : 'Members'}
+                </CardDescription>
+              </div>
+            </div>
+
             {/* Pot Balance */}
             <div className="flex items-center space-x-4">
               <div className="rounded-full p-2 bg-green-100 text-green-600">
@@ -67,7 +81,7 @@ export const GroupOverview = ({
 
             {/* Total Expenses */}
             <div className="flex items-center space-x-4">
-              <div className="rounded-full p-2 bg-blue-100 text-blue-600">
+              <div className="rounded-full p-2 bg-purple-100 text-purple-600">
                 <DollarSign className="h-5 w-5" />
               </div>
               <div>
@@ -76,20 +90,9 @@ export const GroupOverview = ({
               </div>
             </div>
 
-            {/* Pending Payouts */}
-            <div className="flex items-center space-x-4">
-              <div className="rounded-full p-2 bg-yellow-100 text-yellow-600">
-                <Clock className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-semibold">{pendingPayoutsCount}</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">Pending Payouts</CardDescription>
-              </div>
-            </div>
-
             {/* Connected Wallets */}
             <div className="flex items-center space-x-4">
-              <div className="rounded-full p-2 bg-purple-100 text-purple-600">
+              <div className="rounded-full p-2 bg-orange-100 text-orange-600">
                 <Wallet className="h-5 w-5" />
               </div>
               <div>
@@ -101,7 +104,7 @@ export const GroupOverview = ({
         </Card>
       </motion.div>
 
-      {/* Members Section */}
+      {/* Members Section - Always show, even if empty */}
       <motion.div variants={itemVariants}>
         <MembersCard 
           members={members}
@@ -112,7 +115,7 @@ export const GroupOverview = ({
       </motion.div>
 
       {/* Group Management Panel - Only show for admins */}
-      {isAdmin && onMemberUpdate && (
+      {isAdmin && members.length > 0 && (
         <motion.div variants={itemVariants}>
           <GroupManagementPanel
             groupId={groupId}
