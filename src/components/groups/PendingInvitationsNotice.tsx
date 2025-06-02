@@ -19,10 +19,6 @@ interface Invitation {
     name: string;
     icon: string;
   };
-  inviter?: {
-    name: string;
-    email: string;
-  };
 }
 
 export const PendingInvitationsNotice: React.FC = () => {
@@ -53,10 +49,6 @@ export const PendingInvitationsNotice: React.FC = () => {
           groups:group_id (
             name,
             icon
-          ),
-          inviter:invited_by (
-            name,
-            email
           )
         `)
         .eq('email', user.email.toLowerCase())
@@ -160,7 +152,7 @@ export const PendingInvitationsNotice: React.FC = () => {
               <div>
                 <p className="font-medium">{invitation.groups?.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  Invited by {invitation.inviter?.name || invitation.inviter?.email}
+                  You've been invited to join this group
                 </p>
               </div>
             </div>
