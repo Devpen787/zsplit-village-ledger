@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
@@ -28,6 +29,7 @@ const GroupView = () => {
     loading, 
     isAdmin, 
     inviteMember,
+    refreshData,
     potBalance = 0,
     totalExpenses = 0,
     pendingPayoutsCount = 0,
@@ -132,6 +134,7 @@ const GroupView = () => {
               totalExpenses={totalExpenses}
               pendingPayoutsCount={pendingPayoutsCount}
               connectedWalletsCount={connectedWalletsCount}
+              onMemberUpdate={refreshData}
             />
 
             {/* Group Expenses List */}
@@ -171,6 +174,7 @@ const GroupView = () => {
             group={group}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            onMemberUpdate={refreshData}
           />
         )}
         

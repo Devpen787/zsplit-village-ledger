@@ -22,6 +22,7 @@ interface GroupTabsProps {
   } | null;
   activeTab?: string;
   onTabChange?: Dispatch<SetStateAction<string>>;
+  onMemberUpdate?: () => void;
 }
 
 export const GroupTabs = ({ 
@@ -32,7 +33,8 @@ export const GroupTabs = ({
   currentUser,
   group,
   activeTab = "overview",
-  onTabChange
+  onTabChange,
+  onMemberUpdate
 }: GroupTabsProps) => {
   // Get group pulse data for metrics
   const { 
@@ -71,6 +73,7 @@ export const GroupTabs = ({
         totalExpenses={totalExpenses}
         pendingPayoutsCount={pendingPayoutsCount}
         connectedWalletsCount={connectedWalletsCount}
+        onMemberUpdate={onMemberUpdate}
       />
     </Tabs>
   );

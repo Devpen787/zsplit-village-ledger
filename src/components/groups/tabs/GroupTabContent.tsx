@@ -27,6 +27,7 @@ interface GroupTabContentProps {
   totalExpenses: number;
   pendingPayoutsCount: number;
   connectedWalletsCount: number;
+  onMemberUpdate?: () => void;
 }
 
 export const GroupTabContent: React.FC<GroupTabContentProps> = ({
@@ -40,7 +41,8 @@ export const GroupTabContent: React.FC<GroupTabContentProps> = ({
   potBalance,
   totalExpenses,
   pendingPayoutsCount,
-  connectedWalletsCount
+  connectedWalletsCount,
+  onMemberUpdate
 }) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -59,6 +61,7 @@ export const GroupTabContent: React.FC<GroupTabContentProps> = ({
           totalExpenses={totalExpenses}
           pendingPayoutsCount={pendingPayoutsCount}
           connectedWalletsCount={connectedWalletsCount}
+          onMemberUpdate={onMemberUpdate}
         />
       </TabsContent>
       <TabsContent value="expenses" className="mt-4">
