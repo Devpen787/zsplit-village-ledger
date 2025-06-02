@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/layouts/AppLayout';
 import { useGroupsList } from '@/hooks/useGroupsList';
 import { GroupsList } from '@/components/dashboard/GroupsList';
+import { PendingInvitationsNotice } from '@/components/groups/PendingInvitationsNotice';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -44,6 +46,8 @@ const GroupDashboard = () => {
             Create Group
           </Button>
         </div>
+
+        <PendingInvitationsNotice />
 
         <Card>
           <CardHeader>

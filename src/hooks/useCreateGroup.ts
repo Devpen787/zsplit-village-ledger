@@ -4,16 +4,28 @@ import { createGroupSecurely } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
 import { Group } from '@/types/supabase';
+import { useGroupMemberInvitations } from './useGroupMemberInvitations';
+
+interface GroupMember {
+  id: string;
+  name: string;
+  email?: string;
+  isCreator: boolean;
+}
 
 export const useCreateGroup = () => {
   const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
+  const { inviteMembers } = useGroupMemberInvitations();
 
-  const createGroupWithMembership = async (groupData: {
-    name: string;
-    icon: string;
-    created_by: string;
-  }): Promise<Group | null> => {
+  const createGroupWithMembership = async (
+    groupData: {
+      name: string;
+      icon: string;
+      created_by: string;
+    },
+    members: GroupMember[] = []
+  ): Promise<Group | null> => {
     if (isCreating) {
       console.warn("Group creation already in progress");
       return null;
@@ -23,6 +35,7 @@ export const useCreateGroup = () => {
     
     try {
       console.log("🚀 Creating group with membership:", groupData);
+      console.log("🚀 Members to process:", members);
       
       // Use the secure Edge Function to create the group AND add membership
       const result = await createGroupSecurely(groupData);
@@ -35,6 +48,13 @@ export const useCreateGroup = () => {
       }
       
       console.log("✅ Group and membership created successfully");
+      
+      // Process member invitations if any members were added
+      if (members.length > 0) {
+        console.log("📧 Processing member invitations...");
+        await inviteMembers(result.id, members, groupData.created_by);
+      }
+      
       toast.success(`Group "${result.name}" created successfully!`);
       
       // Wait a moment to ensure database consistency before navigation
