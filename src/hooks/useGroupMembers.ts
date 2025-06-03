@@ -37,7 +37,6 @@ export const useGroupMembers = (groupId: string | undefined) => {
     try {
       console.log("Fetching members for group:", groupId);
       
-      // Try the direct query first
       const { data: membersData, error: membersError } = await supabase
         .from('group_members')
         .select(`
@@ -56,26 +55,9 @@ export const useGroupMembers = (groupId: string | undefined) => {
         .eq('group_id', groupId);
         
       if (membersError) {
-        console.error("Direct query failed, trying edge function:", membersError);
-        
-        // Fallback to edge function if RLS blocks us
-        try {
-          const { data: user } = await supabase.auth.getUser();
-          const { data: edgeData, error: edgeError } = await supabase.functions.invoke('get-group-data', {
-            body: { groupId, userId: user.user?.id }
-          });
-          
-          if (edgeError) throw edgeError;
-          
-          // Since the edge function doesn't return members yet, we'll show an empty state
-          console.log("Edge function response:", edgeData);
-          setMembers([]);
-          toast.info("Member list temporarily unavailable due to database permissions");
-        } catch (edgeErr) {
-          console.error("Edge function also failed:", edgeErr);
-          toast.error(`Error loading group members: ${membersError.message}`);
-          setMembers([]);
-        }
+        console.error("Error fetching group members:", membersError);
+        toast.error(`Error loading group members: ${membersError.message}`);
+        setMembers([]);
         return;
       }
       

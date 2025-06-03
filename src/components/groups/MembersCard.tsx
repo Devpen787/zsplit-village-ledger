@@ -15,11 +15,13 @@ interface MembersCardProps {
 }
 
 export const MembersCard = ({ members, isAdmin, onInviteClick, currentUserId, loading = false }: MembersCardProps) => {
-  const [expanded, setExpanded] = useState(true); // Default to expanded so users can see members
+  const [expanded, setExpanded] = useState(true);
   
   const toggleExpanded = () => {
     setExpanded(!expanded);
   };
+  
+  console.log("MembersCard - members:", members, "loading:", loading);
   
   return (
     <Card className="bg-muted/50">
@@ -65,7 +67,10 @@ export const MembersCard = ({ members, isAdmin, onInviteClick, currentUserId, lo
               <div className="text-sm text-muted-foreground">Loading members...</div>
             ) : members.length === 0 ? (
               <div className="text-center py-4">
-                <div className="text-sm text-muted-foreground mb-2">No members yet</div>
+                <div className="text-sm text-muted-foreground mb-2">No members found</div>
+                <div className="text-xs text-muted-foreground mb-3">
+                  There might be a database permissions issue. Try refreshing the page.
+                </div>
                 {isAdmin && (
                   <Button 
                     variant="outline" 
@@ -73,7 +78,7 @@ export const MembersCard = ({ members, isAdmin, onInviteClick, currentUserId, lo
                     onClick={onInviteClick}
                   >
                     <UserPlus className="h-3 w-3 mr-1" />
-                    Invite First Member
+                    Invite Member
                   </Button>
                 )}
               </div>
