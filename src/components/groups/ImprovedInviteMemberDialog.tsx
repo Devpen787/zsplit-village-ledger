@@ -4,43 +4,61 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail } from "lucide-react";
-import { useGroupInvitations } from '@/hooks/useGroupInvitations';
+import { Loader2, Mail, UserCheck } from "lucide-react";
+import { useGroupInvites } from '@/hooks/useGroupInvites';
 
 interface ImprovedInviteMemberDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   groupId: string;
   invitedBy: string;
+  onMemberAdded?: () => void;
 }
 
 export const ImprovedInviteMemberDialog = ({
   open,
   onOpenChange,
   groupId,
-  invitedBy
+  invitedBy,
+  onMemberAdded
 }: ImprovedInviteMemberDialogProps) => {
   const [email, setEmail] = useState('');
-  const { sendInvitation, loading } = useGroupInvitations(groupId);
+  const { inviteMember } = useGroupInvites(groupId);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email.trim()) return;
 
+    setLoading(true);
     try {
-      await sendInvitation(email.trim(), invitedBy);
+      console.log("[INVITE DIALOG] Starting invitation for:", email.trim());
+      await inviteMember(email.trim(), invitedBy);
+      
+      // Clear form and close dialog on success
       setEmail('');
       onOpenChange(false);
+      
+      // Trigger refresh of member data
+      if (onMemberAdded) {
+        console.log("[INVITE DIALOG] Triggering member list refresh");
+        onMemberAdded();
+      }
+      
     } catch (error) {
-      // Error handling is done in the hook
-      console.error('Error sending invitation:', error);
+      console.error('[INVITE DIALOG] Error in invitation flow:', error);
+      // Error toast is already shown in the hook
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setEmail('');
-    onOpenChange(false);
+    if (!loading) {
+      setEmail('');
+      onOpenChange(false);
+    }
   };
 
   return (
@@ -48,7 +66,7 @@ export const ImprovedInviteMemberDialog = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
+            <UserCheck className="h-5 w-5" />
             Invite Member
           </DialogTitle>
         </DialogHeader>
@@ -82,7 +100,7 @@ export const ImprovedInviteMemberDialog = ({
             </Button>
             <Button type="submit" disabled={loading || !email.trim()}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Send Invitation
+              {loading ? 'Adding...' : 'Add Member'}
             </Button>
           </div>
         </form>

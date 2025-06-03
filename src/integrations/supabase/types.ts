@@ -399,6 +399,14 @@ export type Database = {
           amount: number
         }[]
       }
+      is_group_admin: {
+        Args: { group_id_param: string; user_id_param?: string }
+        Returns: boolean
+      }
+      is_group_member: {
+        Args: { group_id_param: string; user_id_param?: string }
+        Returns: boolean
+      }
       user_expenses: {
         Args: { user_id_param?: string }
         Returns: string[]

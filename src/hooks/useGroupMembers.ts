@@ -10,10 +10,12 @@ export const useGroupMembers = (groupId: string | undefined) => {
 
   useEffect(() => {
     if (!groupId) {
+      console.log("[GROUP MEMBERS] No groupId provided");
       setLoading(false);
       return;
     }
     
+    console.log("[GROUP MEMBERS] Setting up for group:", groupId);
     fetchMembers();
     
     const membersChannel = supabase
@@ -21,7 +23,10 @@ export const useGroupMembers = (groupId: string | undefined) => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'group_members', filter: `group_id=eq.${groupId}` },
-        () => fetchMembers()
+        (payload) => {
+          console.log("[GROUP MEMBERS] Real-time update received:", payload);
+          fetchMembers();
+        }
       )
       .subscribe();
       
@@ -35,7 +40,7 @@ export const useGroupMembers = (groupId: string | undefined) => {
     
     setLoading(true);
     try {
-      console.log("Fetching members for group:", groupId);
+      console.log("[GROUP MEMBERS] Fetching members for group:", groupId);
       
       const { data: membersData, error: membersError } = await supabase
         .from('group_members')
@@ -55,13 +60,13 @@ export const useGroupMembers = (groupId: string | undefined) => {
         .eq('group_id', groupId);
         
       if (membersError) {
-        console.error("Error fetching group members:", membersError);
+        console.error("[GROUP MEMBERS] Error fetching group members:", membersError);
         toast.error(`Error loading group members: ${membersError.message}`);
         setMembers([]);
         return;
       }
       
-      console.log("Group members data:", membersData);
+      console.log("[GROUP MEMBERS] Raw members data:", membersData);
       
       // Transform the data to match our interface
       const transformedMembers = (membersData || []).map(member => ({
@@ -69,9 +74,10 @@ export const useGroupMembers = (groupId: string | undefined) => {
         user: member.users
       }));
       
+      console.log("[GROUP MEMBERS] Transformed members:", transformedMembers);
       setMembers(transformedMembers);
     } catch (error: any) {
-      console.error("Error fetching members:", error);
+      console.error("[GROUP MEMBERS] Unexpected error fetching members:", error);
       toast.error(`Error loading group members: ${error.message}`);
       setMembers([]);
     } finally {

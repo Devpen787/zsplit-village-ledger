@@ -14,6 +14,7 @@ import { GroupOverview } from "@/components/groups/GroupOverview";
 import { ExpensesList } from "@/components/ExpensesList";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion } from "framer-motion";
+import { ImprovedInviteMemberDialog } from "@/components/groups/ImprovedInviteMemberDialog";
 
 const GroupView = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,10 +43,16 @@ const GroupView = () => {
   const handleInviteMember = async (email: string) => {
     try {
       await inviteMember(email);
+      // Refresh data after successful invitation
+      await refreshData();
     } catch (error: any) {
-      // Error is already handled in useGroupDetails
       console.error("Error in invitation flow:", error);
     }
+  };
+
+  const handleMemberAdded = async () => {
+    console.log("[GROUP VIEW] Member added, refreshing data");
+    await refreshData();
   };
   
   // If no group ID is provided, redirect to the groups list
@@ -133,7 +140,7 @@ const GroupView = () => {
               totalExpenses={totalExpenses}
               pendingPayoutsCount={pendingPayoutsCount}
               connectedWalletsCount={connectedWalletsCount}
-              onMemberUpdate={refreshData}
+              onMemberUpdate={handleMemberAdded}
             />
 
             {/* Group Expenses List */}
@@ -173,14 +180,16 @@ const GroupView = () => {
             group={group}
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            onMemberUpdate={refreshData}
+            onMemberUpdate={handleMemberAdded}
           />
         )}
         
-        <InviteMemberDialog
+        <ImprovedInviteMemberDialog
           open={inviteDialogOpen}
           onOpenChange={setInviteDialogOpen}
-          onInvite={handleInviteMember}
+          groupId={id!}
+          invitedBy={user?.id || ''}
+          onMemberAdded={handleMemberAdded}
         />
       </motion.div>
     </AppLayout>

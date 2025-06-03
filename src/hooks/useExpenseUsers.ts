@@ -17,21 +17,21 @@ export const useExpenseUsers = (groupId?: string | null) => {
   const { user } = useAuth();
 
   const fetchUsers = useCallback(async () => {
+    console.log("[EXPENSE USERS] Starting fetch, groupId:", groupId, "user:", user?.id);
     setLoading(true);
     setError(null);
 
     try {
       if (!user) {
+        console.log("[EXPENSE USERS] No authenticated user");
         setError("Not authenticated");
         setLoading(false);
         return;
       }
-
-      console.log("Fetching users for expense selection, groupId:", groupId);
       
       if (groupId) {
         // Fetch group members for group expenses
-        console.log("Fetching group members for group:", groupId);
+        console.log("[EXPENSE USERS] Fetching group members for group:", groupId);
         const { data: membersData, error: membersError } = await supabase
           .from('group_members')
           .select(`
@@ -45,7 +45,7 @@ export const useExpenseUsers = (groupId?: string | null) => {
           .eq('group_id', groupId);
 
         if (membersError) {
-          console.error("Error fetching group members:", membersError);
+          console.error("[EXPENSE USERS] Error fetching group members:", membersError);
           setError(membersError.message);
           
           // Fallback to showing just the current user
@@ -59,18 +59,22 @@ export const useExpenseUsers = (groupId?: string | null) => {
           return;
         }
         
+        console.log("[EXPENSE USERS] Raw group members data:", membersData);
+        
         if (membersData && membersData.length > 0) {
           // Transform the data to match our User type
-          const transformedUsers = membersData.map(member => ({
-            id: member.users?.id || member.user_id,
-            name: member.users?.name || null,
-            email: member.users?.email || ''
-          })).filter(user => user.email); // Filter out any invalid users
+          const transformedUsers = membersData
+            .map(member => ({
+              id: member.users?.id || member.user_id,
+              name: member.users?.name || null,
+              email: member.users?.email || ''
+            }))
+            .filter(user => user.email && user.id); // Filter out any invalid users
           
-          console.log("Transformed group member users:", transformedUsers);
+          console.log("[EXPENSE USERS] Transformed group member users:", transformedUsers);
           setUsers(transformedUsers);
         } else {
-          console.log("No group members found, showing current user only");
+          console.log("[EXPENSE USERS] No group members found, showing current user only");
           setUsers([{
             id: user.id,
             name: user.name || null,
@@ -79,6 +83,7 @@ export const useExpenseUsers = (groupId?: string | null) => {
         }
       } else {
         // Fetch current user for non-group expenses
+        console.log("[EXPENSE USERS] Fetching current user for non-group expense");
         const { data: currentUserData, error: currentUserError } = await supabase
           .from('users')
           .select('id, name, email')
@@ -86,8 +91,10 @@ export const useExpenseUsers = (groupId?: string | null) => {
           .single();
 
         if (!currentUserError && currentUserData) {
+          console.log("[EXPENSE USERS] Current user data:", currentUserData);
           setUsers([currentUserData]);
         } else {
+          console.log("[EXPENSE USERS] Fallback to auth user data");
           // Fallback to auth user data
           setUsers([{
             id: user.id,
@@ -97,7 +104,7 @@ export const useExpenseUsers = (groupId?: string | null) => {
         }
       }
     } catch (err: any) {
-      console.error("Unexpected error fetching users:", err);
+      console.error("[EXPENSE USERS] Unexpected error fetching users:", err);
       setError(err.message || 'Failed to fetch users');
       
       // Always show current user as fallback
@@ -127,6 +134,7 @@ export const useExpenseUsers = (groupId?: string | null) => {
     loading, 
     error,
     expenseUsers: users,
-    isLoading: loading
+    isLoading: loading,
+    refetch: fetchUsers
   };
 };
