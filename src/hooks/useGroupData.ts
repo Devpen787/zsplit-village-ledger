@@ -9,6 +9,7 @@ import { User } from '@/types/auth';
 export const useGroupData = (id: string | undefined, user: User | null) => {
   const navigate = useNavigate();
   const [group, setGroup] = useState<Group | null>(null);
+  const [membership, setMembership] = useState<{ role: string } | null>(null);
   const [loading, setLoading] = useState(true);
   
   const fetchGroupDetails = async () => {
@@ -31,6 +32,7 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
       
       console.log("✅ Group data fetched successfully:", result);
       setGroup(result.group);
+      setMembership(result.membership);
       
     } catch (error: any) {
       console.error("💥 Error in fetchGroupDetails:", error);
@@ -87,6 +89,7 @@ export const useGroupData = (id: string | undefined, user: User | null) => {
 
   return {
     group,
+    membership,
     loading,
     refreshData: fetchGroupDetails
   };

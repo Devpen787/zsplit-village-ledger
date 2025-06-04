@@ -25,6 +25,7 @@ const GroupView = () => {
     members, 
     loading, 
     isAdmin, 
+    handleMemberAdded,
     refreshData
   } = useGroupDetails(id, user);
   
@@ -38,11 +39,6 @@ const GroupView = () => {
   
   const handleCreateExpense = () => {
     navigate(`/expenses/new?groupId=${id}`);
-  };
-
-  const handleMemberAdded = async () => {
-    console.log("[GROUP VIEW] Member added, refreshing data");
-    await refreshData();
   };
   
   // If no group ID is provided, redirect to the groups list
