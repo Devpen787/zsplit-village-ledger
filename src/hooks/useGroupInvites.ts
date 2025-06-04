@@ -3,10 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
 export const useGroupInvites = (groupId: string | undefined) => {
-  const inviteMember = async (inviteEmail: string, userId: string) => {
+  const inviteMember = async (inviteEmail: string, userId: string, inviteName?: string) => {
     if (!groupId || !userId) throw new Error("Missing group or user information");
     
-    console.log("[GROUP INVITES] Starting invitation process for email:", inviteEmail, "to group:", groupId);
+    console.log("[GROUP INVITES] Starting invitation process for email:", inviteEmail, "name:", inviteName, "to group:", groupId);
     console.log("[GROUP INVITES] Invited by user:", userId);
     
     try {
@@ -78,7 +78,7 @@ export const useGroupInvites = (groupId: string | undefined) => {
           .from('users')
           .insert({
             email: inviteEmail.toLowerCase(),
-            name: inviteEmail.split('@')[0], // Use email prefix as placeholder name
+            name: inviteName || inviteEmail.split('@')[0], // Use provided name or email prefix as fallback
             id: `placeholder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
           })
           .select()
@@ -110,7 +110,7 @@ export const useGroupInvites = (groupId: string | undefined) => {
         }
 
         console.log("[GROUP INVITES] Successfully added placeholder member:", newMember);
-        toast.success(`${inviteEmail} has been added to the group. They can claim their account when they sign up.`);
+        toast.success(`${inviteName || inviteEmail} has been added to the group. They can claim their account when they sign up.`);
       }
     } catch (error: any) {
       console.error("[GROUP INVITES] Invitation process failed:", error);

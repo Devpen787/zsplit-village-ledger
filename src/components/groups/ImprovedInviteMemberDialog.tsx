@@ -23,6 +23,7 @@ export const ImprovedInviteMemberDialog = ({
   onMemberAdded
 }: ImprovedInviteMemberDialogProps) => {
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const { inviteMember } = useGroupInvites(groupId);
   const [loading, setLoading] = useState(false);
 
@@ -33,11 +34,12 @@ export const ImprovedInviteMemberDialog = ({
 
     setLoading(true);
     try {
-      console.log("[INVITE DIALOG] Starting invitation for:", email.trim());
-      await inviteMember(email.trim(), invitedBy);
+      console.log("[INVITE DIALOG] Starting invitation for:", email.trim(), "with name:", name.trim());
+      await inviteMember(email.trim(), invitedBy, name.trim() || undefined);
       
       // Clear form and close dialog on success
       setEmail('');
+      setName('');
       onOpenChange(false);
       
       // Trigger refresh of member data
@@ -57,6 +59,7 @@ export const ImprovedInviteMemberDialog = ({
   const handleClose = () => {
     if (!loading) {
       setEmail('');
+      setName('');
       onOpenChange(false);
     }
   };
@@ -73,6 +76,18 @@ export const ImprovedInviteMemberDialog = ({
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="Enter their name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+          
+          <div className="space-y-2">
             <Label htmlFor="email">Email Address</Label>
             <Input
               id="email"
@@ -84,8 +99,7 @@ export const ImprovedInviteMemberDialog = ({
               required
             />
             <p className="text-sm text-muted-foreground">
-              If the user has an account, they'll be added immediately. 
-              Otherwise, they'll receive an invitation when they sign up.
+              They'll be added immediately and can claim their account when they sign up.
             </p>
           </div>
 

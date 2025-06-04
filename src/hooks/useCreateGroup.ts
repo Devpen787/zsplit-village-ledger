@@ -61,7 +61,7 @@ export const useCreateGroup = () => {
       setTimeout(() => {
         console.log("🧭 Navigating to group:", result.id);
         navigate(`/group/${result.id}`);
-      }, 300);
+      }, 500); // Increased delay to ensure consistency
       
       return result;
       
