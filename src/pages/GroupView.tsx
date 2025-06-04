@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
@@ -36,12 +37,21 @@ const GroupView = () => {
     connectedWalletsCount = 0
   } = useGroupDetails(id, user);
   
+  console.log("[GROUP VIEW] Current state:", {
+    groupId: id,
+    membersCount: members?.length || 0,
+    members: members,
+    isAdmin,
+    loading
+  });
+  
   const handleCreateExpense = () => {
     navigate(`/expenses/new?groupId=${id}`);
   };
   
   const handleInviteMember = async (email: string) => {
     try {
+      console.log("[GROUP VIEW] Inviting member:", email);
       await inviteMember(email);
       // Refresh data after successful invitation
       await refreshData();
@@ -127,62 +137,68 @@ const GroupView = () => {
           onCreateExpense={handleCreateExpense}
         />
 
-        {activeTab === "overview" ? (
-          <>
-            <GroupOverview
-              groupId={id!}
-              group={group}
-              members={members}
-              isAdmin={isAdmin}
-              onInviteClick={() => setInviteDialogOpen(true)}
-              currentUserId={user?.id}
-              potBalance={potBalance}
-              totalExpenses={totalExpenses}
-              pendingPayoutsCount={pendingPayoutsCount}
-              connectedWalletsCount={connectedWalletsCount}
-              onMemberUpdate={handleMemberAdded}
-            />
-
-            {/* Group Expenses List */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-            >
-              <Card className="shadow-sm hover:shadow transition-all duration-300">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Group Expenses</CardTitle>
-                    <CardDescription>Recent expenses for this group</CardDescription>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleCreateExpense} 
-                    className="hidden md:flex"
-                  >
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Add Expense
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <ExpensesList groupId={id} />
-                </CardContent>
-              </Card>
-            </motion.div>
-          </>
-        ) : (
-          <GroupTabs
-            groupId={id!}
+        {/* Always show the members card prominently */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
+        >
+          <MembersCard 
             members={members}
             isAdmin={isAdmin}
             onInviteClick={() => setInviteDialogOpen(true)}
-            currentUser={user}
+            currentUserId={user?.id}
+            loading={loading}
+          />
+        </motion.div>
+
+        {/* Group Overview with metrics */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+        >
+          <GroupOverview
+            groupId={id!}
             group={group}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
+            members={members}
+            isAdmin={isAdmin}
+            onInviteClick={() => setInviteDialogOpen(true)}
+            currentUserId={user?.id}
+            potBalance={potBalance}
+            totalExpenses={totalExpenses}
+            pendingPayoutsCount={pendingPayoutsCount}
+            connectedWalletsCount={connectedWalletsCount}
             onMemberUpdate={handleMemberAdded}
           />
-        )}
+        </motion.div>
+
+        {/* Group Expenses List */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+        >
+          <Card className="shadow-sm hover:shadow transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Group Expenses</CardTitle>
+                <CardDescription>Recent expenses for this group</CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={handleCreateExpense} 
+                className="hidden md:flex"
+              >
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Add Expense
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <ExpensesList groupId={id} />
+            </CardContent>
+          </Card>
+        </motion.div>
         
         <ImprovedInviteMemberDialog
           open={inviteDialogOpen}
