@@ -4,37 +4,28 @@ import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
 import { GroupHeader } from "@/components/groups/GroupHeader";
 import { MembersCard } from "@/components/groups/MembersCard";
-import { GroupTabs } from "@/components/groups/GroupTabs";
-import { InviteMemberDialog } from "@/components/groups/InviteMemberDialog";
+import { ImprovedInviteMemberDialog } from "@/components/groups/ImprovedInviteMemberDialog";
 import { useGroupDetails } from "@/hooks/useGroupDetails";
 import { useAuth } from "@/contexts";
 import { toast } from "@/components/ui/sonner";
 import { Loader2, AlertTriangle, ArrowLeft, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { GroupOverview } from "@/components/groups/GroupOverview";
 import { ExpensesList } from "@/components/ExpensesList";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { ImprovedInviteMemberDialog } from "@/components/groups/ImprovedInviteMemberDialog";
 
 const GroupView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
   
   const { 
     group, 
     members, 
     loading, 
     isAdmin, 
-    inviteMember,
-    refreshData,
-    potBalance = 0,
-    totalExpenses = 0,
-    pendingPayoutsCount = 0,
-    connectedWalletsCount = 0
+    refreshData
   } = useGroupDetails(id, user);
   
   console.log("[GROUP VIEW] Current state:", {
@@ -47,17 +38,6 @@ const GroupView = () => {
   
   const handleCreateExpense = () => {
     navigate(`/expenses/new?groupId=${id}`);
-  };
-  
-  const handleInviteMember = async (email: string) => {
-    try {
-      console.log("[GROUP VIEW] Inviting member:", email);
-      await inviteMember(email);
-      // Refresh data after successful invitation
-      await refreshData();
-    } catch (error: any) {
-      console.error("Error in invitation flow:", error);
-    }
   };
 
   const handleMemberAdded = async () => {
@@ -137,7 +117,7 @@ const GroupView = () => {
           onCreateExpense={handleCreateExpense}
         />
 
-        {/* Always show the members card prominently */}
+        {/* Members Card - Always visible and prominent */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -152,32 +132,11 @@ const GroupView = () => {
           />
         </motion.div>
 
-        {/* Group Overview with metrics */}
+        {/* Group Expenses List - Directly after members */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.4 }}
-        >
-          <GroupOverview
-            groupId={id!}
-            group={group}
-            members={members}
-            isAdmin={isAdmin}
-            onInviteClick={() => setInviteDialogOpen(true)}
-            currentUserId={user?.id}
-            potBalance={potBalance}
-            totalExpenses={totalExpenses}
-            pendingPayoutsCount={pendingPayoutsCount}
-            connectedWalletsCount={connectedWalletsCount}
-            onMemberUpdate={handleMemberAdded}
-          />
-        </motion.div>
-
-        {/* Group Expenses List */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
         >
           <Card className="shadow-sm hover:shadow transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between">

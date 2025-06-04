@@ -39,7 +39,7 @@ export const MembersCard = ({ members, isAdmin, onInviteClick, currentUserId, lo
               <Button 
                 onClick={onInviteClick}
                 size="sm"
-                className="flex items-center"
+                className="flex items-center bg-primary hover:bg-primary/90"
               >
                 <UserPlus className="h-4 w-4 mr-2" />
                 Invite Member
@@ -65,7 +65,7 @@ export const MembersCard = ({ members, isAdmin, onInviteClick, currentUserId, lo
           {loading ? (
             <div className="text-sm text-muted-foreground py-4">Loading members...</div>
           ) : members.length === 0 ? (
-            <div className="text-center py-6">
+            <div className="text-center py-8 bg-muted/20 rounded-lg border-2 border-dashed">
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <div className="text-lg font-medium mb-2">No members yet</div>
               <div className="text-sm text-muted-foreground mb-4">
@@ -74,7 +74,7 @@ export const MembersCard = ({ members, isAdmin, onInviteClick, currentUserId, lo
               {isAdmin && (
                 <Button 
                   onClick={onInviteClick}
-                  className="flex items-center mx-auto"
+                  className="flex items-center mx-auto bg-primary hover:bg-primary/90"
                 >
                   <UserPlus className="h-4 w-4 mr-2" />
                   Invite First Member
