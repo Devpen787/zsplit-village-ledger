@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, UserPlus, Users } from "lucide-react";
+import { ChevronDown, ChevronUp, UserPlus, Users, Crown } from "lucide-react";
 import { MembersList } from "@/components/groups/MembersList";
 import { GroupMember } from '@/types/supabase';
+import { Badge } from "@/components/ui/badge";
 
 interface MembersCardProps {
   members: GroupMember[];
@@ -27,12 +28,18 @@ export const MembersCard = ({ members, isAdmin, onInviteClick, currentUserId, lo
     <Card className="shadow-sm border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Users className="h-5 w-5 mr-2 text-primary" />
+          <div className="flex items-center gap-3">
+            <Users className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Group Members</CardTitle>
-            <span className="ml-3 text-sm bg-primary/10 text-primary px-2 py-1 rounded-full">
+            <span className="text-sm bg-primary/10 text-primary px-2 py-1 rounded-full">
               {loading ? 'Loading...' : `${members.length} ${members.length === 1 ? 'member' : 'members'}`}
             </span>
+            {isAdmin && (
+              <Badge variant="default" className="bg-yellow-500 hover:bg-yellow-600 text-white">
+                <Crown className="h-3 w-3 mr-1" />
+                Admin
+              </Badge>
+            )}
           </div>
           <div className="flex items-center space-x-2">
             {isAdmin && (

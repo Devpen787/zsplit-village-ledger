@@ -70,70 +70,50 @@ export const useGroupInvites = (groupId: string | undefined) => {
         toast.success(`Successfully added ${userData.name || inviteEmail} to the group`);
         
       } else {
-        // User doesn't exist - create a pending invitation
-        console.log("[GROUP INVITES] User doesn't exist, creating invitation for:", inviteEmail);
+        // User doesn't exist - create them and add to group automatically
+        console.log("[GROUP INVITES] User doesn't exist, creating user and adding to group:", inviteEmail);
         
-        // Check if invitation already exists
-        const { data: existingInvite, error: inviteCheckError } = await supabase
-          .from('invitations')
-          .select('id, status')
-          .eq('group_id', groupId)
-          .eq('email', inviteEmail.toLowerCase())
-          .maybeSingle();
+        // Create a placeholder user that will be claimed when they sign up
+        const { data: newUser, error: createUserError } = await supabase
+          .from('users')
+          .insert({
+            email: inviteEmail.toLowerCase(),
+            name: inviteEmail.split('@')[0], // Use email prefix as placeholder name
+            id: `placeholder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          })
+          .select()
+          .single();
 
-        if (inviteCheckError) {
-          console.error("[GROUP INVITES] Error checking invitation:", inviteCheckError);
-          toast.error(`Error checking existing invitations: ${inviteCheckError.message}`);
-          throw inviteCheckError;
+        if (createUserError) {
+          console.error("[GROUP INVITES] Error creating placeholder user:", createUserError);
+          toast.error(`Failed to create user: ${createUserError.message}`);
+          throw createUserError;
         }
 
-        if (existingInvite && existingInvite.status === 'pending') {
-          console.log("[GROUP INVITES] Invitation already exists:", existingInvite);
-          toast.info("Invitation already sent to this email");
-          return;
-        }
-        
-        // Create or update invitation
-        if (existingInvite) {
-          console.log("[GROUP INVITES] Updating existing invitation");
-          const { error: updateError } = await supabase
-            .from('invitations')
-            .update({ 
-              status: 'pending',
-              invited_by: userId,
-              created_at: new Date().toISOString()
-            })
-            .eq('id', existingInvite.id);
+        console.log("[GROUP INVITES] Created placeholder user:", newUser);
 
-          if (updateError) {
-            console.error("[GROUP INVITES] Error updating invitation:", updateError);
-            toast.error(`Failed to update invitation: ${updateError.message}`);
-            throw updateError;
-          }
-        } else {
-          console.log("[GROUP INVITES] Creating new invitation");
-          const { error: createError } = await supabase
-            .from('invitations')
-            .insert({
-              group_id: groupId,
-              email: inviteEmail.toLowerCase(),
-              invited_by: userId,
-              status: 'pending'
-            });
+        // Add them to the group
+        const { data: newMember, error: addMemberError } = await supabase
+          .from('group_members')
+          .insert({
+            group_id: groupId,
+            user_id: newUser.id,
+            role: 'member'
+          })
+          .select()
+          .single();
 
-          if (createError) {
-            console.error("[GROUP INVITES] Error creating invitation:", createError);
-            toast.error(`Failed to create invitation: ${createError.message}`);
-            throw createError;
-          }
+        if (addMemberError) {
+          console.error("[GROUP INVITES] Error adding placeholder member:", addMemberError);
+          toast.error(`Failed to add member: ${addMemberError.message}`);
+          throw addMemberError;
         }
-        
-        console.log("[GROUP INVITES] Invitation created successfully");
-        toast.success(`Invitation sent to ${inviteEmail}. They will see it when they sign up.`);
+
+        console.log("[GROUP INVITES] Successfully added placeholder member:", newMember);
+        toast.success(`${inviteEmail} has been added to the group. They can claim their account when they sign up.`);
       }
     } catch (error: any) {
       console.error("[GROUP INVITES] Invitation process failed:", error);
-      // Don't show another toast here since we already showed one above
       throw error;
     }
   };
