@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, createUserSecurely } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
 export const useGroupInvites = (groupId: string | undefined) => {
@@ -70,47 +70,46 @@ export const useGroupInvites = (groupId: string | undefined) => {
         toast.success(`Successfully added ${userData.name || inviteEmail} to the group`);
         
       } else {
-        // User doesn't exist - create them and add to group automatically
-        console.log("[GROUP INVITES] User doesn't exist, creating user and adding to group:", inviteEmail);
+        // User doesn't exist - create them using the secure Edge Function
+        console.log("[GROUP INVITES] User doesn't exist, creating user securely:", inviteEmail);
         
-        // Create a placeholder user that will be claimed when they sign up
-        const { data: newUser, error: createUserError } = await supabase
-          .from('users')
-          .insert({
-            email: inviteEmail.toLowerCase(),
-            name: inviteName || inviteEmail.split('@')[0], // Use provided name or email prefix as fallback
-            id: `placeholder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-          })
-          .select()
-          .single();
+        const placeholderUserId = `placeholder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        try {
+          const newUser = await createUserSecurely({
+            user_id: placeholderUserId,
+            user_email: inviteEmail.toLowerCase(),
+            user_name: inviteName || inviteEmail.split('@')[0],
+            user_role: 'participant'
+          });
 
-        if (createUserError) {
-          console.error("[GROUP INVITES] Error creating placeholder user:", createUserError);
-          toast.error(`Failed to create user: ${createUserError.message}`);
-          throw createUserError;
+          console.log("[GROUP INVITES] Created user securely:", newUser);
+
+          // Add them to the group
+          const { data: newMember, error: addMemberError } = await supabase
+            .from('group_members')
+            .insert({
+              group_id: groupId,
+              user_id: newUser.id,
+              role: 'member'
+            })
+            .select()
+            .single();
+
+          if (addMemberError) {
+            console.error("[GROUP INVITES] Error adding member:", addMemberError);
+            toast.error(`Failed to add member: ${addMemberError.message}`);
+            throw addMemberError;
+          }
+
+          console.log("[GROUP INVITES] Successfully added member:", newMember);
+          toast.success(`${inviteName || inviteEmail} has been added to the group. They can claim their account when they sign up.`);
+          
+        } catch (createError) {
+          console.error("[GROUP INVITES] Error creating user securely:", createError);
+          toast.error(`Failed to create user: ${createError.message}`);
+          throw createError;
         }
-
-        console.log("[GROUP INVITES] Created placeholder user:", newUser);
-
-        // Add them to the group
-        const { data: newMember, error: addMemberError } = await supabase
-          .from('group_members')
-          .insert({
-            group_id: groupId,
-            user_id: newUser.id,
-            role: 'member'
-          })
-          .select()
-          .single();
-
-        if (addMemberError) {
-          console.error("[GROUP INVITES] Error adding placeholder member:", addMemberError);
-          toast.error(`Failed to add member: ${addMemberError.message}`);
-          throw addMemberError;
-        }
-
-        console.log("[GROUP INVITES] Successfully added placeholder member:", newMember);
-        toast.success(`${inviteName || inviteEmail} has been added to the group. They can claim their account when they sign up.`);
       }
     } catch (error: any) {
       console.error("[GROUP INVITES] Invitation process failed:", error);
