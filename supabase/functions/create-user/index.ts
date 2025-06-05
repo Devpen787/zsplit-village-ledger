@@ -134,7 +134,7 @@ serve(async (req) => {
       // Check if user is already a member of the group
       const { data: existingMembership, error: membershipCheckError } = await supabaseAdmin
         .from('group_members')
-        .select('id')
+        .select('id, role')
         .eq('group_id', group_id)
         .eq('user_id', finalUser.id)
         .maybeSingle();
@@ -151,13 +151,26 @@ serve(async (req) => {
       }
 
       if (!existingMembership) {
+        // Determine the role - if this user is the group creator, make them admin
+        const { data: groupData, error: groupError } = await supabaseAdmin
+          .from('groups')
+          .select('created_by')
+          .eq('id', group_id)
+          .single();
+
+        let memberRole = 'member';
+        if (!groupError && groupData && groupData.created_by === finalUser.id) {
+          memberRole = 'admin';
+          console.log('User is group creator, assigning admin role');
+        }
+
         // Add user to group using admin client (bypasses RLS)
         const { error: membershipError } = await supabaseAdmin
           .from('group_members')
           .insert({
             group_id: group_id,
             user_id: finalUser.id,
-            role: 'member'
+            role: memberRole
           });
 
         if (membershipError) {
@@ -171,9 +184,9 @@ serve(async (req) => {
           )
         }
 
-        console.log('User successfully added to group');
+        console.log('User successfully added to group with role:', memberRole);
       } else {
-        console.log('User is already a member of the group');
+        console.log('User is already a member of the group with role:', existingMembership.role);
       }
     }
 

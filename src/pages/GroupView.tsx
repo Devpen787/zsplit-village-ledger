@@ -6,6 +6,7 @@ import { GroupHeader } from "@/components/groups/GroupHeader";
 import { MembersCard } from "@/components/groups/MembersCard";
 import { ImprovedInviteMemberDialog } from "@/components/groups/ImprovedInviteMemberDialog";
 import { useGroupDetails } from "@/hooks/useGroupDetails";
+import { useEnsureGroupMembership } from "@/hooks/useEnsureGroupMembership";
 import { useAuth } from "@/contexts";
 import { toast } from "@/components/ui/sonner";
 import { Loader2, AlertTriangle, ArrowLeft, PlusCircle } from "lucide-react";
@@ -19,6 +20,9 @@ const GroupView = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  
+  // Ensure current user is a member of the group
+  useEnsureGroupMembership(id, user);
   
   const { 
     group, 
