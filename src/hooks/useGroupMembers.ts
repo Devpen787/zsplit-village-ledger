@@ -28,6 +28,14 @@ export const useGroupMembers = (groupId: string | undefined) => {
           fetchMembers();
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'users' },
+        (payload) => {
+          console.log("[GROUP MEMBERS] User table update received:", payload);
+          fetchMembers();
+        }
+      )
       .subscribe();
       
     return () => {

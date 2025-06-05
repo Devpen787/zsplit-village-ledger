@@ -35,17 +35,19 @@ export const ImprovedInviteMemberDialog = ({
     setLoading(true);
     try {
       console.log("[INVITE DIALOG] Starting invitation for:", email.trim(), "with name:", name.trim());
-      await inviteMember(email.trim(), invitedBy, name.trim() || undefined);
+      const result = await inviteMember(email.trim(), invitedBy, name.trim() || undefined);
       
-      // Clear form and close dialog on success
-      setEmail('');
-      setName('');
-      onOpenChange(false);
-      
-      // Trigger refresh of member data
-      if (onMemberAdded) {
-        console.log("[INVITE DIALOG] Triggering member list refresh");
-        onMemberAdded();
+      if (result?.success) {
+        // Clear form and close dialog on success
+        setEmail('');
+        setName('');
+        onOpenChange(false);
+        
+        // Trigger refresh of member data
+        if (onMemberAdded) {
+          console.log("[INVITE DIALOG] Triggering member list refresh");
+          onMemberAdded();
+        }
       }
       
     } catch (error) {

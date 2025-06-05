@@ -12,7 +12,7 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
   
   // Use the extracted hooks
   const { group, loading, refreshData, membership } = useGroupData(id, user);
-  const { members } = useGroupMembers(id);
+  const { members, fetchMembers } = useGroupMembers(id);
   const { inviteMember } = useGroupInvites(id);
   const { expenses, totalExpenses } = useGroupExpenses(id, user);
   const { potBalance, pendingPayoutsCount, connectedWalletsCount } = useGroupPotMetrics(id);
@@ -35,7 +35,10 @@ export const useGroupDetails = (id: string | undefined, user: User | null) => {
 
   const handleMemberAdded = async () => {
     console.log("[GROUP DETAILS] Member added, refreshing data");
-    await refreshData();
+    await Promise.all([
+      refreshData(),
+      fetchMembers()
+    ]);
   };
 
   console.log("[GROUP DETAILS] Current state:", {

@@ -45,7 +45,7 @@ export const useGroupInvites = (groupId: string | undefined) => {
         if (existingMember) {
           console.log("[GROUP INVITES] User is already a member:", existingMember);
           toast.info(`${userData.name || inviteEmail} is already a member of this group`);
-          return;
+          return { success: false, reason: 'already_member' };
         }
 
         // User exists but isn't a member - use Edge Function to add them
@@ -68,6 +68,7 @@ export const useGroupInvites = (groupId: string | undefined) => {
 
           console.log("[GROUP INVITES] Successfully added existing user to group");
           toast.success(`Successfully added ${userData.name || inviteEmail} to the group`);
+          return { success: true, user: userData };
           
         } catch (edgeFunctionError) {
           console.error("[GROUP INVITES] Edge Function call failed:", edgeFunctionError);
@@ -99,6 +100,7 @@ export const useGroupInvites = (groupId: string | undefined) => {
 
           console.log("[GROUP INVITES] Created user and added to group successfully:", result.data);
           toast.success(`${inviteName || inviteEmail} has been added to the group. They can claim their account when they sign up.`);
+          return { success: true, user: result.data };
           
         } catch (createError) {
           console.error("[GROUP INVITES] Error creating user securely:", createError);
