@@ -34,10 +34,10 @@ serve(async (req) => {
       }
     )
 
-    const { user_id, user_email, user_name } = await req.json();
+    const { user_id, user_email, user_name, group_id } = await req.json();
     const user_role = 'participant';
 
-    console.log('Request data:', { user_id, user_email, user_name, user_role })
+    console.log('Request data:', { user_id, user_email, user_name, user_role, group_id })
 
     if (!user_id || !user_email) {
       console.error('Missing required fields')
@@ -68,75 +68,117 @@ serve(async (req) => {
       )
     }
 
+    let finalUser = null;
+
     if (existingUserByEmail) {
-      console.log('User already exists with this email, returning existing user')
-      return new Response(
-        JSON.stringify({ data: existingUserByEmail }),
-        { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      console.log('User already exists with this email, using existing user')
+      finalUser = existingUserByEmail;
+    } else {
+      // Check if user already exists by ID
+      const { data: existingUserById, error: idCheckError } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('id', user_id)
+        .maybeSingle()
+
+      if (idCheckError) {
+        console.error('Error checking existing user by ID:', idCheckError)
+        return new Response(
+          JSON.stringify({ error: `Failed to check existing user: ${idCheckError.message}` }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+
+      if (existingUserById) {
+        console.log('User already exists with this ID, using existing user')
+        finalUser = existingUserById;
+      } else {
+        // Create new user using the admin client (bypasses RLS)
+        const { data: userData, error: insertError } = await supabaseAdmin
+          .from('users')
+          .upsert({
+            id: user_id,
+            email: user_email.toLowerCase(),
+            name: user_name,
+            role: user_role
+          }, { 
+            onConflict: 'id',
+            ignoreDuplicates: false 
+          })
+          .select()
+          .single()
+
+        if (insertError) {
+          console.error('Error creating user:', insertError)
+          return new Response(
+            JSON.stringify({ error: `Failed to create user: ${insertError.message}` }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          )
         }
-      )
+
+        console.log('User created successfully:', userData)
+        finalUser = userData;
+      }
     }
 
-    // Check if user already exists by ID
-    const { data: existingUserById, error: idCheckError } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('id', user_id)
-      .maybeSingle()
+    // If group_id is provided, add user to the group
+    if (group_id && finalUser) {
+      console.log('Adding user to group:', { userId: finalUser.id, groupId: group_id });
+      
+      // Check if user is already a member of the group
+      const { data: existingMembership, error: membershipCheckError } = await supabaseAdmin
+        .from('group_members')
+        .select('id')
+        .eq('group_id', group_id)
+        .eq('user_id', finalUser.id)
+        .maybeSingle();
 
-    if (idCheckError) {
-      console.error('Error checking existing user by ID:', idCheckError)
-      return new Response(
-        JSON.stringify({ error: `Failed to check existing user: ${idCheckError.message}` }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      if (membershipCheckError) {
+        console.error('Error checking group membership:', membershipCheckError)
+        return new Response(
+          JSON.stringify({ error: `Failed to check group membership: ${membershipCheckError.message}` }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+
+      if (!existingMembership) {
+        // Add user to group using admin client (bypasses RLS)
+        const { error: membershipError } = await supabaseAdmin
+          .from('group_members')
+          .insert({
+            group_id: group_id,
+            user_id: finalUser.id,
+            role: 'member'
+          });
+
+        if (membershipError) {
+          console.error('Error adding user to group:', membershipError)
+          return new Response(
+            JSON.stringify({ error: `Failed to add user to group: ${membershipError.message}` }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          )
         }
-      )
+
+        console.log('User successfully added to group');
+      } else {
+        console.log('User is already a member of the group');
+      }
     }
 
-    if (existingUserById) {
-      console.log('User already exists with this ID, returning existing user')
-      return new Response(
-        JSON.stringify({ data: existingUserById }),
-        { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
-
-    // Use the admin client to insert the user (bypasses RLS)
-    const { data: userData, error: insertError } = await supabaseAdmin
-      .from('users')
-      .upsert({
-        id: user_id,
-        email: user_email.toLowerCase(),
-        name: user_name,
-        role: user_role
-      }, { 
-        onConflict: 'id',
-        ignoreDuplicates: false 
-      })
-      .select()
-      .single()
-
-    if (insertError) {
-      console.error('Error creating user:', insertError)
-      return new Response(
-        JSON.stringify({ error: `Failed to create user: ${insertError.message}` }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
-
-    console.log('User created successfully:', userData)
     return new Response(
-      JSON.stringify({ data: userData }),
+      JSON.stringify({ data: finalUser }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

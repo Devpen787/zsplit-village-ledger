@@ -48,26 +48,32 @@ export const useGroupInvites = (groupId: string | undefined) => {
           return;
         }
 
-        // User exists but isn't a member - add them directly
-        console.log("[GROUP INVITES] Adding user directly to group");
-        const { data: newMember, error: addError } = await supabase
-          .from('group_members')
-          .insert({
-            group_id: groupId,
-            user_id: userData.id,
-            role: 'member'
-          })
-          .select()
-          .single();
+        // User exists but isn't a member - use Edge Function to add them
+        console.log("[GROUP INVITES] Adding existing user to group via Edge Function");
+        try {
+          const result = await supabase.functions.invoke('create-user', {
+            body: {
+              user_id: userData.id,
+              user_email: userData.email,
+              user_name: userData.name,
+              group_id: groupId
+            }
+          });
+
+          if (result.error) {
+            console.error("[GROUP INVITES] Error from Edge Function:", result.error);
+            toast.error(`Failed to add member: ${result.error.message}`);
+            throw result.error;
+          }
+
+          console.log("[GROUP INVITES] Successfully added existing user to group");
+          toast.success(`Successfully added ${userData.name || inviteEmail} to the group`);
           
-        if (addError) {
-          console.error("[GROUP INVITES] Error adding member:", addError);
-          toast.error(`Failed to add member: ${addError.message}`);
-          throw addError;
+        } catch (edgeFunctionError) {
+          console.error("[GROUP INVITES] Edge Function call failed:", edgeFunctionError);
+          toast.error(`Failed to add member: ${edgeFunctionError.message}`);
+          throw edgeFunctionError;
         }
-        
-        console.log("[GROUP INVITES] Successfully added member:", newMember);
-        toast.success(`Successfully added ${userData.name || inviteEmail} to the group`);
         
       } else {
         // User doesn't exist - create them using the secure Edge Function
@@ -76,33 +82,22 @@ export const useGroupInvites = (groupId: string | undefined) => {
         const placeholderUserId = `placeholder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
         try {
-          const newUser = await createUserSecurely({
-            user_id: placeholderUserId,
-            user_email: inviteEmail.toLowerCase(),
-            user_name: inviteName || inviteEmail.split('@')[0],
-            user_role: 'participant'
+          const result = await supabase.functions.invoke('create-user', {
+            body: {
+              user_id: placeholderUserId,
+              user_email: inviteEmail.toLowerCase(),
+              user_name: inviteName || inviteEmail.split('@')[0],
+              group_id: groupId
+            }
           });
 
-          console.log("[GROUP INVITES] Created user securely:", newUser);
-
-          // Add them to the group
-          const { data: newMember, error: addMemberError } = await supabase
-            .from('group_members')
-            .insert({
-              group_id: groupId,
-              user_id: newUser.id,
-              role: 'member'
-            })
-            .select()
-            .single();
-
-          if (addMemberError) {
-            console.error("[GROUP INVITES] Error adding member:", addMemberError);
-            toast.error(`Failed to add member: ${addMemberError.message}`);
-            throw addMemberError;
+          if (result.error) {
+            console.error("[GROUP INVITES] Error from Edge Function:", result.error);
+            toast.error(`Failed to create user: ${result.error.message}`);
+            throw result.error;
           }
 
-          console.log("[GROUP INVITES] Successfully added member:", newMember);
+          console.log("[GROUP INVITES] Created user and added to group successfully:", result.data);
           toast.success(`${inviteName || inviteEmail} has been added to the group. They can claim their account when they sign up.`);
           
         } catch (createError) {
