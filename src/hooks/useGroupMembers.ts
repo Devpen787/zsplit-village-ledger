@@ -18,7 +18,7 @@ export const useGroupMembers = (groupId: string | undefined) => {
     try {
       console.log("[GROUP MEMBERS] Fetching members for group:", groupId);
       
-      // First, get all group members
+      // Get all group members
       const { data: groupMembersData, error: membersError } = await supabase
         .from('group_members')
         .select('id, group_id, user_id, role, created_at')
