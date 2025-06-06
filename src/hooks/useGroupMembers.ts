@@ -96,6 +96,7 @@ export const useGroupMembers = (groupId: string | undefined) => {
     console.log("[GROUP MEMBERS] Setting up for group:", groupId);
     fetchMembers();
     
+    // Set up real-time subscription
     const membersChannel = supabase
       .channel(`group-${groupId}-members-changes`)
       .on(
@@ -103,7 +104,10 @@ export const useGroupMembers = (groupId: string | undefined) => {
         { event: '*', schema: 'public', table: 'group_members', filter: `group_id=eq.${groupId}` },
         (payload) => {
           console.log("[GROUP MEMBERS] Real-time update received:", payload);
-          fetchMembers();
+          // Add a small delay to ensure the database is consistent
+          setTimeout(() => {
+            fetchMembers();
+          }, 100);
         }
       )
       .on(
@@ -111,7 +115,10 @@ export const useGroupMembers = (groupId: string | undefined) => {
         { event: '*', schema: 'public', table: 'users' },
         (payload) => {
           console.log("[GROUP MEMBERS] User table update received:", payload);
-          fetchMembers();
+          // Add a small delay to ensure the database is consistent
+          setTimeout(() => {
+            fetchMembers();
+          }, 100);
         }
       )
       .subscribe();

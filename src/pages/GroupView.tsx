@@ -45,6 +45,18 @@ const GroupView = () => {
     navigate(`/expenses/new?groupId=${id}`);
   };
   
+  const handleMemberAddedWithRefresh = async () => {
+    console.log("[GROUP VIEW] Member added, refreshing all data");
+    await Promise.all([
+      refreshData(),
+      handleMemberAdded()
+    ]);
+    // Force a additional refresh after a delay to ensure consistency
+    setTimeout(() => {
+      refreshData();
+    }, 1000);
+  };
+  
   // If no group ID is provided, redirect to the groups list
   useEffect(() => {
     if (!id) {
@@ -164,7 +176,7 @@ const GroupView = () => {
           onOpenChange={setInviteDialogOpen}
           groupId={id!}
           invitedBy={user?.id || ''}
-          onMemberAdded={handleMemberAdded}
+          onMemberAdded={handleMemberAddedWithRefresh}
         />
       </motion.div>
     </AppLayout>

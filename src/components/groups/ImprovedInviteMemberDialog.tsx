@@ -43,10 +43,13 @@ export const ImprovedInviteMemberDialog = ({
         setName('');
         onOpenChange(false);
         
-        // Trigger refresh of member data
+        // Trigger refresh of member data with a delay to ensure consistency
         if (onMemberAdded) {
           console.log("[INVITE DIALOG] Triggering member list refresh");
-          onMemberAdded();
+          // Add delay to ensure database consistency
+          setTimeout(() => {
+            onMemberAdded();
+          }, 500);
         }
       }
       
