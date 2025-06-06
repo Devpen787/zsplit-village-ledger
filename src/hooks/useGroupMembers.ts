@@ -50,21 +50,10 @@ export const useGroupMembers = (groupId: string | undefined) => {
     try {
       console.log("[GROUP MEMBERS] Fetching members for group:", groupId);
       
-      const { data: membersData, error: membersError } = await supabase
+      // First, get all group members
+      const { data: groupMembersData, error: membersError } = await supabase
         .from('group_members')
-        .select(`
-          id,
-          group_id,
-          user_id,
-          role,
-          created_at,
-          users:user_id (
-            id,
-            name,
-            email,
-            wallet_address
-          )
-        `)
+        .select('id, group_id, user_id, role, created_at')
         .eq('group_id', groupId);
         
       if (membersError) {
@@ -74,15 +63,51 @@ export const useGroupMembers = (groupId: string | undefined) => {
         return;
       }
       
-      console.log("[GROUP MEMBERS] Raw members data:", membersData);
+      console.log("[GROUP MEMBERS] Raw group members data:", groupMembersData);
       
-      // Transform the data to match our interface
-      const transformedMembers = (membersData || []).map(member => ({
-        ...member,
-        user: member.users
-      }));
+      if (!groupMembersData || groupMembersData.length === 0) {
+        console.log("[GROUP MEMBERS] No members found for group");
+        setMembers([]);
+        return;
+      }
       
-      console.log("[GROUP MEMBERS] Transformed members:", transformedMembers);
+      // Get user IDs
+      const userIds = groupMembersData.map(member => member.user_id);
+      console.log("[GROUP MEMBERS] Fetching user details for IDs:", userIds);
+      
+      // Fetch user details separately
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, name, email, wallet_address')
+        .in('id', userIds);
+        
+      if (usersError) {
+        console.error("[GROUP MEMBERS] Error fetching user details:", usersError);
+        // Continue with members even if user details fail
+      }
+      
+      console.log("[GROUP MEMBERS] User details data:", usersData);
+      
+      // Combine the data manually
+      const transformedMembers: GroupMember[] = groupMembersData.map(member => {
+        const userData = usersData?.find(user => user.id === member.user_id);
+        
+        return {
+          id: member.id,
+          group_id: member.group_id,
+          user_id: member.user_id,
+          role: member.role,
+          created_at: member.created_at,
+          user: userData || {
+            id: member.user_id,
+            name: `User ${member.user_id.slice(0, 8)}`, // Fallback name for placeholder users
+            email: 'Unknown',
+            wallet_address: null
+          }
+        };
+      });
+      
+      console.log("[GROUP MEMBERS] Final transformed members:", transformedMembers);
       setMembers(transformedMembers);
     } catch (error: any) {
       console.error("[GROUP MEMBERS] Unexpected error fetching members:", error);
