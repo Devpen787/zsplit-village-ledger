@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 import { GroupMember } from '@/types/supabase';
@@ -8,43 +8,11 @@ export const useGroupMembers = (groupId: string | undefined) => {
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchMembers = useCallback(async () => {
     if (!groupId) {
-      console.log("[GROUP MEMBERS] No groupId provided");
       setLoading(false);
       return;
     }
-    
-    console.log("[GROUP MEMBERS] Setting up for group:", groupId);
-    fetchMembers();
-    
-    const membersChannel = supabase
-      .channel(`group-${groupId}-members-changes`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'group_members', filter: `group_id=eq.${groupId}` },
-        (payload) => {
-          console.log("[GROUP MEMBERS] Real-time update received:", payload);
-          fetchMembers();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'users' },
-        (payload) => {
-          console.log("[GROUP MEMBERS] User table update received:", payload);
-          fetchMembers();
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(membersChannel);
-    };
-  }, [groupId]);
-
-  const fetchMembers = async () => {
-    if (!groupId) return;
     
     setLoading(true);
     try {
@@ -100,7 +68,7 @@ export const useGroupMembers = (groupId: string | undefined) => {
           created_at: member.created_at,
           user: userData || {
             id: member.user_id,
-            name: `User ${member.user_id.slice(0, 8)}`, // Fallback name for placeholder users
+            name: `User ${member.user_id.slice(0, 8)}`,
             email: 'Unknown',
             wallet_address: null
           }
@@ -116,7 +84,42 @@ export const useGroupMembers = (groupId: string | undefined) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [groupId]);
+
+  useEffect(() => {
+    if (!groupId) {
+      console.log("[GROUP MEMBERS] No groupId provided");
+      setLoading(false);
+      return;
+    }
+    
+    console.log("[GROUP MEMBERS] Setting up for group:", groupId);
+    fetchMembers();
+    
+    const membersChannel = supabase
+      .channel(`group-${groupId}-members-changes`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'group_members', filter: `group_id=eq.${groupId}` },
+        (payload) => {
+          console.log("[GROUP MEMBERS] Real-time update received:", payload);
+          fetchMembers();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'users' },
+        (payload) => {
+          console.log("[GROUP MEMBERS] User table update received:", payload);
+          fetchMembers();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(membersChannel);
+    };
+  }, [groupId, fetchMembers]);
 
   return { members, fetchMembers, loading };
 };
