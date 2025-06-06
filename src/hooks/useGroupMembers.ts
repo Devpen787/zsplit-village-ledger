@@ -11,6 +11,7 @@ export const useGroupMembers = (groupId: string | undefined) => {
   const fetchMembers = useCallback(async () => {
     if (!groupId) {
       setLoading(false);
+      setMembers([]);
       return;
     }
     
@@ -18,10 +19,22 @@ export const useGroupMembers = (groupId: string | undefined) => {
     try {
       console.log("[GROUP MEMBERS] Fetching members for group:", groupId);
       
-      // Get all group members
+      // Get all group members with user details in a single query
       const { data: groupMembersData, error: membersError } = await supabase
         .from('group_members')
-        .select('id, group_id, user_id, role, created_at')
+        .select(`
+          id,
+          group_id,
+          user_id,
+          role,
+          created_at,
+          user:users!user_id (
+            id,
+            name,
+            email,
+            wallet_address
+          )
+        `)
         .eq('group_id', groupId);
         
       if (membersError) {
@@ -39,26 +52,15 @@ export const useGroupMembers = (groupId: string | undefined) => {
         return;
       }
       
-      // Get user IDs
-      const userIds = groupMembersData.map(member => member.user_id);
-      console.log("[GROUP MEMBERS] Fetching user details for IDs:", userIds);
-      
-      // Fetch user details separately
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('id, name, email, wallet_address')
-        .in('id', userIds);
-        
-      if (usersError) {
-        console.error("[GROUP MEMBERS] Error fetching user details:", usersError);
-        // Continue with members even if user details fail
-      }
-      
-      console.log("[GROUP MEMBERS] User details data:", usersData);
-      
-      // Combine the data manually
+      // Transform the data - handle cases where user data might be missing
       const transformedMembers: GroupMember[] = groupMembersData.map(member => {
-        const userData = usersData?.find(user => user.id === member.user_id);
+        // If user data is missing, create a placeholder
+        const userData = member.user || {
+          id: member.user_id,
+          name: `User ${member.user_id.slice(0, 8)}`,
+          email: 'Unknown',
+          wallet_address: null
+        };
         
         return {
           id: member.id,
@@ -66,12 +68,7 @@ export const useGroupMembers = (groupId: string | undefined) => {
           user_id: member.user_id,
           role: member.role,
           created_at: member.created_at,
-          user: userData || {
-            id: member.user_id,
-            name: `User ${member.user_id.slice(0, 8)}`,
-            email: 'Unknown',
-            wallet_address: null
-          }
+          user: userData
         };
       });
       
@@ -96,34 +93,29 @@ export const useGroupMembers = (groupId: string | undefined) => {
     console.log("[GROUP MEMBERS] Setting up for group:", groupId);
     fetchMembers();
     
-    // Set up real-time subscription
+    // Set up real-time subscription for group members changes
     const membersChannel = supabase
       .channel(`group-${groupId}-members-changes`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'group_members', filter: `group_id=eq.${groupId}` },
         (payload) => {
-          console.log("[GROUP MEMBERS] Real-time update received:", payload);
-          // Add a small delay to ensure the database is consistent
-          setTimeout(() => {
-            fetchMembers();
-          }, 100);
+          console.log("[GROUP MEMBERS] Real-time group_members update received:", payload);
+          fetchMembers();
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'users' },
         (payload) => {
-          console.log("[GROUP MEMBERS] User table update received:", payload);
-          // Add a small delay to ensure the database is consistent
-          setTimeout(() => {
-            fetchMembers();
-          }, 100);
+          console.log("[GROUP MEMBERS] Real-time users update received:", payload);
+          fetchMembers();
         }
       )
       .subscribe();
       
     return () => {
+      console.log("[GROUP MEMBERS] Cleaning up subscription for group:", groupId);
       supabase.removeChannel(membersChannel);
     };
   }, [groupId, fetchMembers]);

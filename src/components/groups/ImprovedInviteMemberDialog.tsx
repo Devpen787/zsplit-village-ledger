@@ -38,24 +38,22 @@ export const ImprovedInviteMemberDialog = ({
       const result = await inviteMember(email.trim(), invitedBy, name.trim() || undefined);
       
       if (result?.success) {
-        // Clear form and close dialog on success
+        console.log("[INVITE DIALOG] Invitation successful, clearing form and refreshing");
+        
+        // Clear form and close dialog
         setEmail('');
         setName('');
         onOpenChange(false);
         
-        // Trigger refresh of member data with a delay to ensure consistency
+        // Trigger refresh immediately
         if (onMemberAdded) {
           console.log("[INVITE DIALOG] Triggering member list refresh");
-          // Add delay to ensure database consistency
-          setTimeout(() => {
-            onMemberAdded();
-          }, 500);
+          onMemberAdded();
         }
       }
       
     } catch (error) {
       console.error('[INVITE DIALOG] Error in invitation flow:', error);
-      // Error toast is already shown in the hook
     } finally {
       setLoading(false);
     }

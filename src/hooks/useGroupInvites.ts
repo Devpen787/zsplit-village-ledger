@@ -1,5 +1,5 @@
 
-import { supabase, createUserSecurely } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
 export const useGroupInvites = (groupId: string | undefined) => {

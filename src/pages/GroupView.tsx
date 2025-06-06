@@ -45,16 +45,11 @@ const GroupView = () => {
     navigate(`/expenses/new?groupId=${id}`);
   };
   
-  const handleMemberAddedWithRefresh = async () => {
-    console.log("[GROUP VIEW] Member added, refreshing all data");
-    await Promise.all([
-      refreshData(),
-      handleMemberAdded()
-    ]);
-    // Force a additional refresh after a delay to ensure consistency
-    setTimeout(() => {
-      refreshData();
-    }, 1000);
+  const handleMemberAddedRefresh = () => {
+    console.log("[GROUP VIEW] Member added, refreshing data");
+    // Just call the existing refresh functions
+    refreshData();
+    handleMemberAdded();
   };
   
   // If no group ID is provided, redirect to the groups list
@@ -176,7 +171,7 @@ const GroupView = () => {
           onOpenChange={setInviteDialogOpen}
           groupId={id!}
           invitedBy={user?.id || ''}
-          onMemberAdded={handleMemberAddedWithRefresh}
+          onMemberAdded={handleMemberAddedRefresh}
         />
       </motion.div>
     </AppLayout>
