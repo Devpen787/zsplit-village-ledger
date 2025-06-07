@@ -2,21 +2,24 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import { useAuth } from '@/contexts';
 
 export const useGroupDeletion = () => {
   const [loading, setLoading] = useState(false);
+  const { user, isAuthenticated } = useAuth();
 
   const deleteGroup = async (groupId: string) => {
     setLoading(true);
     try {
       console.log('Starting group deletion for:', groupId);
       
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Check if user is authenticated using our auth context
+      if (!isAuthenticated || !user) {
         toast.error('You must be logged in to delete groups');
         return false;
       }
+
+      console.log('Authenticated user:', user.id);
 
       // First, delete all expenses associated with this group
       const { error: expensesError } = await supabase
