@@ -32,6 +32,7 @@ import {
   PiggyBank,
   Activity,
   UserRound,
+  CreditCard,
 } from "lucide-react";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
