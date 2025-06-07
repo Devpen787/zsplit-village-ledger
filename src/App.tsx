@@ -46,6 +46,7 @@ const AppWrapper = () => {
         <Route path="/expenses/:id" element={<ExpenseDetail />} />
         <Route path="/expenses/new" element={<ExpenseForm />} />
         <Route path="/balances" element={<Balances />} />
+        <Route path="/settlements" element={<Settlements />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/group" element={<GroupDashboard />} />
         <Route path="/group/:id" element={<GroupView />} />
