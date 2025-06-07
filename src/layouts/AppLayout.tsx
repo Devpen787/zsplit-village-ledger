@@ -31,6 +31,7 @@ import {
   ArrowLeft,
   PiggyBank,
   Activity,
+  UserRound,
 } from "lucide-react";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -83,7 +84,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     { icon: Receipt, label: "Expense", path: "/expenses/new" },
     { icon: Wallet, label: "Balances", path: "/balances" },
     { icon: Users, label: "Groups", path: "/group" },
-    { icon: PiggyBank, label: "Pot", path: "/group-pot" },
+    { icon: UserRound, label: "Members", path: "/members" },
   ];
 
   // Desktop navigation items - more complete
@@ -92,6 +93,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     { icon: Receipt, label: "Add Expense", path: "/expenses/new" },
     { icon: Wallet, label: "Balances", path: "/balances" },
     { icon: Users, label: "Groups", path: "/group" },
+    { icon: UserRound, label: "Members", path: "/members" },
     { icon: PiggyBank, label: "Group Pot", path: "/group-pot" },
     { icon: Activity, label: "Group Pulse", path: "/group-pulse" },
     { icon: User, label: "Profile", path: "/profile" },
