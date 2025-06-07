@@ -82,15 +82,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const mobileNavItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: Receipt, label: "Expense", path: "/expenses/new" },
+    { icon: CreditCard, label: "Settle", path: "/settlements" },
     { icon: Wallet, label: "Balances", path: "/balances" },
     { icon: Users, label: "Groups", path: "/group" },
-    { icon: UserRound, label: "Members", path: "/members" },
   ];
 
   // Desktop navigation items - more complete
   const desktopNavItems = [
     { icon: Home, label: "Dashboard", path: "/" },
     { icon: Receipt, label: "Add Expense", path: "/expenses/new" },
+    { icon: CreditCard, label: "Settle Up", path: "/settlements" },
     { icon: Wallet, label: "Balances", path: "/balances" },
     { icon: Users, label: "Groups", path: "/group" },
     { icon: UserRound, label: "Members", path: "/members" },

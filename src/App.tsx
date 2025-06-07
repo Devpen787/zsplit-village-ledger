@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import ExpenseDetail from "./pages/ExpenseDetail";
 import ExpenseForm from "./pages/ExpenseForm";
 import Balances from "./pages/Balances";
+import Settlements from "./pages/Settlements";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts";
 import { WalletProvider } from "./contexts/WalletContext";
