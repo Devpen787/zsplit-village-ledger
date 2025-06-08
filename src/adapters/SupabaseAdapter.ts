@@ -385,7 +385,19 @@ export class SupabaseAdapter implements StorageAdapter {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    
+    // Cast the database response to our typed interface
+    return (data || []).map((activity: any) => ({
+      id: activity.id,
+      group_id: activity.group_id,
+      user_id: activity.user_id,
+      type: activity.type as 'contribution' | 'payout',
+      amount: activity.amount,
+      status: activity.status as 'pending' | 'approved' | 'complete' | 'rejected',
+      note: activity.note,
+      created_at: activity.created_at,
+      user: activity.user
+    }));
   }
 
   async createPotActivity(data: Omit<PotActivity, 'id' | 'created_at'>): Promise<PotActivity> {
@@ -396,7 +408,18 @@ export class SupabaseAdapter implements StorageAdapter {
       .single();
     
     if (error) throw error;
-    return result;
+    
+    // Cast the result to our typed interface
+    return {
+      id: result.id,
+      group_id: result.group_id,
+      user_id: result.user_id,
+      type: result.type as 'contribution' | 'payout',
+      amount: result.amount,
+      status: result.status as 'pending' | 'approved' | 'complete' | 'rejected',
+      note: result.note,
+      created_at: result.created_at
+    };
   }
 
   async updatePotActivity(activityId: string, data: Partial<PotActivity>): Promise<void> {
@@ -422,7 +445,17 @@ export class SupabaseAdapter implements StorageAdapter {
       .eq('status', 'pending');
     
     if (error) throw error;
-    return data || [];
+    
+    // Cast the database response to our typed interface
+    return (data || []).map((invitation: any) => ({
+      id: invitation.id,
+      group_id: invitation.group_id,
+      email: invitation.email,
+      invited_by: invitation.invited_by,
+      status: invitation.status as 'pending' | 'accepted' | 'declined',
+      created_at: invitation.created_at,
+      groups: invitation.groups
+    }));
   }
 
   async createInvitation(groupId: string, email: string, invitedBy: string): Promise<Invitation> {
@@ -438,7 +471,16 @@ export class SupabaseAdapter implements StorageAdapter {
       .single();
     
     if (error) throw error;
-    return data;
+    
+    // Cast the result to our typed interface
+    return {
+      id: data.id,
+      group_id: data.group_id,
+      email: data.email,
+      invited_by: data.invited_by,
+      status: data.status as 'pending' | 'accepted' | 'declined',
+      created_at: data.created_at
+    };
   }
 
   async updateInvitation(invitationId: string, status: 'accepted' | 'declined'): Promise<void> {

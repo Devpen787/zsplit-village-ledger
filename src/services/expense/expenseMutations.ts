@@ -54,10 +54,7 @@ export const saveExpense = async (
       await storageAdapter.updateExpense(id, expenseData);
     } else {
       console.log('[EXPENSE SERVICE] Creating new expense');
-      const newExpense = await storageAdapter.createExpense({
-        ...expenseData,
-        id: '', // Will be generated
-      });
+      const newExpense = await storageAdapter.createExpense(expenseData);
       expenseId = newExpense.id;
       console.log('[EXPENSE SERVICE] Created expense:', expenseId);
     }
