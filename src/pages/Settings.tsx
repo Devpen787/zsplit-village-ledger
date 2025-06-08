@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useAuth } from '@/contexts';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Wrench } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -146,6 +146,24 @@ const Settings = () => {
                 {savingPreferences ? "Saving..." : "Save Preferences"}
               </Button>
             </CardFooter>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wrench className="h-5 w-5" />
+                Developer Tools
+              </CardTitle>
+              <CardDescription>
+                Access advanced tools for data management and debugging
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate('/tools')} variant="outline" className="w-full">
+                <Wrench className="h-4 w-4 mr-2" />
+                Open Developer Tools
+              </Button>
+            </CardContent>
           </Card>
           
           <Card>

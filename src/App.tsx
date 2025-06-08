@@ -1,4 +1,3 @@
-
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,6 +11,7 @@ import ExpenseForm from "./pages/ExpenseForm";
 import Balances from "./pages/Balances";
 import Settlements from "./pages/Settlements";
 import NotFound from "./pages/NotFound";
+import Tools from "./pages/Tools";
 import { AuthProvider } from "./contexts";
 import { WalletProvider } from "./contexts/WalletContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -48,6 +48,7 @@ const AppWrapper = () => {
         <Route path="/balances" element={<Balances />} />
         <Route path="/settlements" element={<Settlements />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/tools" element={<Tools />} />
         <Route path="/group" element={<GroupDashboard />} />
         <Route path="/group/:id" element={<GroupView />} />
         <Route path="/group-pot" element={<GroupPot />} />
