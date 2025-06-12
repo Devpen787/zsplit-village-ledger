@@ -1,6 +1,5 @@
 
-import { render } from '@testing-library/react';
-import { screen, fireEvent, waitFor } from '@testing-library/dom';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ConflictResolutionDialog from '../ConflictResolutionDialog';
 import { ConflictData } from '@/adapters/sync/types';
 
@@ -45,10 +44,10 @@ describe('ConflictResolutionDialog', () => {
       />
     );
 
-    expect(screen.getByText('Resolve Data Conflict')).toBeInTheDocument();
-    expect(screen.getByText('CONCURRENT EDIT')).toBeInTheDocument();
-    expect(screen.getByText('Local Version')).toBeInTheDocument();
-    expect(screen.getByText('Remote Version')).toBeInTheDocument();
+    expect(screen.getByText('Resolve Data Conflict')).toBeVisible();
+    expect(screen.getByText('CONCURRENT EDIT')).toBeVisible();
+    expect(screen.getByText('Local Version')).toBeVisible();
+    expect(screen.getByText('Remote Version')).toBeVisible();
   });
 
   it('should not render when closed', () => {
@@ -87,12 +86,12 @@ describe('ConflictResolutionDialog', () => {
       />
     );
 
-    expect(screen.getByText('Local Name')).toBeInTheDocument();
-    expect(screen.getByText('Remote Name')).toBeInTheDocument();
-    expect(screen.getByText('Version: 1')).toBeInTheDocument();
-    expect(screen.getByText('Version: 2')).toBeInTheDocument();
-    expect(screen.getByText('Node: node1')).toBeInTheDocument();
-    expect(screen.getByText('Node: node2')).toBeInTheDocument();
+    expect(screen.getByText('Local Name')).toBeVisible();
+    expect(screen.getByText('Remote Name')).toBeVisible();
+    expect(screen.getByText('Version: 1')).toBeVisible();
+    expect(screen.getByText('Version: 2')).toBeVisible();
+    expect(screen.getByText('Node: node1')).toBeVisible();
+    expect(screen.getByText('Node: node2')).toBeVisible();
   });
 
   it('should call onResolve with local strategy', async () => {
@@ -183,8 +182,8 @@ describe('ConflictResolutionDialog', () => {
     const expectedLocalTime = new Date(1000000000000).toLocaleString();
     const expectedRemoteTime = new Date(1000000001000).toLocaleString();
     
-    expect(screen.getByText(`Modified: ${expectedLocalTime}`)).toBeInTheDocument();
-    expect(screen.getByText(`Modified: ${expectedRemoteTime}`)).toBeInTheDocument();
+    expect(screen.getByText(`Modified: ${expectedLocalTime}`)).toBeVisible();
+    expect(screen.getByText(`Modified: ${expectedRemoteTime}`)).toBeVisible();
   });
 
   it('should display JSON data in pre blocks', () => {
@@ -197,7 +196,7 @@ describe('ConflictResolutionDialog', () => {
       />
     );
 
-    const preBlocks = screen.getAllByRole('textbox', { hidden: true });
-    expect(preBlocks.length).toBeGreaterThan(0);
+    const preElements = document.querySelectorAll('pre');
+    expect(preElements.length).toBeGreaterThan(0);
   });
 });

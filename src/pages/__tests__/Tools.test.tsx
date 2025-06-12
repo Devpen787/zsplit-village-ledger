@@ -1,6 +1,5 @@
 
-import { render } from '@testing-library/react';
-import { screen, fireEvent } from '@testing-library/dom';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Tools from '../Tools';
 
@@ -53,11 +52,11 @@ describe('Tools Page', () => {
   it('should render the tools page correctly', () => {
     renderWithRouter(<Tools />);
 
-    expect(screen.getByText('Developer Tools')).toBeInTheDocument();
-    expect(screen.getByText('Advanced tools for data management, development, debugging, and synchronization.')).toBeInTheDocument();
-    expect(screen.getByText('Dev Tools')).toBeInTheDocument();
-    expect(screen.getByText('Data Management')).toBeInTheDocument();
-    expect(screen.getByText('Sync Engine')).toBeInTheDocument();
+    expect(screen.getByText('Developer Tools')).toBeVisible();
+    expect(screen.getByText('Advanced tools for data management, development, debugging, and synchronization.')).toBeVisible();
+    expect(screen.getByText('Dev Tools')).toBeVisible();
+    expect(screen.getByText('Data Management')).toBeVisible();
+    expect(screen.getByText('Sync Engine')).toBeVisible();
   });
 
   it('should navigate back to dashboard when back button is clicked', () => {
@@ -72,7 +71,7 @@ describe('Tools Page', () => {
   it('should show dev tools tab by default', () => {
     renderWithRouter(<Tools />);
 
-    expect(screen.getByTestId('dev-tools')).toBeInTheDocument();
+    expect(screen.getByTestId('dev-tools')).toBeVisible();
     expect(screen.queryByTestId('data-management')).not.toBeInTheDocument();
     expect(screen.queryByTestId('sync-dashboard')).not.toBeInTheDocument();
   });
@@ -83,7 +82,7 @@ describe('Tools Page', () => {
     const dataManagementTab = screen.getByRole('tab', { name: /data management/i });
     fireEvent.click(dataManagementTab);
 
-    expect(screen.getByTestId('data-management')).toBeInTheDocument();
+    expect(screen.getByTestId('data-management')).toBeVisible();
     expect(screen.queryByTestId('dev-tools')).not.toBeInTheDocument();
     expect(screen.queryByTestId('sync-dashboard')).not.toBeInTheDocument();
   });
@@ -94,7 +93,7 @@ describe('Tools Page', () => {
     const syncEngineTab = screen.getByRole('tab', { name: /sync engine/i });
     fireEvent.click(syncEngineTab);
 
-    expect(screen.getByTestId('sync-dashboard')).toBeInTheDocument();
+    expect(screen.getByTestId('sync-dashboard')).toBeVisible();
     expect(screen.queryByTestId('dev-tools')).not.toBeInTheDocument();
     expect(screen.queryByTestId('data-management')).not.toBeInTheDocument();
   });
@@ -110,7 +109,7 @@ describe('Tools Page', () => {
     const devToolsTab = screen.getByRole('tab', { name: /dev tools/i });
     fireEvent.click(devToolsTab);
 
-    expect(screen.getByTestId('dev-tools')).toBeInTheDocument();
+    expect(screen.getByTestId('dev-tools')).toBeVisible();
     expect(screen.queryByTestId('data-management')).not.toBeInTheDocument();
     expect(screen.queryByTestId('sync-dashboard')).not.toBeInTheDocument();
   });

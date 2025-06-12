@@ -1,6 +1,5 @@
 
-import { renderHook, act } from '@testing-library/react';
-import { waitFor } from '@testing-library/dom';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useSyncEngine } from '../useSyncEngine';
 import { MockSyncEngine } from '@/adapters/sync/MockSyncEngine';
 import { SyncEngineAdapter } from '@/adapters/sync/SyncEngineAdapter';
