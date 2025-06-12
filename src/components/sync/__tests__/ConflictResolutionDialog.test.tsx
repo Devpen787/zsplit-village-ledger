@@ -1,6 +1,6 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ConflictResolutionDialog } from '../ConflictResolutionDialog';
+import ConflictResolutionDialog from '../ConflictResolutionDialog';
 import { ConflictData } from '@/adapters/sync/types';
 
 const mockConflict: ConflictData = {

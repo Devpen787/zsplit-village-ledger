@@ -12,7 +12,7 @@ interface SyncStatusIndicatorProps {
   className?: string;
 }
 
-const SyncStatusIndicator = ({ 
+export const SyncStatusIndicator = ({ 
   status, 
   lastSync, 
   conflictCount = 0, 

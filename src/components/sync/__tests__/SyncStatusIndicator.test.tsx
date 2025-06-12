@@ -1,6 +1,6 @@
 
 import { render, screen } from '@testing-library/react';
-import { SyncStatusIndicator } from '../SyncStatusIndicator';
+import SyncStatusIndicator from '../SyncStatusIndicator';
 
 describe('SyncStatusIndicator', () => {
   it('should render synced status correctly', () => {

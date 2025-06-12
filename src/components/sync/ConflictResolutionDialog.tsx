@@ -21,7 +21,7 @@ interface ConflictResolutionDialogProps {
   onResolve: (conflictId: string, strategy: 'local' | 'remote' | 'merge') => void;
 }
 
-const ConflictResolutionDialog = ({
+export const ConflictResolutionDialog = ({
   isOpen,
   onClose,
   conflict,
