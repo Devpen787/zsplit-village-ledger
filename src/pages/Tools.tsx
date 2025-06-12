@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import AppLayout from '@/layouts/AppLayout';
 import DataManagement from '@/components/tools/DataManagement';
 import DevTools from '@/components/tools/DevTools';
+import SyncDashboard from '@/components/sync/SyncDashboard';
 
 const Tools = () => {
   const navigate = useNavigate();
@@ -20,14 +21,15 @@ const Tools = () => {
           </Button>
           <h1 className="text-3xl font-bold">Developer Tools</h1>
           <p className="text-muted-foreground mt-2">
-            Advanced tools for data management, development, and debugging.
+            Advanced tools for data management, development, debugging, and synchronization.
           </p>
         </div>
 
         <Tabs defaultValue="dev-tools" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="dev-tools">Dev Tools</TabsTrigger>
             <TabsTrigger value="data-management">Data Management</TabsTrigger>
+            <TabsTrigger value="sync-engine">Sync Engine</TabsTrigger>
           </TabsList>
           
           <TabsContent value="dev-tools">
@@ -36,6 +38,10 @@ const Tools = () => {
           
           <TabsContent value="data-management">
             <DataManagement />
+          </TabsContent>
+          
+          <TabsContent value="sync-engine">
+            <SyncDashboard />
           </TabsContent>
         </Tabs>
       </div>
