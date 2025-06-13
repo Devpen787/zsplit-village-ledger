@@ -1,93 +1,114 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Wifi, WifiOff, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
-import { SyncStatus } from '@/adapters/sync/types';
+import { 
+  CheckCircle, 
+  Loader2, 
+  AlertTriangle, 
+  XCircle, 
+  WifiOff,
+  Clock
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface SyncStatusIndicatorProps {
-  status: SyncStatus;
+  status: 'idle' | 'syncing' | 'synced' | 'conflict' | 'error' | 'offline';
   lastSync?: number;
   conflictCount?: number;
   className?: string;
 }
 
-export const SyncStatusIndicator = ({ 
-  status, 
-  lastSync, 
-  conflictCount = 0, 
-  className = '' 
-}: SyncStatusIndicatorProps) => {
-  const getStatusInfo = () => {
+const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
+  status,
+  lastSync,
+  conflictCount = 0,
+  className
+}) => {
+  const getStatusConfig = () => {
     switch (status) {
       case 'synced':
         return {
-          icon: <CheckCircle className="h-3 w-3" />,
-          variant: 'default' as const,
+          icon: CheckCircle,
           text: 'Synced',
-          color: 'text-green-600'
+          variant: 'default' as const,
+          className: 'bg-green-100 text-green-800 border-green-200'
         };
       case 'syncing':
         return {
-          icon: <RefreshCw className="h-3 w-3 animate-spin" />,
-          variant: 'secondary' as const,
+          icon: Loader2,
           text: 'Syncing',
-          color: 'text-blue-600'
+          variant: 'secondary' as const,
+          className: 'bg-blue-100 text-blue-800 border-blue-200',
+          iconClassName: 'animate-spin'
         };
       case 'conflict':
         return {
-          icon: <AlertCircle className="h-3 w-3" />,
+          icon: AlertTriangle,
+          text: conflictCount > 0 ? `${conflictCount} Conflicts` : 'Conflict',
           variant: 'destructive' as const,
-          text: `${conflictCount} Conflicts`,
-          color: 'text-red-600'
+          className: 'bg-orange-100 text-orange-800 border-orange-200'
         };
       case 'error':
         return {
-          icon: <AlertCircle className="h-3 w-3" />,
-          variant: 'destructive' as const,
+          icon: XCircle,
           text: 'Error',
-          color: 'text-red-600'
+          variant: 'destructive' as const,
+          className: 'bg-red-100 text-red-800 border-red-200'
         };
       case 'offline':
+        return {
+          icon: WifiOff,
+          text: 'Offline',
+          variant: 'outline' as const,
+          className: 'bg-gray-100 text-gray-800 border-gray-200'
+        };
       default:
         return {
-          icon: <WifiOff className="h-3 w-3" />,
+          icon: Clock,
+          text: 'Idle',
           variant: 'outline' as const,
-          text: 'Offline',
-          color: 'text-gray-500'
+          className: 'bg-gray-100 text-gray-600 border-gray-200'
         };
     }
   };
 
-  const statusInfo = getStatusInfo();
-  const lastSyncText = lastSync 
-    ? `Last sync: ${new Date(lastSync).toLocaleTimeString()}`
-    : 'Never synced';
+  const config = getStatusConfig();
+  const Icon = config.icon;
+
+  const formatLastSync = (timestamp?: number) => {
+    if (!timestamp) return null;
+    
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    if (diff < 60000) return 'just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return `${Math.floor(diff / 86400000)}d ago`;
+  };
+
+  const lastSyncText = formatLastSync(lastSync);
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger>
-          <Badge variant={statusInfo.variant} className={`gap-1 ${className}`}>
-            {statusInfo.icon}
-            <span className="text-xs">{statusInfo.text}</span>
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>
-          <div className="text-sm">
-            <div className={`font-medium ${statusInfo.color}`}>
-              Status: {status.charAt(0).toUpperCase() + status.slice(1)}
-            </div>
-            <div className="text-gray-600">{lastSyncText}</div>
-            {conflictCount > 0 && (
-              <div className="text-red-600">
-                {conflictCount} conflict{conflictCount !== 1 ? 's' : ''} need resolution
-              </div>
-            )}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Badge 
+      variant={config.variant}
+      className={cn(
+        'flex items-center gap-1.5 px-2 py-1 text-xs font-medium',
+        config.className,
+        className
+      )}
+    >
+      <Icon 
+        className={cn(
+          'h-3 w-3', 
+          config.iconClassName
+        )} 
+      />
+      <span>{config.text}</span>
+      {lastSyncText && status === 'synced' && (
+        <span className="opacity-75">• {lastSyncText}</span>
+      )}
+    </Badge>
   );
 };
 

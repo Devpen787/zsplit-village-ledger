@@ -3,170 +3,231 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useSyncEngine } from '@/hooks/useSyncEngine';
-import SyncStatusIndicator from './SyncStatusIndicator';
-import ConflictResolutionDialog from './ConflictResolutionDialog';
-import { ConflictData } from '@/adapters/sync/types';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 import { 
   Play, 
   Pause, 
   RefreshCw, 
   Users, 
-  AlertCircle,
+  AlertTriangle,
   CheckCircle,
-  Clock
+  Clock,
+  Zap
 } from 'lucide-react';
+import { useSyncEngine } from '@/hooks/useSyncEngine';
+import SyncStatusIndicator from './SyncStatusIndicator';
+import ConflictResolutionDialog from './ConflictResolutionDialog';
+import { SyncConflict } from '@/adapters/sync/types';
 
 interface SyncDashboardProps {
   groupId?: string;
 }
 
-const SyncDashboard = ({ groupId }: SyncDashboardProps) => {
-  const { 
-    syncState, 
-    conflicts, 
-    isInitialized, 
-    startSync, 
-    stopSync, 
-    syncGroupData, 
-    resolveConflict 
+const SyncDashboard: React.FC<SyncDashboardProps> = ({ groupId }) => {
+  const {
+    isInitialized,
+    syncState,
+    startSync,
+    stopSync,
+    syncGroupData,
+    resolveConflict
   } = useSyncEngine(groupId);
 
-  const [selectedConflict, setSelectedConflict] = useState<ConflictData | null>(null);
-  const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [selectedConflict, setSelectedConflict] = useState<SyncConflict | null>(null);
 
-  const handleConflictClick = (conflict: ConflictData) => {
-    setSelectedConflict(conflict);
-    setShowConflictDialog(true);
+  const handleResolveConflict = async (conflictId: string, resolution: 'local' | 'remote') => {
+    await resolveConflict(conflictId, resolution);
+    setSelectedConflict(null);
   };
 
-  const handleResolveConflict = async (
-    conflictId: string, 
-    strategy: 'local' | 'remote' | 'merge'
-  ) => {
-    await resolveConflict(conflictId, strategy);
+  const handleSimulateConflict = async () => {
+    // This would be exposed through the sync engine for testing
+    const mockConflict: SyncConflict = {
+      id: `conflict-${Date.now()}`,
+      type: 'expense',
+      entityId: '22222222-2222-2222-2222-222222222221',
+      localVersion: {
+        title: 'Grocery Shopping at Migros',
+        amount: 85.50,
+        version: 2,
+        last_modified: new Date().toISOString()
+      },
+      remoteVersion: {
+        title: 'Grocery Shopping at Coop',
+        amount: 82.75,
+        version: 2,
+        last_modified: new Date(Date.now() - 1000).toISOString()
+      },
+      conflictFields: ['title', 'amount'],
+      timestamp: Date.now()
+    };
+    setSelectedConflict(mockConflict);
   };
 
   if (!isInitialized) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <div className="text-center">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2 text-gray-400" />
-            <p className="text-gray-600">Initializing sync engine...</p>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center space-y-2">
+            <RefreshCw className="h-6 w-6 animate-spin" />
+            <p className="text-sm text-gray-500">Initializing sync engine...</p>
           </div>
         </CardContent>
       </Card>
     );
   }
 
+  const syncProgress = syncState?.pendingOperations 
+    ? Math.max(0, (10 - syncState.pendingOperations) / 10 * 100)
+    : 100;
+
   return (
     <div className="space-y-6">
       {/* Sync Status Overview */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5" />
-              Sync Status
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Sync Status
+              </CardTitle>
+              <CardDescription>
+                Real-time synchronization status and controls
+              </CardDescription>
             </div>
-            <SyncStatusIndicator 
-              status={syncState.status}
-              lastSync={syncState.lastSync}
-              conflictCount={conflicts.length}
+            <SyncStatusIndicator
+              status={syncState?.status || 'idle'}
+              lastSync={syncState?.lastSync || undefined}
+              conflictCount={syncState?.conflicts?.length || 0}
             />
-          </CardTitle>
-          <CardDescription>
-            Real-time synchronization status and controls
-          </CardDescription>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {syncState.peers.length}
+          {/* Sync Progress */}
+          {syncState?.status === 'syncing' && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Syncing data...</span>
+                <span>{Math.round(syncProgress)}%</span>
               </div>
-              <div className="text-sm text-gray-600">Active Peers</div>
+              <Progress value={syncProgress} className="h-2" />
+              {syncState.pendingOperations > 0 && (
+                <p className="text-xs text-gray-500">
+                  {syncState.pendingOperations} operations remaining
+                </p>
+              )}
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {conflicts.length}
-              </div>
-              <div className="text-sm text-gray-600">Conflicts</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                {syncState.pendingOperations}
-              </div>
-              <div className="text-sm text-gray-600">Pending Ops</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {syncState.lastSync ? new Date(syncState.lastSync).toLocaleTimeString() : 'Never'}
-              </div>
-              <div className="text-sm text-gray-600">Last Sync</div>
-            </div>
-          </div>
+          )}
 
+          {/* Action Buttons */}
           <div className="flex gap-2">
-            {syncState.status === 'offline' || syncState.status === 'error' ? (
-              <Button onClick={startSync} className="flex items-center gap-2">
-                <Play className="h-4 w-4" />
-                Start Sync
+            {syncState?.status === 'syncing' ? (
+              <Button onClick={stopSync} variant="outline" size="sm">
+                <Pause className="h-4 w-4 mr-2" />
+                Stop Sync
               </Button>
             ) : (
-              <Button onClick={stopSync} variant="outline" className="flex items-center gap-2">
-                <Pause className="h-4 w-4" />
-                Stop Sync
+              <Button onClick={startSync} size="sm">
+                <Play className="h-4 w-4 mr-2" />
+                Start Sync
               </Button>
             )}
             
             <Button 
-              onClick={() => syncGroupData()} 
-              variant="secondary"
-              className="flex items-center gap-2"
+              onClick={() => groupId ? syncGroupData(groupId) : syncGroupData()}
+              variant="outline" 
+              size="sm"
+              disabled={syncState?.status === 'syncing'}
             >
-              <RefreshCw className="h-4 w-4" />
-              Sync Now
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Sync Group Data
+            </Button>
+
+            <Button 
+              onClick={handleSimulateConflict}
+              variant="outline" 
+              size="sm"
+              className="ml-auto"
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Simulate Conflict
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Conflicts Section */}
-      {conflicts.length > 0 && (
+      {/* Peer Connections */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Connected Peers
+          </CardTitle>
+          <CardDescription>
+            Other users currently syncing with this group
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {syncState?.peers && syncState.peers.length > 0 ? (
+            <div className="space-y-3">
+              {syncState.peers.map((peer) => (
+                <div key={peer.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${
+                      peer.status === 'connected' ? 'bg-green-500' : 'bg-gray-400'
+                    }`} />
+                    <span className="text-sm font-medium">Peer {peer.id}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={peer.status === 'connected' ? 'default' : 'secondary'}>
+                      {peer.status}
+                    </Badge>
+                    <span className="text-xs text-gray-500">
+                      {new Date(peer.lastSeen).toLocaleTimeString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No peers connected</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Conflicts */}
+      {syncState?.conflicts && syncState.conflicts.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
-              Data Conflicts ({conflicts.length})
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Sync Conflicts
             </CardTitle>
             <CardDescription>
-              Resolve conflicts between local and remote data
+              Data conflicts that require your attention
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {conflicts.map((conflict) => (
-                <div
-                  key={conflict.id}
-                  className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
-                  onClick={() => handleConflictClick(conflict)}
-                >
-                  <div className="flex items-center gap-3">
-                    <AlertCircle className="h-4 w-4 text-red-500" />
-                    <div>
-                      <div className="font-medium">
-                        {conflict.conflictType.replace('_', ' ')}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Conflict ID: {conflict.id.slice(0, 8)}...
-                      </div>
-                    </div>
+            <div className="space-y-3">
+              {syncState.conflicts.map((conflict) => (
+                <div key={conflict.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium text-sm capitalize">
+                      {conflict.type} Conflict
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Fields: {conflict.conflictFields.join(', ')}
+                    </p>
                   </div>
-                  <Badge variant="destructive">
-                    Needs Resolution
-                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedConflict(conflict)}
+                  >
+                    Resolve
+                  </Button>
                 </div>
               ))}
             </div>
@@ -174,56 +235,49 @@ const SyncDashboard = ({ groupId }: SyncDashboardProps) => {
         </Card>
       )}
 
-      {/* Connected Peers */}
+      {/* Sync Statistics */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Connected Peers ({syncState.peers.length})
+            <CheckCircle className="h-5 w-5" />
+            Sync Statistics
           </CardTitle>
-          <CardDescription>
-            Other devices and users currently syncing
-          </CardDescription>
         </CardHeader>
-        <CardContent>
-          {syncState.peers.length === 0 ? (
-            <div className="text-center py-4 text-gray-600">
-              No peers connected
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600">
+                {syncState?.lastSync ? '✓' : '–'}
+              </p>
+              <p className="text-xs text-gray-500">Last Sync</p>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {syncState.peers.map((peer) => (
-                <div
-                  key={peer.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${
-                      peer.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
-                    }`} />
-                    <div>
-                      <div className="font-medium">Peer {peer.id.slice(0, 8)}...</div>
-                      <div className="text-sm text-gray-600">
-                        Last seen: {new Date(peer.lastSeen).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </div>
-                  <Badge variant={peer.status === 'online' ? 'default' : 'secondary'}>
-                    {peer.status}
-                  </Badge>
-                </div>
-              ))}
+            <div className="text-center">
+              <p className="text-2xl font-bold">
+                {syncState?.peers?.length || 0}
+              </p>
+              <p className="text-xs text-gray-500">Connected Peers</p>
             </div>
-          )}
+            <div className="text-center">
+              <p className="text-2xl font-bold text-orange-600">
+                {syncState?.conflicts?.length || 0}
+              </p>
+              <p className="text-xs text-gray-500">Conflicts</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold">
+                {syncState?.pendingOperations || 0}
+              </p>
+              <p className="text-xs text-gray-500">Pending Ops</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       {/* Conflict Resolution Dialog */}
       <ConflictResolutionDialog
-        isOpen={showConflictDialog}
-        onClose={() => setShowConflictDialog(false)}
         conflict={selectedConflict}
         onResolve={handleResolveConflict}
+        onClose={() => setSelectedConflict(null)}
       />
     </div>
   );

@@ -11,127 +11,135 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ConflictData } from '@/adapters/sync/types';
-import { AlertTriangle, Clock, User } from 'lucide-react';
+import { AlertTriangle, User, Clock } from 'lucide-react';
+import { SyncConflict } from '@/adapters/sync/types';
 
 interface ConflictResolutionDialogProps {
-  isOpen: boolean;
+  conflict: SyncConflict | null;
+  onResolve: (conflictId: string, resolution: 'local' | 'remote') => void;
   onClose: () => void;
-  conflict: ConflictData | null;
-  onResolve: (conflictId: string, strategy: 'local' | 'remote' | 'merge') => void;
 }
 
-export const ConflictResolutionDialog = ({
-  isOpen,
-  onClose,
+const ConflictResolutionDialog: React.FC<ConflictResolutionDialogProps> = ({
   conflict,
-  onResolve
-}: ConflictResolutionDialogProps) => {
+  onResolve,
+  onClose
+}) => {
   if (!conflict) return null;
 
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp).toLocaleString();
   };
 
-  const renderVersionData = (version: any, title: string, icon: React.ReactNode) => (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
-          {icon}
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="text-xs text-gray-600">
-          <div>Version: {version.version}</div>
-          <div>Node: {version.nodeId}</div>
-          <div>Modified: {formatTimestamp(version.timestamp)}</div>
-        </div>
-        <div className="text-sm">
-          <pre className="bg-gray-50 p-2 rounded text-xs overflow-auto max-h-32">
-            {JSON.stringify(version, null, 2)}
-          </pre>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const getConflictDescription = () => {
+    switch (conflict.type) {
+      case 'expense':
+        return 'This expense has been modified by multiple users simultaneously.';
+      case 'group':
+        return 'This group has been modified by multiple users simultaneously.';
+      case 'user':
+        return 'This user profile has been modified simultaneously.';
+      default:
+        return 'A conflict has been detected in the data.';
+    }
+  };
+
+  const renderVersionComparison = () => {
+    const local = conflict.localVersion;
+    const remote = conflict.remoteVersion;
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Your Version
+              <Badge variant="outline" className="text-xs">Local</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {conflict.conflictFields.map(field => (
+              <div key={`local-${field}`} className="flex justify-between">
+                <span className="text-sm font-medium capitalize">{field}:</span>
+                <span className="text-sm text-gray-600">
+                  {String(local[field] || 'N/A')}
+                </span>
+              </div>
+            ))}
+            {local.last_modified && (
+              <div className="flex items-center gap-1 text-xs text-gray-500 mt-2">
+                <Clock className="h-3 w-3" />
+                Modified: {formatTimestamp(new Date(local.last_modified).getTime())}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Other Version
+              <Badge variant="outline" className="text-xs">Remote</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {conflict.conflictFields.map(field => (
+              <div key={`remote-${field}`} className="flex justify-between">
+                <span className="text-sm font-medium capitalize">{field}:</span>
+                <span className="text-sm text-gray-600">
+                  {String(remote[field] || 'N/A')}
+                </span>
+              </div>
+            ))}
+            {remote.last_modified && (
+              <div className="flex items-center gap-1 text-xs text-gray-500 mt-2">
+                <Clock className="h-3 w-3" />
+                Modified: {formatTimestamp(new Date(remote.last_modified).getTime())}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+    <Dialog open={!!conflict} onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
-            Resolve Data Conflict
+            <AlertTriangle className="h-5 w-5 text-orange-500" />
+            Sync Conflict Detected
           </DialogTitle>
           <DialogDescription>
-            A conflict was detected between local and remote versions of the data.
-            Choose how to resolve this conflict.
+            {getConflictDescription()} Please choose which version to keep.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Badge variant="destructive">
-              {conflict.conflictType.replace('_', ' ').toUpperCase()}
-            </Badge>
-            <span className="text-sm text-gray-600">
-              Conflict ID: {conflict.id}
-            </span>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            {renderVersionData(
-              conflict.localVersion,
-              'Local Version',
-              <User className="h-4 w-4" />
-            )}
-            {renderVersionData(
-              conflict.remoteVersion,
-              'Remote Version',
-              <Clock className="h-4 w-4" />
-            )}
-          </div>
-
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-800 mb-2">Resolution Strategies:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li><strong>Keep Local:</strong> Use your local version and discard remote changes</li>
-              <li><strong>Use Remote:</strong> Accept the remote version and discard local changes</li>
-              <li><strong>Merge:</strong> Attempt to combine both versions intelligently</li>
-            </ul>
-          </div>
+        <div className="py-4">
+          {renderVersionComparison()}
         </div>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button
+            variant="outline"
+            onClick={() => onResolve(conflict.id, 'local')}
+          >
+            Keep My Version
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => onResolve(conflict.id, 'remote')}
+          >
+            Keep Other Version
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={onClose}
+          >
             Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => {
-              onResolve(conflict.id, 'local');
-              onClose();
-            }}
-          >
-            Keep Local
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              onResolve(conflict.id, 'remote');
-              onClose();
-            }}
-          >
-            Use Remote
-          </Button>
-          <Button
-            onClick={() => {
-              onResolve(conflict.id, 'merge');
-              onClose();
-            }}
-          >
-            Merge Versions
           </Button>
         </DialogFooter>
       </DialogContent>

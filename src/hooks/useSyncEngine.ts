@@ -1,85 +1,109 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { SyncEngineAdapter } from '@/adapters/sync';
-import { storageAdapter } from '@/adapters';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts';
-import { SyncState, ConflictData } from '@/adapters/sync/types';
+import { MockSyncEngine } from '@/adapters/sync/MockSyncEngine';
+import { SyncState } from '@/adapters/sync/types';
 
 export const useSyncEngine = (groupId?: string) => {
   const { user } = useAuth();
-  const [syncEngine] = useState(() => new SyncEngineAdapter(storageAdapter));
-  const [syncState, setSyncState] = useState<SyncState>({
-    status: 'offline',
-    lastSync: 0,
-    conflicts: [],
-    peers: [],
-    pendingOperations: 0
-  });
-  const [conflicts, setConflicts] = useState<ConflictData[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [syncState, setSyncState] = useState<SyncState | null>(null);
+  
+  const syncEngineRef = useRef<MockSyncEngine | null>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   // Initialize sync engine
   useEffect(() => {
-    if (user && !isInitialized) {
-      syncEngine.initialize(user.id, groupId)
-        .then(() => {
-          setIsInitialized(true);
-          console.log('[USE SYNC] Sync engine initialized');
-        })
-        .catch(error => {
-          console.error('[USE SYNC] Failed to initialize sync engine:', error);
-        });
+    if (!user) {
+      setIsInitialized(false);
+      return;
     }
-  }, [user, groupId, syncEngine, isInitialized]);
 
-  // Update sync state periodically
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    const updateState = async () => {
+    const initializeEngine = async () => {
       try {
-        const [state, conflictsData] = await Promise.all([
-          syncEngine.getSyncState(),
-          syncEngine.getConflicts()
-        ]);
+        console.log('[USE SYNC] Initializing sync engine for user:', user.id);
         
-        setSyncState(state);
-        setConflicts(conflictsData);
+        // Create new sync engine instance
+        const engine = new MockSyncEngine();
+        syncEngineRef.current = engine;
+        
+        // Set up state change listener
+        unsubscribeRef.current = engine.onStateChange((state) => {
+          console.log('[USE SYNC] State updated:', state);
+          setSyncState(state);
+        });
+        
+        // Initialize the engine
+        await engine.initialize(user.id, groupId);
+        
+        // Get initial state
+        const initialState = await engine.getSyncState();
+        setSyncState(initialState);
+        
+        setIsInitialized(true);
+        console.log('[USE SYNC] Engine initialized successfully');
+        
       } catch (error) {
-        console.error('[USE SYNC] Failed to update sync state:', error);
+        console.error('[USE SYNC] Failed to initialize sync engine:', error);
+        setIsInitialized(false);
       }
     };
 
-    updateState();
-    const interval = setInterval(updateState, 2000);
-    
+    initializeEngine();
+
+    // Cleanup on unmount or user change
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+      if (syncEngineRef.current) {
+        syncEngineRef.current.destroy();
+        syncEngineRef.current = null;
+      }
+      setIsInitialized(false);
+      setSyncState(null);
+    };
+  }, [user, groupId]);
+
+  // Update sync state periodically
+  useEffect(() => {
+    if (!isInitialized || !syncEngineRef.current) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const currentState = await syncEngineRef.current!.getSyncState();
+        setSyncState(currentState);
+      } catch (error) {
+        console.error('[USE SYNC] Failed to update sync state:', error);
+      }
+    }, 5000); // Update every 5 seconds
+
     return () => clearInterval(interval);
-  }, [isInitialized, syncEngine]);
+  }, [isInitialized]);
 
   const startSync = useCallback(async () => {
-    if (!isInitialized) return;
+    if (!syncEngineRef.current) return;
     
     try {
-      await syncEngine.startSync();
-      console.log('[USE SYNC] Sync started');
+      await syncEngineRef.current.startSync();
     } catch (error) {
       console.error('[USE SYNC] Failed to start sync:', error);
     }
-  }, [isInitialized, syncEngine]);
+  }, []);
 
   const stopSync = useCallback(async () => {
-    if (!isInitialized) return;
+    if (!syncEngineRef.current) return;
     
     try {
-      await syncEngine.stopSync();
-      console.log('[USE SYNC] Sync stopped');
+      await syncEngineRef.current.stopSync();
     } catch (error) {
       console.error('[USE SYNC] Failed to stop sync:', error);
     }
-  }, [isInitialized, syncEngine]);
+  }, []);
 
   const syncGroupData = useCallback(async (targetGroupId?: string) => {
-    if (!isInitialized) return;
+    if (!syncEngineRef.current) return;
     
     const targetId = targetGroupId || groupId;
     if (!targetId) {
@@ -88,46 +112,28 @@ export const useSyncEngine = (groupId?: string) => {
     }
     
     try {
-      await syncEngine.syncGroupData(targetId);
-      console.log(`[USE SYNC] Synced group data for ${targetId}`);
+      await syncEngineRef.current.syncGroupData(targetId);
     } catch (error) {
       console.error('[USE SYNC] Failed to sync group data:', error);
     }
-  }, [isInitialized, syncEngine, groupId]);
+  }, [groupId]);
 
-  const resolveConflict = useCallback(async (
-    conflictId: string, 
-    strategy: 'local' | 'remote' | 'merge' = 'merge'
-  ) => {
-    if (!isInitialized) return;
+  const resolveConflict = useCallback(async (conflictId: string, resolution: 'local' | 'remote') => {
+    if (!syncEngineRef.current) return;
     
     try {
-      await syncEngine.resolveConflict(conflictId, strategy);
-      console.log(`[USE SYNC] Resolved conflict ${conflictId} with strategy ${strategy}`);
+      await syncEngineRef.current.resolveConflict(conflictId, resolution);
     } catch (error) {
       console.error('[USE SYNC] Failed to resolve conflict:', error);
     }
-  }, [isInitialized, syncEngine]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (isInitialized) {
-        syncEngine.destroy().catch(error => {
-          console.error('[USE SYNC] Failed to destroy sync engine:', error);
-        });
-      }
-    };
-  }, [isInitialized, syncEngine]);
+  }, []);
 
   return {
-    syncState,
-    conflicts,
     isInitialized,
+    syncState,
     startSync,
     stopSync,
     syncGroupData,
-    resolveConflict,
-    syncEngine
+    resolveConflict
   };
 };
