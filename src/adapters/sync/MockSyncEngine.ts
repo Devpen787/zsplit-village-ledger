@@ -1,42 +1,49 @@
 
 import { SyncState, ConflictData, SyncOperation, GuestUser, SyncMetadata, SyncEvent, PeerInfo, ConflictResolutionStrategy } from './types';
 import { SyncEngine } from './SyncEngine';
+import { MockEventEmitter } from './mock/MockEventEmitter';
+import { MockSyncState } from './mock/MockSyncState';
+import { MockPeerManager } from './mock/MockPeerManager';
+import { MockConflictManager } from './mock/MockConflictManager';
+import { MockSyncOperations } from './mock/MockSyncOperations';
 
 export class MockSyncEngine implements SyncEngine {
-  private syncState: SyncState = {
-    status: 'idle',
-    lastSync: null,
-    conflicts: [],
-    peers: [],
-    pendingOperations: 0
-  };
-
-  private operations: SyncOperation[] = [];
-  private listeners: Map<string, ((event: any) => void)[]> = new Map();
-  private peers: Map<string, PeerInfo> = new Map();
-  private conflicts: Map<string, ConflictData> = new Map();
+  private eventEmitter: MockEventEmitter;
+  private syncState: MockSyncState;
+  private peerManager: MockPeerManager;
+  private conflictManager: MockConflictManager;
+  private syncOperations: MockSyncOperations;
   private isInitialized = false;
   private nodeId = '';
+
+  constructor() {
+    this.eventEmitter = new MockEventEmitter();
+    this.syncState = new MockSyncState();
+    this.peerManager = new MockPeerManager(this.eventEmitter);
+    this.conflictManager = new MockConflictManager();
+    this.syncOperations = new MockSyncOperations('');
+  }
 
   async initialize(nodeId: string, groupId?: string): Promise<void> {
     console.log('[MockSyncEngine] Initializing for user:', nodeId, 'group:', groupId);
     
     this.nodeId = nodeId;
+    this.syncOperations = new MockSyncOperations(nodeId);
     this.isInitialized = true;
     
-    this.loadPersistedState();
+    this.syncState.loadPersistedState();
+    this.syncOperations.loadPersistedOperations();
     
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    this.syncState = {
-      ...this.syncState,
+    this.syncState.updateState({
       status: 'synced',
       lastSync: Date.now(),
       peers: [
         { id: 'peer-1', status: 'connected', lastSeen: Date.now() },
         { id: 'peer-2', status: 'connected', lastSeen: Date.now() - 5000 }
       ]
-    };
+    });
     
     this.persistState();
     this.notifyListeners();
@@ -45,50 +52,57 @@ export class MockSyncEngine implements SyncEngine {
   async startSync(): Promise<void> {
     this.ensureInitialized();
     console.log('[MockSyncEngine] Starting sync...');
-    this.syncState.status = 'syncing';
+    this.syncState.updateState({ status: 'syncing' });
     this.notifyListeners();
     
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    this.syncState.status = 'synced';
-    this.syncState.lastSync = Date.now();
+    this.syncState.updateState({
+      status: 'synced',
+      lastSync: Date.now()
+    });
     this.persistState();
     this.notifyListeners();
-    this.emit('sync_complete', {});
+    this.eventEmitter.emit('sync_complete', {});
   }
 
   async stopSync(): Promise<void> {
     this.ensureInitialized();
     console.log('[MockSyncEngine] Stopping sync...');
-    this.syncState.status = 'offline';
+    this.syncState.updateState({ status: 'offline' });
     this.persistState();
     this.notifyListeners();
   }
 
   async getSyncState(): Promise<SyncState> {
-    return { ...this.syncState };
+    return this.syncState.getState();
   }
 
   async getConflicts(): Promise<ConflictData[]> {
-    return [...this.syncState.conflicts];
+    const conflicts = await this.conflictManager.getConflicts();
+    return conflicts;
   }
 
   async syncGroupData(groupId: string): Promise<void> {
     this.ensureInitialized();
     console.log('[MockSyncEngine] Syncing group data:', groupId);
     
-    this.syncState.status = 'syncing';
-    this.syncState.pendingOperations = 5;
+    this.syncState.updateState({
+      status: 'syncing',
+      pendingOperations: 5
+    });
     this.notifyListeners();
     
     for (let i = 0; i < 5; i++) {
       await new Promise(resolve => setTimeout(resolve, 300));
-      this.syncState.pendingOperations = 4 - i;
+      this.syncState.updateState({ pendingOperations: 4 - i });
       this.notifyListeners();
     }
     
-    this.syncState.status = 'synced';
-    this.syncState.lastSync = Date.now();
+    this.syncState.updateState({
+      status: 'synced',
+      lastSync: Date.now()
+    });
     this.persistState();
     this.notifyListeners();
   }
@@ -97,7 +111,7 @@ export class MockSyncEngine implements SyncEngine {
     this.ensureInitialized();
     console.log('[MockSyncEngine] Syncing data for table:', table);
     
-    this.emit('data_updated', {
+    this.eventEmitter.emit('data_updated', {
       type: 'data_updated',
       data,
       metadata
@@ -106,98 +120,43 @@ export class MockSyncEngine implements SyncEngine {
 
   async pullChanges(since?: number): Promise<SyncOperation[]> {
     this.ensureInitialized();
-    
-    if (since) {
-      return this.operations.filter(op => op.timestamp > since);
-    }
-    return [...this.operations];
+    return this.syncOperations.pullChanges(since);
   }
 
   async pushChanges(operations: SyncOperation[]): Promise<void> {
     this.ensureInitialized();
-    this.operations.push(...operations);
+    await this.syncOperations.pushChanges(operations);
     this.persistState();
   }
 
   detectConflicts<T>(localData: T & SyncMetadata, remoteData: T & SyncMetadata): ConflictData<T> | null {
-    if (localData.version === remoteData.version && 
-        localData.checksum !== remoteData.checksum &&
-        Math.abs(localData.timestamp - remoteData.timestamp) < 1000) {
-      
-      return {
-        id: `conflict-${Date.now()}`,
-        localVersion: localData,
-        remoteVersion: remoteData,
-        conflictType: 'concurrent_edit'
-      };
-    }
-    
-    return null;
+    return this.conflictManager.detectConflicts(localData, remoteData);
   }
 
   async resolveConflict<T>(conflict: ConflictData<T>, strategy: ConflictResolutionStrategy): Promise<T> {
     this.ensureInitialized();
-    
-    let resolved: T;
-    
-    switch (strategy) {
-      case 'last_write_wins':
-        resolved = conflict.remoteVersion.timestamp > conflict.localVersion.timestamp 
-          ? conflict.remoteVersion : conflict.localVersion;
-        break;
-      case 'reject_remote':
-        resolved = conflict.localVersion;
-        break;
-      case 'merge':
-        resolved = this.mergeVersions(conflict.localVersion, conflict.remoteVersion);
-        break;
-      default:
-        resolved = conflict.localVersion;
-    }
-    
-    this.conflicts.delete(conflict.id);
+    const resolved = await this.conflictManager.resolveConflict(conflict, strategy);
     this.persistState();
-    
     return resolved;
   }
 
   async getPeers(): Promise<PeerInfo[]> {
     this.ensureInitialized();
-    return Array.from(this.peers.values());
+    return this.peerManager.getPeers();
   }
 
   async connectToPeer(peerId: string): Promise<void> {
     this.ensureInitialized();
-    
-    this.peers.set(peerId, {
-      id: peerId,
-      status: 'online',
-      lastSeen: Date.now()
-    });
-    
-    this.emit('peer_connected', { type: 'peer_connected', peerId });
+    await this.peerManager.connectToPeer(peerId);
   }
 
   async disconnectFromPeer(peerId: string): Promise<void> {
     this.ensureInitialized();
-    
-    const peer = this.peers.get(peerId);
-    if (peer) {
-      peer.status = 'offline';
-      this.peers.set(peerId, peer);
-    }
-    
-    this.emit('peer_disconnected', { type: 'peer_disconnected', peerId });
+    await this.peerManager.disconnectFromPeer(peerId);
   }
 
   createVersion<T>(data: T): T & SyncMetadata {
-    return {
-      ...data,
-      version: 1,
-      timestamp: Date.now(),
-      nodeId: this.nodeId,
-      checksum: Math.random().toString(36)
-    };
+    return this.syncOperations.createVersion(data);
   }
 
   mergeVersions<T>(local: T & SyncMetadata, remote: T & SyncMetadata): T & SyncMetadata {
@@ -225,47 +184,21 @@ export class MockSyncEngine implements SyncEngine {
   }
 
   on<T>(event: SyncEvent<T>['type'], callback: (event: SyncEvent<T>) => void): () => void {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, []);
-    }
-    
-    this.listeners.get(event)!.push(callback);
-    
-    return () => {
-      const eventListeners = this.listeners.get(event);
-      if (eventListeners) {
-        const index = eventListeners.indexOf(callback);
-        if (index > -1) {
-          eventListeners.splice(index, 1);
-        }
-      }
-    };
+    return this.eventEmitter.on(event, callback);
   }
 
   off<T>(event: SyncEvent<T>['type'], callback: (event: SyncEvent<T>) => void): void {
-    const eventListeners = this.listeners.get(event);
-    if (eventListeners) {
-      const index = eventListeners.indexOf(callback);
-      if (index > -1) {
-        eventListeners.splice(index, 1);
-      }
-    }
+    this.eventEmitter.off(event, callback);
   }
 
   async destroy(): Promise<void> {
     console.log('[MockSyncEngine] Destroying...');
-    this.listeners.clear();
-    this.operations = [];
-    this.peers.clear();
-    this.conflicts.clear();
+    this.eventEmitter.clear();
+    this.syncOperations.clear();
+    this.peerManager.clear();
+    this.conflictManager.clear();
+    this.syncState.reset();
     this.isInitialized = false;
-    this.syncState = {
-      status: 'idle',
-      lastSync: null,
-      conflicts: [],
-      peers: [],
-      pendingOperations: 0
-    };
   }
 
   async simulateConflict(): Promise<void> {
@@ -296,8 +229,12 @@ export class MockSyncEngine implements SyncEngine {
       timestamp: Date.now()
     };
     
-    this.syncState.conflicts.push(conflict);
-    this.syncState.status = 'conflict';
+    this.conflictManager.addConflict(conflict);
+    const currentState = this.syncState.getState();
+    this.syncState.updateState({
+      conflicts: [...currentState.conflicts, conflict],
+      status: 'conflict'
+    });
     this.persistState();
     this.notifyListeners();
   }
@@ -320,7 +257,7 @@ export class MockSyncEngine implements SyncEngine {
   }
 
   onStateChange(callback: (state: SyncState) => void): () => void {
-    return this.on('data_updated' as any, callback as any);
+    return this.eventEmitter.on('data_updated' as any, callback as any);
   }
 
   private ensureInitialized(): void {
@@ -329,44 +266,12 @@ export class MockSyncEngine implements SyncEngine {
     }
   }
 
-  private emit(event: string, data: any): void {
-    const eventListeners = this.listeners.get(event);
-    if (eventListeners) {
-      eventListeners.forEach(listener => listener(data));
-    }
-  }
-
   private notifyListeners(): void {
-    this.emit('data_updated', { type: 'data_updated', data: this.syncState });
+    this.eventEmitter.emit('data_updated', { type: 'data_updated', data: this.syncState.getState() });
   }
 
   private persistState(): void {
-    try {
-      localStorage.setItem('mock-sync-engine-data', JSON.stringify({
-        ...this.syncState,
-        operations: this.operations
-      }));
-    } catch (error) {
-      console.warn('[MockSyncEngine] Failed to persist state:', error);
-    }
-  }
-
-  private loadPersistedState(): void {
-    try {
-      const stored = localStorage.getItem('mock-sync-engine-data');
-      if (stored) {
-        const parsedState = JSON.parse(stored);
-        this.syncState = {
-          status: parsedState.status || 'idle',
-          lastSync: parsedState.lastSync || null,
-          conflicts: parsedState.conflicts || [],
-          peers: parsedState.peers || [],
-          pendingOperations: parsedState.pendingOperations || 0
-        };
-        this.operations = parsedState.operations || [];
-      }
-    } catch (error) {
-      console.warn('[MockSyncEngine] Failed to load persisted state:', error);
-    }
+    this.syncState.persistState();
+    this.syncOperations.persistOperations();
   }
 }
