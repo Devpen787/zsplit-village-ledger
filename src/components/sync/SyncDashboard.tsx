@@ -18,7 +18,7 @@ import {
 import { useSyncEngine } from '@/hooks/useSyncEngine';
 import SyncStatusIndicator from './SyncStatusIndicator';
 import ConflictResolutionDialog from './ConflictResolutionDialog';
-import { SyncConflict } from '@/adapters/sync/types';
+import { ConflictData } from '@/adapters/sync/types';
 
 interface SyncDashboardProps {
   groupId?: string;
@@ -34,7 +34,7 @@ const SyncDashboard: React.FC<SyncDashboardProps> = ({ groupId }) => {
     resolveConflict
   } = useSyncEngine(groupId);
 
-  const [selectedConflict, setSelectedConflict] = useState<SyncConflict | null>(null);
+  const [selectedConflict, setSelectedConflict] = useState<ConflictData | null>(null);
 
   const handleResolveConflict = async (conflictId: string, resolution: 'local' | 'remote') => {
     await resolveConflict(conflictId, resolution);
@@ -42,8 +42,7 @@ const SyncDashboard: React.FC<SyncDashboardProps> = ({ groupId }) => {
   };
 
   const handleSimulateConflict = async () => {
-    // This would be exposed through the sync engine for testing
-    const mockConflict: SyncConflict = {
+    const mockConflict: ConflictData = {
       id: `conflict-${Date.now()}`,
       type: 'expense',
       entityId: '22222222-2222-2222-2222-222222222221',
@@ -51,14 +50,21 @@ const SyncDashboard: React.FC<SyncDashboardProps> = ({ groupId }) => {
         title: 'Grocery Shopping at Migros',
         amount: 85.50,
         version: 2,
-        last_modified: new Date().toISOString()
+        last_modified: new Date().toISOString(),
+        timestamp: Date.now(),
+        nodeId: 'local',
+        checksum: 'local-checksum'
       },
       remoteVersion: {
         title: 'Grocery Shopping at Coop',
         amount: 82.75,
         version: 2,
-        last_modified: new Date(Date.now() - 1000).toISOString()
+        last_modified: new Date(Date.now() - 1000).toISOString(),
+        timestamp: Date.now() - 1000,
+        nodeId: 'remote',
+        checksum: 'remote-checksum'
       },
+      conflictType: 'concurrent_edit',
       conflictFields: ['title', 'amount'],
       timestamp: Date.now()
     };
@@ -215,10 +221,10 @@ const SyncDashboard: React.FC<SyncDashboardProps> = ({ groupId }) => {
                 <div key={conflict.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium text-sm capitalize">
-                      {conflict.type} Conflict
+                      {conflict.type || 'Data'} Conflict
                     </p>
                     <p className="text-xs text-gray-500">
-                      Fields: {conflict.conflictFields.join(', ')}
+                      Fields: {conflict.conflictFields?.join(', ') || 'Multiple'}
                     </p>
                   </div>
                   <Button

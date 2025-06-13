@@ -12,10 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, User, Clock } from 'lucide-react';
-import { SyncConflict } from '@/adapters/sync/types';
+import { ConflictData } from '@/adapters/sync/types';
 
 interface ConflictResolutionDialogProps {
-  conflict: SyncConflict | null;
+  conflict: ConflictData | null;
   onResolve: (conflictId: string, resolution: 'local' | 'remote') => void;
   onClose: () => void;
 }
@@ -59,20 +59,22 @@ const ConflictResolutionDialog: React.FC<ConflictResolutionDialogProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {conflict.conflictFields.map(field => (
+            {conflict.conflictFields?.map(field => (
               <div key={`local-${field}`} className="flex justify-between">
                 <span className="text-sm font-medium capitalize">{field}:</span>
                 <span className="text-sm text-gray-600">
-                  {String(local[field] || 'N/A')}
+                  {String(local[field as keyof typeof local] || 'N/A')}
                 </span>
               </div>
-            ))}
-            {local.last_modified && (
-              <div className="flex items-center gap-1 text-xs text-gray-500 mt-2">
-                <Clock className="h-3 w-3" />
-                Modified: {formatTimestamp(new Date(local.last_modified).getTime())}
+            )) || (
+              <div className="text-sm text-gray-500">
+                Version: {local.version}, Node: {local.nodeId}
               </div>
             )}
+            <div className="flex items-center gap-1 text-xs text-gray-500 mt-2">
+              <Clock className="h-3 w-3" />
+              Modified: {formatTimestamp(local.timestamp)}
+            </div>
           </CardContent>
         </Card>
 
@@ -85,20 +87,22 @@ const ConflictResolutionDialog: React.FC<ConflictResolutionDialogProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {conflict.conflictFields.map(field => (
+            {conflict.conflictFields?.map(field => (
               <div key={`remote-${field}`} className="flex justify-between">
                 <span className="text-sm font-medium capitalize">{field}:</span>
                 <span className="text-sm text-gray-600">
-                  {String(remote[field] || 'N/A')}
+                  {String(remote[field as keyof typeof remote] || 'N/A')}
                 </span>
               </div>
-            ))}
-            {remote.last_modified && (
-              <div className="flex items-center gap-1 text-xs text-gray-500 mt-2">
-                <Clock className="h-3 w-3" />
-                Modified: {formatTimestamp(new Date(remote.last_modified).getTime())}
+            )) || (
+              <div className="text-sm text-gray-500">
+                Version: {remote.version}, Node: {remote.nodeId}
               </div>
             )}
+            <div className="flex items-center gap-1 text-xs text-gray-500 mt-2">
+              <Clock className="h-3 w-3" />
+              Modified: {formatTimestamp(remote.timestamp)}
+            </div>
           </CardContent>
         </Card>
       </div>

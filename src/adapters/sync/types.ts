@@ -1,23 +1,27 @@
-
 // Core sync engine types for conflict detection and resolution
 export interface SyncState {
   status: 'idle' | 'syncing' | 'synced' | 'conflict' | 'error' | 'offline';
   lastSync: number | null;
-  conflicts: SyncConflict[];
+  conflicts: ConflictData[];
   peers: PeerConnection[];
   pendingOperations: number;
 }
 
-export interface SyncConflict {
+// Unified conflict type - using ConflictData as the primary interface
+export interface ConflictData<T = any> {
   id: string;
-  type: 'expense' | 'group' | 'user';
-  entityId: string;
-  localVersion: any;
-  remoteVersion: any;
-  conflictFields: string[];
-  timestamp: number;
+  type?: 'expense' | 'group' | 'user';
+  entityId?: string;
+  localVersion: T & SyncMetadata;
+  remoteVersion: T & SyncMetadata;
+  conflictType: 'concurrent_edit' | 'version_mismatch' | 'deletion_conflict';
+  conflictFields?: string[];
+  timestamp?: number;
   resolution?: 'local' | 'remote' | 'merge';
 }
+
+// Keep SyncConflict as an alias for backward compatibility
+export type SyncConflict = ConflictData;
 
 export interface PeerConnection {
   id: string;
@@ -60,19 +64,11 @@ export interface ExpenseConflict {
   };
 }
 
-// Additional types needed by SyncEngine interface
 export interface SyncMetadata {
   version: number;
   timestamp: number;
   nodeId: string;
   checksum: string;
-}
-
-export interface ConflictData<T = any> {
-  id: string;
-  localVersion: T & SyncMetadata;
-  remoteVersion: T & SyncMetadata;
-  conflictType: 'concurrent_edit' | 'version_mismatch' | 'deletion_conflict';
 }
 
 export interface SyncEvent<T = any> {

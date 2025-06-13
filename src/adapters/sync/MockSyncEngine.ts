@@ -1,5 +1,5 @@
 
-import { SyncState, SyncConflict, SyncOperation, GuestUser, SyncMetadata, ConflictData, SyncEvent, PeerInfo, ConflictResolutionStrategy } from './types';
+import { SyncState, ConflictData, SyncOperation, GuestUser, SyncMetadata, SyncEvent, PeerInfo, ConflictResolutionStrategy } from './types';
 import { SyncEngine } from './SyncEngine';
 
 export class MockSyncEngine implements SyncEngine {
@@ -24,10 +24,8 @@ export class MockSyncEngine implements SyncEngine {
     this.nodeId = nodeId;
     this.isInitialized = true;
     
-    // Load persisted state
     this.loadPersistedState();
     
-    // Simulate initialization delay
     await new Promise(resolve => setTimeout(resolve, 100));
     
     this.syncState = {
@@ -50,7 +48,6 @@ export class MockSyncEngine implements SyncEngine {
     this.syncState.status = 'syncing';
     this.notifyListeners();
     
-    // Simulate sync process
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     this.syncState.status = 'synced';
@@ -72,7 +69,7 @@ export class MockSyncEngine implements SyncEngine {
     return { ...this.syncState };
   }
 
-  async getConflicts(): Promise<SyncConflict[]> {
+  async getConflicts(): Promise<ConflictData[]> {
     return [...this.syncState.conflicts];
   }
 
@@ -84,7 +81,6 @@ export class MockSyncEngine implements SyncEngine {
     this.syncState.pendingOperations = 5;
     this.notifyListeners();
     
-    // Simulate syncing with progress updates
     for (let i = 0; i < 5; i++) {
       await new Promise(resolve => setTimeout(resolve, 300));
       this.syncState.pendingOperations = 4 - i;
@@ -97,7 +93,6 @@ export class MockSyncEngine implements SyncEngine {
     this.notifyListeners();
   }
 
-  // SyncEngine interface implementation
   async syncData<T>(table: string, data: T[], metadata: SyncMetadata): Promise<void> {
     this.ensureInitialized();
     console.log('[MockSyncEngine] Syncing data for table:', table);
@@ -125,7 +120,6 @@ export class MockSyncEngine implements SyncEngine {
   }
 
   detectConflicts<T>(localData: T & SyncMetadata, remoteData: T & SyncMetadata): ConflictData<T> | null {
-    // Simple conflict detection: same version but different checksums within 1000ms
     if (localData.version === remoteData.version && 
         localData.checksum !== remoteData.checksum &&
         Math.abs(localData.timestamp - remoteData.timestamp) < 1000) {
@@ -161,7 +155,6 @@ export class MockSyncEngine implements SyncEngine {
         resolved = conflict.localVersion;
     }
     
-    // Remove conflict from tracking
     this.conflicts.delete(conflict.id);
     this.persistState();
     
@@ -208,7 +201,6 @@ export class MockSyncEngine implements SyncEngine {
   }
 
   mergeVersions<T>(local: T & SyncMetadata, remote: T & SyncMetadata): T & SyncMetadata {
-    // Simple merge strategy: take remote data but increment version
     return {
       ...remote,
       version: Math.max(local.version, remote.version) + 1,
@@ -276,9 +268,8 @@ export class MockSyncEngine implements SyncEngine {
     };
   }
 
-  // Mock-specific methods
   async simulateConflict(): Promise<void> {
-    const conflict: SyncConflict = {
+    const conflict: ConflictData = {
       id: `conflict-${Date.now()}`,
       type: 'expense',
       entityId: '22222222-2222-2222-2222-222222222221',
@@ -286,14 +277,21 @@ export class MockSyncEngine implements SyncEngine {
         title: 'Grocery Shopping at Migros',
         amount: 85.50,
         version: 2,
-        last_modified: new Date().toISOString()
+        last_modified: new Date().toISOString(),
+        timestamp: Date.now(),
+        nodeId: this.nodeId,
+        checksum: 'local-checksum'
       },
       remoteVersion: {
         title: 'Grocery Shopping at Coop',
         amount: 82.75,
         version: 2,
-        last_modified: new Date(Date.now() - 1000).toISOString()
+        last_modified: new Date(Date.now() - 1000).toISOString(),
+        timestamp: Date.now() - 1000,
+        nodeId: 'remote-node',
+        checksum: 'remote-checksum'
       },
+      conflictType: 'concurrent_edit',
       conflictFields: ['title', 'amount'],
       timestamp: Date.now()
     };
@@ -304,28 +302,11 @@ export class MockSyncEngine implements SyncEngine {
     this.notifyListeners();
   }
 
-  async resolveConflict(conflictId: string, resolution: 'local' | 'remote' | 'merge'): Promise<void> {
-    console.log('[MockSyncEngine] Resolving conflict:', conflictId, 'with:', resolution);
-    
-    const conflictIndex = this.syncState.conflicts.findIndex(c => c.id === conflictId);
-    if (conflictIndex >= 0) {
-      this.syncState.conflicts[conflictIndex].resolution = resolution;
-      this.syncState.conflicts.splice(conflictIndex, 1);
-      
-      if (this.syncState.conflicts.length === 0) {
-        this.syncState.status = 'synced';
-      }
-      
-      this.persistState();
-      this.notifyListeners();
-    }
-  }
-
   async createGuestUser(name?: string): Promise<GuestUser> {
     const guestUser: GuestUser = {
       temp_id: `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: name || 'Guest User',
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date().toISOString()
     };
     
@@ -335,7 +316,6 @@ export class MockSyncEngine implements SyncEngine {
 
   async upgradeGuestUser(tempId: string, userId: string, email: string): Promise<boolean> {
     console.log('[MockSyncEngine] Upgrading guest user:', tempId, 'to:', userId);
-    // In real implementation, this would call the database function
     return true;
   }
 
