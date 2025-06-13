@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts';
 import { MockSyncEngine } from '@/adapters/sync/MockSyncEngine';
-import { SyncState } from '@/adapters/sync/types';
+import { SyncState, ConflictData } from '@/adapters/sync/types';
 
 export const useSyncEngine = (groupId?: string) => {
   const { user } = useAuth();
@@ -122,7 +122,22 @@ export const useSyncEngine = (groupId?: string) => {
     if (!syncEngineRef.current) return;
     
     try {
-      await syncEngineRef.current.resolveConflict(conflictId, resolution);
+      // Find the conflict first
+      const conflicts = await syncEngineRef.current.getConflicts();
+      const conflict = conflicts.find(c => c.id === conflictId);
+      
+      if (!conflict) {
+        console.error('[USE SYNC] Conflict not found:', conflictId);
+        return;
+      }
+
+      // Map resolution to strategy
+      const strategyMap = {
+        'local': 'reject_remote' as const,
+        'remote': 'last_write_wins' as const
+      };
+      
+      await syncEngineRef.current.resolveConflict(conflict, strategyMap[resolution]);
     } catch (error) {
       console.error('[USE SYNC] Failed to resolve conflict:', error);
     }
