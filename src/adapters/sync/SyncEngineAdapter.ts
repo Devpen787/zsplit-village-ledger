@@ -66,11 +66,11 @@ export class SyncEngineAdapter {
   }
 
   async getConflicts(): Promise<ConflictData[]> {
-    return this.syncEngine.getConflicts();
+    return this.syncEngine.getConflicts() as Promise<ConflictData[]>;
   }
 
   async resolveConflict(conflictId: string, strategy: 'local' | 'remote' | 'merge' = 'merge'): Promise<void> {
-    const conflicts = await this.syncEngine.getConflicts();
+    const conflicts = await this.syncEngine.getConflicts() as ConflictData[];
     const conflict = conflicts.find(c => c.id === conflictId);
     
     if (!conflict) {

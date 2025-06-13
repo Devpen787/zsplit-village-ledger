@@ -59,3 +59,35 @@ export interface ExpenseConflict {
     data: any;
   };
 }
+
+// Additional types needed by SyncEngine interface
+export interface SyncMetadata {
+  version: number;
+  timestamp: number;
+  nodeId: string;
+  checksum: string;
+}
+
+export interface ConflictData<T = any> {
+  id: string;
+  localVersion: T & SyncMetadata;
+  remoteVersion: T & SyncMetadata;
+  conflictType: 'concurrent_edit' | 'version_mismatch' | 'deletion_conflict';
+}
+
+export interface SyncEvent<T = any> {
+  type: 'data_updated' | 'conflict_detected' | 'sync_complete' | 'peer_connected' | 'peer_disconnected';
+  data?: T;
+  metadata?: SyncMetadata;
+  conflicts?: ConflictData[];
+  peerId?: string;
+}
+
+export interface PeerInfo {
+  id: string;
+  status: 'online' | 'offline';
+  lastSeen: number;
+  syncProgress?: number;
+}
+
+export type ConflictResolutionStrategy = 'last_write_wins' | 'reject_remote' | 'merge';
