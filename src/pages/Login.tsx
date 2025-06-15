@@ -31,6 +31,7 @@ const Login = () => {
         
         <AuthNavLink
           to="/signup"
+          isLoading={false}
           label="Need an account? Sign up"
         />
       </div>
