@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from "@/layouts/AppLayout";
@@ -139,6 +138,10 @@ const Index = () => {
     );
   }
 
+  useEffect(() => {
+    console.log('[DASHBOARD] authLoading:', authLoading, 'groupsLoading:', groupsLoading, 'user:', user);
+  }, [authLoading, groupsLoading, user]);
+
   return (
     <AppLayout>
       <motion.div
@@ -224,4 +227,3 @@ const Index = () => {
 };
 
 export default Index;
-

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { setSupabaseAuth, clearAuthState } from '@/integrations/supabase/client';
@@ -151,9 +150,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Debounce auth changes to prevent rapid fire calls
-    const timeoutId = setTimeout(handleAuthChange, 100);
-    
+    // ADD: Log before and after handleAuthChange
+    console.log('[AUTH CONTEXT] (Before) handleAuthChange, loading:', loading, 'authState:', authState, 'user:', user);
+
+    const timeoutId = setTimeout(async () => {
+      await handleAuthChange();
+      console.log('[AUTH CONTEXT] (After) handleAuthChange, loading:', loading, 'authState:', authState, 'user:', user);
+    }, 100);
+
     return () => clearTimeout(timeoutId);
   }, [ready, authenticated, privyUser, refreshUser, user]);
 
