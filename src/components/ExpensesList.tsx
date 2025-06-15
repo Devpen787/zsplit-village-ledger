@@ -1,6 +1,6 @@
 
 import { useNavigate } from "react-router-dom";
-import { useExpenses } from "@/hooks/useExpenses";
+import { useExpenses } from "@/hooks/adapters/useExpenses";
 import { ExpensesLoading } from "./expenses/ExpensesLoading";
 import { ExpensesError } from "./expenses/ExpensesError";
 import { ExpensesEmpty } from "./expenses/ExpensesEmpty";

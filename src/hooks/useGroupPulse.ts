@@ -4,7 +4,7 @@ import { usePulseAdmin } from './group-pulse/usePulseAdmin';
 import { usePulsePayouts } from './group-pulse/usePulsePayouts';
 import { useGroupConnectivity } from './group-pulse/useGroupConnectivity';
 import { useGroupMetrics } from './group-pulse/useGroupMetrics';
-import { useExpenses } from './useExpenses';
+import { useExpenses } from './adapters/useExpenses';
 import { useCrossGroupStats, AllGroupsStats } from './group-pulse/useCrossGroupStats';
 import { useGroupsList } from './useGroupsList';
 
