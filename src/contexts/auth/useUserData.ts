@@ -14,19 +14,21 @@ export const useUserData = () => {
   // Function to fetch a user from Supabase
   const fetchUser = useCallback(async (privyUserId: string): Promise<User | null> => {
     try {
-      console.log("Attempting to fetch user with ID:", privyUserId);
+      console.log("[USER DATA] Attempting to fetch user with ID:", privyUserId);
       
       // Validate Privy user ID format
       if (!validatePrivyUserId(privyUserId)) {
-        console.error("Invalid Privy user ID format:", privyUserId);
+        console.error("[USER DATA] Invalid Privy user ID format:", privyUserId);
         setAuthError("Invalid user ID format");
         return null;
       }
       
       // Set Supabase auth context for RLS
+      console.log("[USER DATA] Setting Supabase auth context");
       await setSupabaseAuth(privyUserId);
       
       // Try to fetch the user - this should work with RLS if user exists
+      console.log("[USER DATA] Fetching user from Supabase");
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
@@ -34,20 +36,20 @@ export const useUserData = () => {
         .maybeSingle();
 
       if (fetchError) {
-        console.error("Error fetching user:", fetchError);
+        console.error("[USER DATA] Error fetching user:", fetchError);
         // RLS might block this if user doesn't exist yet, which is expected
         return null;
       }
 
       if (existingUser) {
-        console.log("User found in database:", existingUser);
+        console.log("[USER DATA] User found in database:", existingUser.id);
         return existingUser as User;
       }
 
-      console.log("User not found in database");
+      console.log("[USER DATA] User not found in database");
       return null;
     } catch (error) {
-      console.error("Error in fetchUser:", error);
+      console.error("[USER DATA] Error in fetchUser:", error);
       setAuthError("Unexpected error while fetching user profile");
       return null;
     }
@@ -56,11 +58,11 @@ export const useUserData = () => {
   // Create a user using the secure Edge Function
   const createUser = useCallback(async (privyUserId: string, privyUser: any): Promise<User | null> => {
     try {
-      console.log("Attempting to create new user with ID:", privyUserId);
+      console.log("[USER DATA] Attempting to create new user with ID:", privyUserId);
       
       // Validate Privy user ID format
       if (!validatePrivyUserId(privyUserId)) {
-        console.error("Invalid Privy user ID format:", privyUserId);
+        console.error("[USER DATA] Invalid Privy user ID format:", privyUserId);
         setAuthError("Invalid user ID format");
         return null;
       }
@@ -69,18 +71,18 @@ export const useUserData = () => {
       if (privyUser.token) {
         const tokenValidation = validatePrivyToken(privyUser.token);
         if (!tokenValidation.isValid) {
-          console.error("Invalid Privy token:", tokenValidation.error);
+          console.error("[USER DATA] Invalid Privy token:", tokenValidation.error);
           setAuthError(`Token validation failed: ${tokenValidation.error}`);
           return null;
         }
-        console.log("Privy token validated successfully");
+        console.log("[USER DATA] Privy token validated successfully");
       }
       
       // Get email from Privy user
       const email = getPrivyEmail(privyUser);
       
       if (!email) {
-        console.error("No email found in Privy user data");
+        console.error("[USER DATA] No email found in Privy user data");
         setAuthError("Could not create user: No email available");
         return null;
       }
@@ -93,24 +95,25 @@ export const useUserData = () => {
         user_role: 'participant' // Default role
       };
       
-      console.log("Creating user with data:", userData);
+      console.log("[USER DATA] Creating user with data:", userData);
       
       // Use the secure Edge Function to create the user (bypasses RLS)
       const insertedUser = await createUserSecurely(userData);
       
       if (!insertedUser) {
-        console.error("No user data returned after insert");
+        console.error("[USER DATA] No user data returned after insert");
         setAuthError("Failed to create your profile. No data returned.");
         return null;
       }
       
       // Set up auth context after user creation
+      console.log("[USER DATA] Setting up auth context after user creation");
       await setSupabaseAuth(privyUserId);
       
-      console.log("User created successfully:", insertedUser);
+      console.log("[USER DATA] User created successfully:", insertedUser.id);
       return insertedUser as User;
     } catch (error: any) {
-      console.error("Error in createUser:", error);
+      console.error("[USER DATA] Error in createUser:", error);
       
       // Provide more specific error messages
       if (error.message?.includes('Failed to create user')) {
@@ -129,6 +132,9 @@ export const useUserData = () => {
     createUser,
     authError,
     setAuthError,
-    clearAuthError: () => setAuthError(null)
+    clearAuthError: () => {
+      console.log("[USER DATA] Clearing auth error");
+      setAuthError(null);
+    }
   };
 };
