@@ -1,14 +1,14 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import AuthContainer from "@/components/auth/AuthContainer";
-import AuthButton from "@/components/auth/AuthButton";
+import SignInButton from "@/components/auth/SignInButton";
 import AuthNavLink from "@/components/auth/AuthNavLink";
-import { useAuthFlow } from "@/hooks/useAuthFlow";
 import { Alert, AlertDescription } from "@/components/ui/alert"; 
 import { AlertCircle } from "lucide-react";
+import { useAuth } from "@/contexts";
 
 const Login = () => {
-  const { handleAuth, displayError, showLoadingButton, loginAttempts } = useAuthFlow(false);
+  const { authError, loginAttempts } = useAuth();
 
   // Display detailed error information in development mode
   const showDebugInfo = process.env.NODE_ENV === 'development' && loginAttempts > 1;
@@ -16,18 +16,12 @@ const Login = () => {
   return (
     <AuthContainer
       title="Log In to Zsplit"
-      description="Continue with email or wallet"
-      error={displayError}
+      description="Continue with Privy wallet"
+      error={authError}
       showTroubleshooting={loginAttempts > 2}
     >
       <div className="flex flex-col items-center justify-center gap-4">
-        <AuthButton
-          onClick={handleAuth}
-          isLoading={showLoadingButton}
-          loadingText="Trying to sign in"
-          actionText="Sign In"
-          loginAttempts={loginAttempts}
-        />
+        <SignInButton />
         
         <div className="flex items-center w-full">
           <div className="flex-grow h-px bg-muted"></div>
@@ -37,11 +31,9 @@ const Login = () => {
         
         <AuthNavLink
           to="/signup"
-          isLoading={showLoadingButton}
           label="Need an account? Sign up"
         />
       </div>
-
       {showDebugInfo && (
         <Alert variant="warning" className="mt-6">
           <AlertCircle className="h-4 w-4 mr-2" />
