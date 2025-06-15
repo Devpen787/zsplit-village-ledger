@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from "@/layouts/AppLayout";
 import { useAuth } from '@/contexts';
@@ -15,17 +15,33 @@ import { DashboardSection } from '@/components/dashboard/DashboardSection';
 import { DashboardSummary } from '@/components/dashboard/DashboardSummary';
 import { InvitationsPanel } from '@/components/groups/InvitationsPanel';
 import { FloatingActionButton } from '@/components/ui/floating-action-button';
-import { PlusIcon, Loader2 } from 'lucide-react';
+import { PlusIcon, Loader2, AlertCircle, LogOutIcon, RefreshCw } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+const LOADING_TIMEOUT_MS = 20000;
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading, authError, signOut, refreshUser } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
-  const { groups, loading, error, hasRecursionError, fetchGroups } = useGroupsList();
+  const { groups, loading: groupsLoading, error, hasRecursionError, fetchGroups } = useGroupsList();
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  // Loading stuck state: Timeout after 20s
+  useEffect(() => {
+    if (authLoading || groupsLoading) {
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, LOADING_TIMEOUT_MS);
+      return () => clearTimeout(timer);
+    }
+    setLoadingTimeout(false);
+  }, [authLoading, groupsLoading]);
 
   const handleCreateGroup = () => {
     setIsCreateGroupModalOpen(true);
@@ -35,18 +51,27 @@ const Index = () => {
     setIsCreateGroupModalOpen(false);
     toast.success(`Group "${newGroup.name}" created successfully!`);
     fetchGroups();
-    
-    // Navigate to the new group's overview page
     navigate(`/group/${newGroup.id}`);
   };
-  
-  // This handler is correctly configured to navigate to the specific group view
+
   const handleGroupSelect = (groupId: string) => {
     navigate(`/group/${groupId}`);
   };
-  
+
   const handleNewExpense = () => {
     navigate('/expenses/new');
+  };
+
+  const handleRetry = async () => {
+    setLoadingTimeout(false);
+    await refreshUser();
+    fetchGroups();
+  };
+
+  const handleForceSignOut = async () => {
+    setLoadingTimeout(false);
+    await signOut();
+    navigate("/login");
   };
 
   // Animation variants
@@ -66,13 +91,48 @@ const Index = () => {
     visible: { opacity: 1, y: 0 }
   };
 
-  if (loading) {
+  // Robust fail for stuck loading
+  if ((authLoading || groupsLoading) && !loadingTimeout) {
     return (
       <AppLayout>
         <div className="flex justify-center items-center h-64">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
             <p className="text-muted-foreground">Loading your dashboard...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (loadingTimeout || authError || error) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center mt-20 gap-6 max-w-lg mx-auto">
+          <Alert variant="destructive" className="w-full">
+            <AlertCircle className="h-5 w-5 mr-2" />
+            <AlertDescription>
+              {authError
+                ? <>Authentication failed: {authError}</>
+                : error
+                  ? <>Error loading dashboard: {error}</>
+                  : <>Dashboard took too long to load. This may be an authentication issue, a slow network, or a temporary bug.<br />Try one of the actions below.</>
+              }
+            </AlertDescription>
+          </Alert>
+          <div className="w-full flex flex-col gap-2">
+            <Button onClick={handleRetry} variant="default" className="w-full gap-2" >
+              <RefreshCw className="w-4 h-4" /> Retry
+            </Button>
+            <Button onClick={handleForceSignOut} variant="outline" className="w-full gap-2">
+              <LogOutIcon className="w-4 h-4" /> Sign Out
+            </Button>
+            <Button onClick={() => navigate("/login")} variant="ghost" className="w-full gap-2">
+              <AlertCircle className="w-4 h-4" /> Return to Login
+            </Button>
+          </div>
+          <div className="text-xs text-muted-foreground text-center mt-3 px-2">
+            If this issue persists, please try clearing your browser cache and reloading the page.<br />If you think this is a bug, check the console or <a href="https://docs.lovable.dev/tips-tricks/troubleshooting" className="underline" target="_blank" rel="noopener noreferrer">see troubleshooting</a>.
           </div>
         </div>
       </AppLayout>
@@ -117,7 +177,7 @@ const Index = () => {
           >
             <GroupsList
               groups={groups}
-              loading={loading}
+              loading={groupsLoading}
               error={error}
               hasRecursionError={hasRecursionError}
               onCreateGroup={handleCreateGroup}
@@ -164,3 +224,4 @@ const Index = () => {
 };
 
 export default Index;
+
