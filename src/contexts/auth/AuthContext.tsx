@@ -16,15 +16,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { ready, authenticated, user: privyUser, logout } = usePrivy();
   const { fetchUser, createUser, authError, clearAuthError, setAuthError } = useUserData();
 
-  console.log('[AUTH CONTEXT] Current state:', {
-    ready,
-    authenticated,
-    privyUserId: privyUser?.id,
-    userInState: user?.id,
-    loading,
-    loginAttempts,
-    authError
-  });
+  console.log('[AUTH CONTEXT] === DETAILED STATE ===');
+  console.log('[AUTH CONTEXT] ready:', ready);
+  console.log('[AUTH CONTEXT] authenticated:', authenticated);
+  console.log('[AUTH CONTEXT] privyUser exists:', !!privyUser);
+  console.log('[AUTH CONTEXT] privyUser.id:', privyUser?.id);
+  console.log('[AUTH CONTEXT] privyUser.email:', privyUser?.email?.address);
+  console.log('[AUTH CONTEXT] user in state:', user?.id);
+  console.log('[AUTH CONTEXT] loading:', loading);
+  console.log('[AUTH CONTEXT] loginAttempts:', loginAttempts);
+  console.log('[AUTH CONTEXT] authError:', authError);
+  console.log('[AUTH CONTEXT] ================================');
 
   // Reset login attempts counter
   const resetLoginAttempts = useCallback(() => {
@@ -32,78 +34,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoginAttempts(0);
   }, []);
 
-  // Main auth effect - simplified with more logging
+  // Main auth effect
   useEffect(() => {
     const handleAuth = async () => {
-      console.log('[AUTH] Starting auth check', { 
-        ready, 
-        authenticated, 
-        privyUserId: privyUser?.id,
-        privyUserEmail: privyUser?.email?.address 
-      });
+      console.log('[AUTH] ====== STARTING AUTH HANDLER ======');
+      console.log('[AUTH] ready:', ready);
+      console.log('[AUTH] authenticated:', authenticated);
+      console.log('[AUTH] privyUser:', privyUser?.id);
       
       if (!ready) {
-        console.log('[AUTH] Privy not ready yet, waiting...');
+        console.log('[AUTH] Privy not ready yet, keeping loading state');
         return;
       }
 
       if (!authenticated || !privyUser) {
-        console.log('[AUTH] Not authenticated, clearing state and stopping loading');
+        console.log('[AUTH] Not authenticated, clearing state');
         clearAuthState();
         setUser(null);
         setLoading(false);
+        console.log('[AUTH] ====== AUTH HANDLER COMPLETE (NOT AUTHENTICATED) ======');
         return;
       }
 
+      console.log('[AUTH] User is authenticated, proceeding with setup');
+      
       try {
-        console.log('[AUTH] User is authenticated, setting up Supabase auth');
         setLoading(true);
         clearAuthError();
 
-        // Set up Supabase auth
-        console.log('[AUTH] Setting up Supabase auth for user:', privyUser.id);
+        console.log('[AUTH] Step 1: Setting up Supabase auth for user:', privyUser.id);
         const authSuccess = await setSupabaseAuth(privyUser.id);
         if (!authSuccess) {
           throw new Error('Failed to set up Supabase authentication');
         }
-        console.log('[AUTH] Supabase auth setup successful');
+        console.log('[AUTH] Step 1: ✅ Supabase auth setup successful');
 
-        // Fetch or create user
-        console.log('[AUTH] Fetching user data from Supabase');
+        console.log('[AUTH] Step 2: Attempting to fetch existing user');
         let userData = await fetchUser(privyUser.id);
+        
         if (!userData) {
-          console.log('[AUTH] User not found, creating new user');
+          console.log('[AUTH] Step 3: No existing user found, creating new user');
           userData = await createUser(privyUser.id, privyUser);
+          console.log('[AUTH] Step 3: Create user result:', userData ? 'SUCCESS' : 'FAILED');
         } else {
-          console.log('[AUTH] Existing user found:', userData.id);
+          console.log('[AUTH] Step 2: ✅ Existing user found:', userData.id);
         }
 
         if (userData) {
-          console.log('[AUTH] User data loaded successfully:', userData.id);
+          console.log('[AUTH] Step 4: ✅ Setting user data in state:', userData.id);
           setUser(userData);
           resetLoginAttempts();
+          console.log('[AUTH] ====== AUTH HANDLER COMPLETE (SUCCESS) ======');
         } else {
+          console.log('[AUTH] Step 4: ❌ No user data available after fetch/create');
           throw new Error('Failed to load user data after creation/fetch');
         }
       } catch (error: any) {
-        console.error('[AUTH] Error in auth setup:', error);
-        console.error('[AUTH] Error details:', {
-          message: error?.message,
-          code: error?.code,
-          details: error?.details
-        });
+        console.error('[AUTH] ❌ Error in auth setup:', error);
+        console.error('[AUTH] Error message:', error?.message);
+        console.error('[AUTH] Error code:', error?.code);
+        
         setAuthError(`Authentication failed: ${error?.message || 'Unknown error'}`);
         setLoginAttempts(prev => {
           const newAttempts = prev + 1;
           console.log('[AUTH] Login attempt failed, count:', newAttempts);
           return newAttempts;
         });
+        console.log('[AUTH] ====== AUTH HANDLER COMPLETE (ERROR) ======');
       } finally {
         console.log('[AUTH] Setting loading to false');
         setLoading(false);
       }
     };
 
+    console.log('[AUTH] Auth effect triggered, calling handleAuth');
     handleAuth();
   }, [ready, authenticated, privyUser?.id, fetchUser, createUser, clearAuthError, setAuthError, resetLoginAttempts]);
 
@@ -150,14 +154,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isAuthenticated = authenticated && !!user;
 
-  console.log('[AUTH] Final state check:', {
-    ready,
-    authenticated,
-    user: user?.id,
-    loading,
-    isAuthenticated,
-    authError
-  });
+  console.log('[AUTH] ==== FINAL CONTEXT STATE ====');
+  console.log('[AUTH] isAuthenticated:', isAuthenticated);
+  console.log('[AUTH] loading:', loading);
+  console.log('[AUTH] user exists:', !!user);
+  console.log('[AUTH] authError:', authError);
+  console.log('[AUTH] ===============================');
 
   const value: AuthContextType = {
     user,
