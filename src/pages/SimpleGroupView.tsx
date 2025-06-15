@@ -3,53 +3,75 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
 import { GroupHeader } from "@/components/groups/GroupHeader";
-import { MembersCard } from "@/components/groups/MembersCard";
+import { SimpleMembersCard } from "@/components/groups/SimpleMembersCard";
+import { SimpleGroupManagementPanel } from "@/components/groups/SimpleGroupManagementPanel";
 import { ImprovedInviteMemberDialog } from "@/components/groups/ImprovedInviteMemberDialog";
-import { useGroupDetails } from "@/hooks/useGroupDetails";
-import { useEnsureGroupMembership } from "@/hooks/useEnsureGroupMembership";
+import { useSimpleGroupMembers } from "@/hooks/useSimpleGroupMembers";
 import { useAuth } from "@/contexts";
-import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2, AlertTriangle, ArrowLeft, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ExpensesList } from "@/components/ExpensesList";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion } from "framer-motion";
 
-const GroupView = () => {
+const SimpleGroupView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [group, setGroup] = useState<any>(null);
+  const [groupLoading, setGroupLoading] = useState(true);
   
-  // Ensure current user is a member of the group
-  useEnsureGroupMembership(id, user);
+  const { members, fetchMembers, loading: membersLoading } = useSimpleGroupMembers(id);
   
-  const { 
-    group, 
-    members, 
-    loading, 
-    isAdmin, 
-    handleMemberAdded,
-    refreshData
-  } = useGroupDetails(id, user);
+  // Check if current user is admin
+  const currentUserMember = members.find(member => member.user?.id === user?.id);
+  const isAdmin = currentUserMember?.role === 'admin';
   
-  console.log("[GROUP VIEW] Current state:", {
+  console.log("[SIMPLE GROUP VIEW] Current state:", {
     groupId: id,
     membersCount: members?.length || 0,
-    members: members,
     isAdmin,
-    loading
+    currentUserMember
   });
+  
+  // Fetch group details
+  useEffect(() => {
+    const fetchGroup = async () => {
+      if (!id) return;
+      
+      setGroupLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('groups')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (error) {
+          console.error("[SIMPLE GROUP VIEW] Error fetching group:", error);
+          setGroup(null);
+        } else {
+          setGroup(data);
+        }
+      } catch (error) {
+        console.error("[SIMPLE GROUP VIEW] Unexpected error:", error);
+        setGroup(null);
+      } finally {
+        setGroupLoading(false);
+      }
+    };
+    
+    fetchGroup();
+  }, [id]);
   
   const handleCreateExpense = () => {
     navigate(`/expenses/new?groupId=${id}`);
   };
   
   const handleMemberAddedRefresh = () => {
-    console.log("[GROUP VIEW] Member added, refreshing data");
-    // Just call the existing refresh functions
-    refreshData();
-    handleMemberAdded();
+    console.log("[SIMPLE GROUP VIEW] Member added, refreshing data");
+    fetchMembers();
   };
   
   // If no group ID is provided, redirect to the groups list
@@ -59,14 +81,7 @@ const GroupView = () => {
     }
   }, [id, navigate]);
 
-  // Animations
-  const pageVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-    exit: { opacity: 0, y: 20, transition: { duration: 0.2 } }
-  };
-
-  if (loading) {
+  if (groupLoading || membersLoading) {
     return (
       <AppLayout>
         <div className="flex flex-col justify-center items-center h-64">
@@ -112,10 +127,9 @@ const GroupView = () => {
     <AppLayout>
       <motion.div 
         className="container mx-auto py-6 space-y-6"
-        variants={pageVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
       >
         <GroupHeader 
           groupName={group.name}
@@ -124,47 +138,23 @@ const GroupView = () => {
           onCreateExpense={handleCreateExpense}
         />
 
-        {/* Members Card - Always visible and prominent */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-        >
-          <MembersCard 
-            members={members}
-            isAdmin={isAdmin}
-            onInviteClick={() => setInviteDialogOpen(true)}
-            currentUserId={user?.id}
-            loading={loading}
-          />
-        </motion.div>
+        <SimpleMembersCard 
+          members={members}
+          isAdmin={isAdmin}
+          onInviteClick={() => setInviteDialogOpen(true)}
+          currentUserId={user?.id}
+          loading={membersLoading}
+        />
 
-        {/* Group Expenses List - Directly after members */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-        >
-          <Card className="shadow-sm hover:shadow transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Group Expenses</CardTitle>
-                <CardDescription>Recent expenses for this group</CardDescription>
-              </div>
-              <Button 
-                variant="outline" 
-                onClick={handleCreateExpense} 
-                className="hidden md:flex"
-              >
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add Expense
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <ExpensesList groupId={id} />
-            </CardContent>
-          </Card>
-        </motion.div>
+        {isAdmin && (
+          <SimpleGroupManagementPanel
+            groupId={id!}
+            members={members}
+            currentUserId={user?.id}
+            isAdmin={isAdmin}
+            onMemberUpdate={handleMemberAddedRefresh}
+          />
+        )}
         
         <ImprovedInviteMemberDialog
           open={inviteDialogOpen}
@@ -178,4 +168,4 @@ const GroupView = () => {
   );
 };
 
-export default GroupView;
+export default SimpleGroupView;

@@ -1,32 +1,30 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Settings, UserMinus, Crown, User } from 'lucide-react';
-import { GroupMember } from '@/types/supabase';
-import { useGroupManagement } from '@/hooks/useGroupManagement';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useSimpleGroupManagement } from '@/hooks/useSimpleGroupManagement';
+import type { SimpleGroupMember } from '@/hooks/useSimpleGroupMembers';
 
-interface GroupManagementPanelProps {
+interface SimpleGroupManagementPanelProps {
   groupId: string;
-  members: GroupMember[];
+  members: SimpleGroupMember[];
   currentUserId?: string;
   isAdmin: boolean;
   onMemberUpdate: () => void;
 }
 
-export const GroupManagementPanel = ({ 
+export const SimpleGroupManagementPanel = ({ 
   groupId, 
   members, 
   currentUserId, 
   isAdmin,
   onMemberUpdate 
-}: GroupManagementPanelProps) => {
-  const { updateMemberRole, removeMember, loading } = useGroupManagement();
-  const [selectedMember, setSelectedMember] = useState<string | null>(null);
+}: SimpleGroupManagementPanelProps) => {
+  const { updateMemberRole, removeMember, loading } = useSimpleGroupManagement();
 
   const handleRoleChange = async (userId: string, newRole: 'admin' | 'member' | 'participant') => {
     try {
@@ -41,7 +39,6 @@ export const GroupManagementPanel = ({
     try {
       await removeMember(groupId, userId);
       onMemberUpdate();
-      setSelectedMember(null);
     } catch (error) {
       // Error is handled in the hook
     }
@@ -66,7 +63,7 @@ export const GroupManagementPanel = ({
               <Avatar className="h-10 w-10">
                 <AvatarImage src={`https://avatar.vercel.sh/${member.user?.email}`} />
                 <AvatarFallback>
-                  {member.user?.name?.charAt(0) || member.user?.email.charAt(0)}
+                  {member.user?.name?.charAt(0) || member.user?.email?.charAt(0) || '?'}
                 </AvatarFallback>
               </Avatar>
               <div>
