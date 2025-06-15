@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { setSupabaseAuth, clearAuthState } from '@/integrations/supabase/client';
@@ -12,7 +11,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [loginAttempts, setLoginAttempts] = useState(0);
-  
+
+  // Fallback: force-clear loading after N seconds in case of bug
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => {
+        console.warn('[AUTH][SAFETY] Forcing loading=false after timeout');
+        setLoading(false);
+      }, 8000); // 8 seconds max, adjust if needed
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
   const { ready, authenticated, user: privyUser, logout } = usePrivy();
   const { fetchUser, createUser, authError, clearAuthError, setAuthError } = useUserData();
 
@@ -36,12 +46,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Main auth effect
   useEffect(() => {
+    let isMounted = true;
     const handleAuth = async () => {
       console.log('[AUTH] ====== STARTING AUTH HANDLER ======');
       console.log('[AUTH] ready:', ready);
       console.log('[AUTH] authenticated:', authenticated);
       console.log('[AUTH] privyUser:', privyUser?.id);
-      
+
       if (!ready) {
         console.log('[AUTH] Privy not ready yet, keeping loading state');
         return;
@@ -57,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       console.log('[AUTH] User is authenticated, proceeding with setup');
-      
+
       try {
         setLoading(true);
         clearAuthError();
@@ -71,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         console.log('[AUTH] Step 2: Attempting to fetch existing user');
         let userData = await fetchUser(privyUser.id);
-        
+
         if (!userData) {
           console.log('[AUTH] Step 3: No existing user found, creating new user');
           userData = await createUser(privyUser.id, privyUser);
@@ -87,13 +98,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('[AUTH] ====== AUTH HANDLER COMPLETE (SUCCESS) ======');
         } else {
           console.log('[AUTH] Step 4: ❌ No user data available after fetch/create');
-          throw new Error('Failed to load user data after creation/fetch');
+          setUser(null);
+          setAuthError('Failed to load user profile. Please try again.');
         }
       } catch (error: any) {
         console.error('[AUTH] ❌ Error in auth setup:', error);
         console.error('[AUTH] Error message:', error?.message);
         console.error('[AUTH] Error code:', error?.code);
-        
+
         setAuthError(`Authentication failed: ${error?.message || 'Unknown error'}`);
         setLoginAttempts(prev => {
           const newAttempts = prev + 1;
@@ -102,13 +114,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         console.log('[AUTH] ====== AUTH HANDLER COMPLETE (ERROR) ======');
       } finally {
-        console.log('[AUTH] Setting loading to false');
-        setLoading(false);
+        if (isMounted) {
+          console.log('[AUTH] Setting loading to false');
+          setLoading(false);
+        }
       }
     };
 
     console.log('[AUTH] Auth effect triggered, calling handleAuth');
     handleAuth();
+    return () => { isMounted = false; };
   }, [ready, authenticated, privyUser?.id, fetchUser, createUser, clearAuthError, setAuthError, resetLoginAttempts]);
 
   const refreshUser = useCallback(async (): Promise<User | null> => {
@@ -117,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('[AUTH] Cannot refresh - not authenticated');
       return null;
     }
-    
+
     try {
       const userData = await fetchUser(privyUser.id);
       if (userData) {
