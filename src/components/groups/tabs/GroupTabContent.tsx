@@ -14,11 +14,7 @@ import { useNavigate } from "react-router-dom";
 interface GroupTabContentProps {
   activeTab: string;
   groupId: string;
-  group?: {
-    name: string;
-    icon: string;
-    created_at: string;
-  } | null;
+  groupName?: string;
   members: GroupMember[];
   isAdmin: boolean;
   onInviteClick: () => void;
@@ -33,7 +29,7 @@ interface GroupTabContentProps {
 export const GroupTabContent: React.FC<GroupTabContentProps> = ({
   activeTab,
   groupId,
-  group,
+  groupName,
   members,
   isAdmin,
   onInviteClick,
@@ -52,16 +48,8 @@ export const GroupTabContent: React.FC<GroupTabContentProps> = ({
       <TabsContent value="overview" className="mt-4">
         <GroupOverview 
           groupId={groupId}
-          group={group}
-          members={members}
+          groupName={groupName}
           isAdmin={isAdmin}
-          onInviteClick={onInviteClick}
-          currentUserId={currentUserId}
-          potBalance={potBalance}
-          totalExpenses={totalExpenses}
-          pendingPayoutsCount={pendingPayoutsCount}
-          connectedWalletsCount={connectedWalletsCount}
-          onMemberUpdate={onMemberUpdate}
         />
       </TabsContent>
       <TabsContent value="expenses" className="mt-4">

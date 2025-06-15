@@ -17,7 +17,7 @@ const ExpenseDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { expenseUsers, isLoading: isUsersLoading } = useExpenseUsers();
+  const { users: expenseUsers, isLoading: isUsersLoading } = useExpenseUsers();
   
   const {
     expense,

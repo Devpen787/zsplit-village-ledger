@@ -9,6 +9,8 @@ import { SimpleMembersCard } from './SimpleMembersCard';
 import { GroupPotTab } from './tabs/GroupPotTab';
 import { GroupPulseTab } from './tabs/GroupPulseTab';
 import { BalancesTab } from './tabs/BalancesTab';
+import { useSimpleGroupMembers } from '@/hooks/useSimpleGroupMembers';
+import { useAuth } from '@/contexts';
 
 interface GroupTabsProps {
   groupId: string;
@@ -17,6 +19,13 @@ interface GroupTabsProps {
 
 export const GroupTabs = ({ groupId, isAdmin }: GroupTabsProps) => {
   const { expenses, loading } = useExpenses(undefined, groupId);
+  const { members, fetchMembers, loading: membersLoading } = useSimpleGroupMembers(groupId);
+  const { user } = useAuth();
+
+  const handleInviteClick = () => {
+    // TODO: Implement invite functionality
+    console.log('Invite clicked');
+  };
 
   return (
     <Tabs defaultValue="expenses" className="w-full">
@@ -55,7 +64,13 @@ export const GroupTabs = ({ groupId, isAdmin }: GroupTabsProps) => {
       </TabsContent>
 
       <TabsContent value="members" className="mt-6">
-        <SimpleMembersCard groupId={groupId} isAdmin={isAdmin} />
+        <SimpleMembersCard 
+          members={members}
+          isAdmin={isAdmin || false}
+          onInviteClick={handleInviteClick}
+          currentUserId={user?.id}
+          loading={membersLoading}
+        />
       </TabsContent>
 
       <TabsContent value="pot" className="mt-6">

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SimpleGroupManagementPanel } from './SimpleGroupManagementPanel';
+import { useSimpleGroupMembers } from '@/hooks/useSimpleGroupMembers';
 
 interface GroupOverviewProps {
   groupId: string;
@@ -16,6 +17,7 @@ interface GroupOverviewProps {
 
 export const GroupOverview = ({ groupId, groupName, isAdmin }: GroupOverviewProps) => {
   const navigate = useNavigate();
+  const { members, fetchMembers, loading } = useSimpleGroupMembers(groupId);
 
   return (
     <motion.div
@@ -32,8 +34,8 @@ export const GroupOverview = ({ groupId, groupName, isAdmin }: GroupOverviewProp
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">Loading...</p>
+            <div className="text-2xl font-bold">{members.length}</div>
+            <p className="text-xs text-muted-foreground">Active members</p>
           </CardContent>
         </Card>
 
@@ -97,7 +99,12 @@ export const GroupOverview = ({ groupId, groupName, isAdmin }: GroupOverviewProp
 
       {/* Management Panel */}
       {isAdmin && (
-        <SimpleGroupManagementPanel groupId={groupId} />
+        <SimpleGroupManagementPanel 
+          groupId={groupId} 
+          members={members}
+          isAdmin={isAdmin}
+          onMemberUpdate={fetchMembers}
+        />
       )}
     </motion.div>
   );
