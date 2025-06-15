@@ -1,193 +1,108 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { setSupabaseAuth, clearAuthState } from '@/integrations/supabase/client';
 import { User, AuthContextType } from '@/types/auth';
-import { toast } from '@/components/ui/sonner';
 import { useUserData } from './useUserData';
-import { performSignOut, getPrivyEmail } from './authUtils';
+import { performSignOut } from './authUtils';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Auth state machine states
-type AuthState = 'initializing' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [loginAttempts, setLoginAttempts] = useState(0);
-  const [authState, setAuthState] = useState<AuthState>('initializing');
   
   const { ready, authenticated, user: privyUser, logout } = usePrivy();
   const { fetchUser, createUser, authError, clearAuthError, setAuthError } = useUserData();
-  
-  // Refs to prevent race conditions
-  const isProcessingRef = useRef(false);
-  const lastPrivyIdRef = useRef<string | null>(null);
-  const mountedRef = useRef(true);
 
   // Reset login attempts counter
   const resetLoginAttempts = useCallback(() => {
     setLoginAttempts(0);
   }, []);
 
-  // Centralized user refresh with race condition protection
-  const refreshUser = useCallback(async (): Promise<User | null> => {
-    console.log('[AUTH CONTEXT] Starting refreshUser', {
-      isProcessing: isProcessingRef.current,
-      mounted: mountedRef.current,
-      authenticated,
-      privyUserId: privyUser?.id,
-      lastPrivyId: lastPrivyIdRef.current
-    });
+  // Main auth effect - simplified
+  useEffect(() => {
+    const handleAuth = async () => {
+      console.log('[AUTH] Starting auth check', { ready, authenticated, privyUser: privyUser?.id });
+      
+      if (!ready) {
+        console.log('[AUTH] Privy not ready yet');
+        return;
+      }
 
-    // Prevent concurrent refresh calls
-    if (isProcessingRef.current || !mountedRef.current) {
-      console.log('[AUTH CONTEXT] Skipping refresh - already processing or unmounted');
-      return user;
-    }
-
-    if (!authenticated || !privyUser) {
-      console.log('[AUTH CONTEXT] Not authenticated or no privy user');
-      if (mountedRef.current) {
-        setAuthState('unauthenticated');
+      if (!authenticated || !privyUser) {
+        console.log('[AUTH] Not authenticated, clearing state');
+        clearAuthState();
         setUser(null);
         setLoading(false);
+        return;
       }
-      return null;
-    }
 
-    // Skip if same user and already processing
-    if (lastPrivyIdRef.current === privyUser.id && user) {
-      console.log('[AUTH CONTEXT] Same user, returning existing');
-      return user;
-    }
-
-    isProcessingRef.current = true;
-    lastPrivyIdRef.current = privyUser.id;
-
-    try {
-      if (mountedRef.current) {
-        setAuthState('loading');
+      try {
+        console.log('[AUTH] User is authenticated, setting up Supabase');
         setLoading(true);
         clearAuthError();
-      }
 
-      console.log('[AUTH CONTEXT] Setting up Supabase auth for user:', privyUser.id);
-      // Set up Supabase auth
-      const authSuccess = await setSupabaseAuth(privyUser.id);
-      console.log('[AUTH CONTEXT] Supabase auth setup result:', authSuccess);
-      
-      // Fetch or create user
-      console.log('[AUTH CONTEXT] Fetching user data');
-      let userData = await fetchUser(privyUser.id);
-      
-      if (!userData) {
-        console.log('[AUTH CONTEXT] User not found, creating new user');
-        userData = await createUser(privyUser.id, privyUser);
-      }
+        // Set up Supabase auth
+        const authSuccess = await setSupabaseAuth(privyUser.id);
+        if (!authSuccess) {
+          throw new Error('Failed to set up Supabase authentication');
+        }
 
-      if (userData && mountedRef.current) {
-        console.log('[AUTH CONTEXT] User data loaded successfully:', userData);
-        setUser(userData);
-        setAuthState('authenticated');
-        resetLoginAttempts();
-      } else {
-        throw new Error('Failed to load user data');
-      }
+        // Fetch or create user
+        let userData = await fetchUser(privyUser.id);
+        if (!userData) {
+          console.log('[AUTH] Creating new user');
+          userData = await createUser(privyUser.id, privyUser);
+        }
 
-      return userData;
-    } catch (error: any) {
-      console.error('[AUTH CONTEXT] Auth refresh error:', error);
-      
-      if (mountedRef.current) {
-        setAuthState('error');
+        if (userData) {
+          console.log('[AUTH] User data loaded:', userData.id);
+          setUser(userData);
+          resetLoginAttempts();
+        } else {
+          throw new Error('Failed to load user data');
+        }
+      } catch (error: any) {
+        console.error('[AUTH] Error in auth setup:', error);
         setAuthError(`Authentication failed: ${error?.message || 'Unknown error'}`);
         setLoginAttempts(prev => prev + 1);
-      }
-      
-      return null;
-    } finally {
-      if (mountedRef.current) {
+      } finally {
         setLoading(false);
       }
-      isProcessingRef.current = false;
-    }
-  }, [authenticated, privyUser, fetchUser, createUser, clearAuthError, setAuthError, resetLoginAttempts, user]);
+    };
 
-  // Single effect to manage auth state
-  useEffect(() => {
-    if (!ready) {
-      console.log('[AUTH CONTEXT] Privy not ready yet');
-      return;
-    }
+    handleAuth();
+  }, [ready, authenticated, privyUser?.id, fetchUser, createUser, clearAuthError, setAuthError, resetLoginAttempts]);
 
-    console.log('[AUTH CONTEXT] Auth state change detected:', {
-      authenticated,
-      privyUserId: privyUser?.id,
-      currentUserId: user?.id
-    });
-
-    // Handle auth state changes
-    const handleAuthChange = async () => {
-      if (authenticated && privyUser) {
-        // Only refresh if user ID changed or we don't have a user
-        if (lastPrivyIdRef.current !== privyUser.id || !user) {
-          console.log('[AUTH CONTEXT] Need to refresh user data');
-          await refreshUser();
-        } else {
-          console.log('[AUTH CONTEXT] User already loaded, skipping refresh');
-        }
-      } else {
-        // Clear auth state
-        console.log('[AUTH CONTEXT] Clearing auth state');
-        if (mountedRef.current) {
-          clearAuthState();
-          setUser(null);
-          setAuthState('unauthenticated');
-          setLoading(false);
-          lastPrivyIdRef.current = null;
-        }
+  const refreshUser = useCallback(async (): Promise<User | null> => {
+    if (!authenticated || !privyUser) return null;
+    
+    try {
+      const userData = await fetchUser(privyUser.id);
+      if (userData) {
+        setUser(userData);
+        return userData;
       }
-    };
-
-    // ADD: Log before and after handleAuthChange
-    console.log('[AUTH CONTEXT] (Before) handleAuthChange, loading:', loading, 'authState:', authState, 'user:', user);
-
-    const timeoutId = setTimeout(async () => {
-      await handleAuthChange();
-      console.log('[AUTH CONTEXT] (After) handleAuthChange, loading:', loading, 'authState:', authState, 'user:', user);
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [ready, authenticated, privyUser, refreshUser, user]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+    } catch (error) {
+      console.error('[AUTH] Error refreshing user:', error);
+    }
+    return null;
+  }, [authenticated, privyUser, fetchUser]);
 
   const signOut = async () => {
     try {
-      console.log('[AUTH CONTEXT] Starting sign out');
+      console.log('[AUTH] Signing out');
       setLoading(true);
       clearAuthError();
       await performSignOut(logout);
-      
-      if (mountedRef.current) {
-        setUser(null);
-        setAuthState('unauthenticated');
-        resetLoginAttempts();
-        lastPrivyIdRef.current = null;
-      }
-      console.log('[AUTH CONTEXT] Sign out completed');
+      setUser(null);
+      resetLoginAttempts();
     } catch (error) {
-      console.error("[AUTH CONTEXT] Error in signOut:", error);
+      console.error('[AUTH] Error in signOut:', error);
     } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
@@ -196,18 +111,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return user.role === role;
   };
 
-  const isAuthenticated = authState === 'authenticated' && !!user;
+  const isAuthenticated = authenticated && !!user;
 
-  console.log('[AUTH CONTEXT] Current auth state:', {
-    authState,
-    isAuthenticated,
-    userId: user?.id,
-    loading
+  console.log('[AUTH] Current state:', {
+    ready,
+    authenticated,
+    user: user?.id,
+    loading,
+    isAuthenticated
   });
 
   const value: AuthContextType = {
     user,
-    loading: authState === 'loading' || authState === 'initializing' || loading,
+    loading,
     signOut,
     isAuthenticated,
     hasRole,

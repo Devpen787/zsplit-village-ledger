@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from "@/layouts/AppLayout";
@@ -21,26 +22,22 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const LOADING_TIMEOUT_MS = 20000;
-
 const Index = () => {
-  const { user, loading: authLoading, authError, signOut, refreshUser } = useAuth();
+  const { user, loading: authLoading, authError, signOut, refreshUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const { groups, loading: groupsLoading, error, hasRecursionError, fetchGroups } = useGroupsList();
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  // Loading stuck state: Timeout after 20s
+  console.log('[DASHBOARD] Auth state:', { isAuthenticated, authLoading, user: user?.id });
+
+  // Redirect to login if not authenticated and not loading
   useEffect(() => {
-    if (authLoading || groupsLoading) {
-      const timer = setTimeout(() => {
-        setLoadingTimeout(true);
-      }, LOADING_TIMEOUT_MS);
-      return () => clearTimeout(timer);
+    if (!authLoading && !isAuthenticated) {
+      console.log('[DASHBOARD] Not authenticated, redirecting to login');
+      navigate('/login');
     }
-    setLoadingTimeout(false);
-  }, [authLoading, groupsLoading]);
+  }, [authLoading, isAuthenticated, navigate]);
 
   const handleCreateGroup = () => {
     setIsCreateGroupModalOpen(true);
@@ -62,13 +59,11 @@ const Index = () => {
   };
 
   const handleRetry = async () => {
-    setLoadingTimeout(false);
     await refreshUser();
     fetchGroups();
   };
 
   const handleForceSignOut = async () => {
-    setLoadingTimeout(false);
     await signOut();
     navigate("/login");
   };
@@ -90,8 +85,8 @@ const Index = () => {
     visible: { opacity: 1, y: 0 }
   };
 
-  // Robust fail for stuck loading
-  if ((authLoading || groupsLoading) && !loadingTimeout) {
+  // Show loading while auth is being determined
+  if (authLoading) {
     return (
       <AppLayout>
         <div className="flex justify-center items-center h-64">
@@ -104,7 +99,8 @@ const Index = () => {
     );
   }
 
-  if (loadingTimeout || authError || error) {
+  // Show error state
+  if (authError || error) {
     return (
       <AppLayout>
         <div className="flex flex-col items-center mt-20 gap-6 max-w-lg mx-auto">
@@ -115,7 +111,7 @@ const Index = () => {
                 ? <>Authentication failed: {authError}</>
                 : error
                   ? <>Error loading dashboard: {error}</>
-                  : <>Dashboard took too long to load. This may be an authentication issue, a slow network, or a temporary bug.<br />Try one of the actions below.</>
+                  : <>Something went wrong loading your dashboard.</>
               }
             </AlertDescription>
           </Alert>
@@ -126,21 +122,16 @@ const Index = () => {
             <Button onClick={handleForceSignOut} variant="outline" className="w-full gap-2">
               <LogOutIcon className="w-4 h-4" /> Sign Out
             </Button>
-            <Button onClick={() => navigate("/login")} variant="ghost" className="w-full gap-2">
-              <AlertCircle className="w-4 h-4" /> Return to Login
-            </Button>
-          </div>
-          <div className="text-xs text-muted-foreground text-center mt-3 px-2">
-            If this issue persists, please try clearing your browser cache and reloading the page.<br />If you think this is a bug, check the console or <a href="https://docs.lovable.dev/tips-tricks/troubleshooting" className="underline" target="_blank" rel="noopener noreferrer">see troubleshooting</a>.
           </div>
         </div>
       </AppLayout>
     );
   }
 
-  useEffect(() => {
-    console.log('[DASHBOARD] authLoading:', authLoading, 'groupsLoading:', groupsLoading, 'user:', user);
-  }, [authLoading, groupsLoading, user]);
+  // Don't render dashboard if not authenticated
+  if (!isAuthenticated || !user) {
+    return null;
+  }
 
   return (
     <AppLayout>
@@ -154,22 +145,18 @@ const Index = () => {
           <DashboardHeader onCreateGroup={handleCreateGroup} />
         </motion.div>
 
-        {user && (
-          <>
-            <motion.div variants={itemVariants}>
-              <DashboardSummary />
-            </motion.div>
-            
-            <motion.div variants={itemVariants}>
-              <UserWelcomeCard user={user} />
-            </motion.div>
+        <motion.div variants={itemVariants}>
+          <DashboardSummary />
+        </motion.div>
+        
+        <motion.div variants={itemVariants}>
+          <UserWelcomeCard user={user} />
+        </motion.div>
 
-            {/* Group Invitations Panel */}
-            <motion.div variants={itemVariants}>
-              <InvitationsPanel />
-            </motion.div>
-          </>
-        )}
+        {/* Group Invitations Panel */}
+        <motion.div variants={itemVariants}>
+          <InvitationsPanel />
+        </motion.div>
 
         <motion.div variants={itemVariants}>
           <DashboardSection 

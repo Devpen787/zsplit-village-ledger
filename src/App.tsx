@@ -3,7 +3,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./contexts";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
 import Group from "./pages/Group";
 import SimpleGroupView from "./pages/SimpleGroupView";
 import Members from "./pages/Members";
@@ -22,16 +24,19 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/group" element={<Group />} />
-            <Route path="/group/:id" element={<SimpleGroupView />} />
-            <Route path="/members" element={<Members />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/expenses/new" element={<SimpleExpenseFormPage />} />
-            <Route path="/group/:id/pot" element={<GroupPot />} />
-            <Route path="/group/:id/pulse" element={<GroupPulse />} />
-            <Route path="/balances" element={<Balances />} />
-            <Route path="/settlements" element={<Settlements />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<ProtectedRoute />}>
+              <Route index element={<Index />} />
+              <Route path="group" element={<Group />} />
+              <Route path="group/:id" element={<SimpleGroupView />} />
+              <Route path="members" element={<Members />} />
+              <Route path="expenses" element={<Expenses />} />
+              <Route path="expenses/new" element={<SimpleExpenseFormPage />} />
+              <Route path="group/:id/pot" element={<GroupPot />} />
+              <Route path="group/:id/pulse" element={<GroupPulse />} />
+              <Route path="balances" element={<Balances />} />
+              <Route path="settlements" element={<Settlements />} />
+            </Route>
           </Routes>
           <Toaster />
         </BrowserRouter>
